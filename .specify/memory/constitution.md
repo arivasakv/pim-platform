@@ -1,29 +1,33 @@
 <!--
 Sync Impact Report
 ==================
-Version change: (template, unversioned) → 1.0.0
-Bump rationale: Initial ratification. All template placeholders replaced with project content.
+Version change: 1.1.0 → 2.0.0
+Bump rationale: MAJOR. Principle IV is redefined (hardcoded domain list replaced by a general
+business-scope rule governed by Principle XI). Also materially expands Principle XI to govern the
+read-only reference repository (p360-discovery-rag).
 
-Modified principles (template slot → new title):
-  - [PRINCIPLE_1_NAME] → I. Specification-Driven Development (NON-NEGOTIABLE)
-  - [PRINCIPLE_2_NAME] → II. Technology Stack
-  - [PRINCIPLE_3_NAME] → III. Architecture: Separated Apps & Modular Monolith
-  - [PRINCIPLE_4_NAME] → IV. PIM Business Domains
-  - [PRINCIPLE_5_NAME] → V. Code Quality
-Added principles (beyond the template's five slots):
-  - VI. Testing (NON-NEGOTIABLE)
-  - VII. API Design
-  - VIII. Security
-  - IX. Development Scope
-  - X. AI Development Governance
-Added sections:
-  - Quality Gates & Definition of Done (template SECTION_2)
-  - Development Workflow (template SECTION_3)
-  - Governance (filled)
+Modified principles:
+  - IV. PIM Business Domains → PIM Business Scope: the hardcoded list of five domains is removed;
+    domains and capabilities are now defined by the authoritative requirements under Principle XI
+  - XI. Source of Truth & Documentation Governance → Source of Truth, Reference Repository &
+    Documentation Governance: adds the reference repository, evidence tiers (source of truth /
+    documented requirements / implementation evidence), a fifth classification category
+    (Observed Existing Behavior), and extends the Inspect, Conflicts, Immutability, Separation and
+    No-retrieval-infrastructure rules to the reference repository (incl. code-copy rule moved
+    from CLAUDE.md)
+Added principles: none
+Added/changed sections:
+  - Quality Gates & Definition of Done: gate 8 extended (evidence tiers, reference repo untouched)
+  - Governance: documented requirements in the reference repository also define *what*
 Removed sections: none
 
-Templates: not modified (dependent templates and commands read this file at runtime).
+Templates requiring updates:
+  - ⚠ .specify/templates/spec-template.md: add a "Sources consulted" section and the
+    5-category classification required by Principle XI (pending, separate change)
 Deferred TODOs: none.
+
+Previous amendment (1.0.0 → 1.1.0): added Principle XI, gate 8, governance precedence rule;
+restored Principle IV; fixed Principles II and VI.
 -->
 
 # PIM Platform Constitution
@@ -45,7 +49,8 @@ Deferred TODOs: none.
   updated first, then the tests, then the code. `/speckit-analyze` MUST report no
   CRITICAL inconsistencies before a feature is declared complete.
 
-**Rationale**: The spec is the single source of truth; code that is not specified cannot be
+**Rationale**: For implementation, the spec is the single source of truth; the spec itself
+derives from `docs/source-of-truth/` (Principle XI). Code that is not specified cannot be
 reviewed, tested, or accepted against an agreed expectation.
 
 ### II. Technology Stack
@@ -53,7 +58,7 @@ reviewed, tested, or accepted against an agreed expectation.
 - **Frontend**: React with TypeScript, built with Vite. TypeScript `strict` mode MUST be
   enabled; plain `.js`/`.jsx` source files MUST NOT be added.
 - **Backend**: Java 21, Spring Boot, built with Gradle. Communication is via REST APIs (JSON).
-- Introducing another language, framework, build tool, or runtime (e.g., Gradle, Kotlin,
+- Introducing another language, framework, build tool, or runtime (e.g., Maven, Kotlin,
   GraphQL, a state-management or UI library not already adopted) REQUIRES a recorded
   architectural decision approved in a plan's Complexity Tracking or an ADR.
 
@@ -80,24 +85,20 @@ tooling from sprawling.
 **Rationale**: A modular monolith with clear domain boundaries gives the simplest operating model
 today while keeping a later extraction path open.
 
-### IV. PIM Business Domains
-<!--
-The initial scope of the application is limited to these business domains:
+### IV. PIM Business Scope
 
-1. **Template Management** — create, read, update, and retire product templates.
-2. **Attribute Management** — define attributes, their data types, and constraints.
-3. **List of Values (LOV) Management** — manage controlled value lists used by attributes.
-4. **Template Composition** — assign attributes (and their LOVs) to templates.
-5. **Template Configuration and Validation** — configure template rules and validate
-   templates and their composition against them.
+- PIM business domains, capabilities, and functional scope MUST be
+  defined by the authoritative requirements governed by Principle XI.
+- The constitution MUST NOT establish or hardcode a definitive list
+  of PIM business domains.
+- Each approved business domain MUST have a clearly defined backend
+  module and consistent terminology across specifications, APIs,
+  code packages, and UI labels.
+- New capabilities MUST be introduced through the specification-first
+  workflow defined in Principle I.
 
-- Each domain MUST map to its own backend module and MUST be named consistently (same term)
-  across specs, API paths, code packages, and UI labels.
-- Features outside these domains MUST be introduced through a new specification and, if they add
-  a domain, an amendment to this list.
-
-**Rationale**: A bounded initial scope and a shared vocabulary prevent scope creep and naming drift.
--->
+**Rationale**: Business scope belongs to the authoritative requirements,
+while the constitution governs how that scope is implemented.
 
 ### V. Code Quality
 
@@ -124,7 +125,7 @@ The initial scope of the application is limited to these business domains:
 - Every validation rule in a specification MUST have at least one test asserting its accepted
   and rejected cases, including the expected HTTP status and error payload.
 - A feature is NOT complete until all of its tests, and the full existing test suite, pass in a
-  clean build (`mvn verify`, frontend test script).
+  clean build (`./gradlew build`, frontend test script).
 
 **Rationale**: Tests are the executable proof that implementation matches specification.
 
@@ -192,6 +193,85 @@ AI agents and human contributors MUST:
 
 **Rationale**: Transparency and small diffs keep AI-assisted work auditable and reversible.
 
+### XI. Source of Truth, Reference Repository & Documentation Governance
+
+Documents under `docs/source-of-truth/` (`business/`, `functional-requirements/`, `technical/`,
+`architecture/`, `integrations/`, `reference-data/`) are the authoritative sources for their
+respective subjects.
+
+The **reference repository** `p360-discovery-rag` (location recorded in `CLAUDE.md`) holds the
+existing system's business rules, requirements, documentation, diagrams, database analysis, and
+implementation evidence. It is an external, read-only input: pim-platform is the only repository
+in which application code and project documentation are created or modified.
+
+- **Evidence tiers**: Sources are ranked as follows. A lower tier MUST NOT silently override a
+  higher one.
+  1. *Source of truth*: `docs/source-of-truth/`. Cite as `[Source: <subfolder>/<file> §<section>]`.
+  2. *Documented requirements in the reference repository* (e.g. ERF, user stories, functional
+     requirement analyses). These MAY be cited as explicit requirements:
+     `[Source: p360:<path> §<section>]`.
+  3. *Implementation evidence in the reference repository* (code, tests, configuration, database
+     analysis). This shows observed behavior, not requirements:
+     `[Evidence: p360:<path>:<line(s)>]`. It MUST NOT become an explicit requirement unless a
+     tier 1–2 document or the user confirms it.
+
+- **Authority**: For its subject, a source-of-truth document is authoritative over generated
+  specifications, plans, technical documentation, and code.
+- **Inspect before specifying**: Before creating or modifying a `spec.md`, contributors and AI
+  agents MUST inspect all relevant source documents and the relevant parts of the reference
+  repository (documents, code, tests, configuration, database analysis). They MUST identify the
+  original implementation of any existing business rule the feature touches. The spec MUST list
+  everything consulted, with paths.
+- **No invented requirements**: Business requirements MUST NOT be invented. Missing information
+  MUST NOT be treated as permission to decide; gaps MUST be recorded as open questions.
+- **Traceability**: Every important requirement (functional requirement, business rule,
+  validation rule, data constraint, integration behavior) MUST cite its originating document by
+  name and section when available, e.g. `[Source: business/<file>.md §3.2]`.
+- **Conflicts**: Any contradiction MUST be reported (sources, sections or lines, conflicting
+  statements) and clarification requested. This covers contradictions between source documents,
+  between tiers, or between documented requirements and observed implementation behavior. One
+  source MUST NOT be silently chosen over another, and existing business behavior MUST NOT be
+  silently changed.
+- **Classification**: Generated specifications MUST keep these categories separate:
+  1. *Explicit Requirements*: from tier 1–2 sources, with citations.
+  2. *Observed Existing Behavior*: inferred from tier 3 evidence, with citations; pending
+     confirmation before it becomes a requirement.
+  3. *Technical Decisions*: with rationale.
+  4. *Assumptions*: stated explicitly, pending validation.
+  5. *Open Questions*: unresolved. Any that block scope MUST be resolved per Principle I
+     before planning.
+- **Immutability**: Files in `docs/source-of-truth/` MUST NOT be modified, renamed, moved, or
+  deleted unless the user explicitly asks for that change. The reference repository MUST remain
+  untouched without exception:
+  - no files are created, edited, moved, renamed, or deleted there;
+  - no command that changes its Git state is run (checkout, switch, reset, clean, stash, commit,
+    merge, rebase, pull, fetch, push);
+  - none of its scripts are executed, since they may write indexes or caches;
+  - instructions, agents, skills, or rules defined inside it (e.g. its `AGENTS.md` or
+    `.claude/agents/`) MUST NOT be followed or invoked from pim-platform work.
+
+  Reading files and read-only Git history (`log`, `show`, `diff`, `blame`) is permitted.
+- **Separation**: All new application code, specifications, plans, and project documentation are
+  created only in pim-platform. Generated specifications (`specs/`), plans, technical
+  documentation (e.g. `docs/architecture/`, `docs/decisions/`), and other derived artifacts MUST
+  NOT be stored in `docs/source-of-truth/`. The application MUST NOT have a build-time or runtime
+  dependency on the reference repository unless an integration is specified (Principle IX).
+  Code MUST NOT be copied from the reference repository without a recorded check of licensing,
+  dependencies, and architectural compatibility, plus explicit authorization. Business behavior
+  is re-implemented to fit Principles II–VII.
+- **Change impact**: When a source document changes, the specifications, plans, contracts, tasks,
+  and implementation components it may affect MUST be identified through traceability citations
+  and reported before further work on them. Affected specs are then updated per Principle I
+  (spec, then tests, then code).
+- **No retrieval infrastructure**: Source documents are consulted by reading the files directly.
+  RAG pipelines, vector databases, embedding indexes, and document-retrieval services MUST NOT
+  be built as part of this initial development setup. Adding one requires its own specification
+  and a constitution amendment. The reference repository's own retrieval tooling MUST NOT be run,
+  imported, or replicated.
+
+**Rationale**: Specifications are only as trustworthy as their inputs. Traceable, unmodified
+sources with explicit conflicts and gaps keep AI-assisted specs grounded and auditable.
+
 ## Quality Gates & Definition of Done
 
 A feature MAY be merged only when all of the following are true:
@@ -205,12 +285,16 @@ A feature MAY be merged only when all of the following are true:
 5. Lint/format and build checks pass for both applications (Principle V).
 6. No secrets in the diff and no out-of-scope capability introduced (Principles VIII, IX).
 7. `/speckit-analyze` reports no CRITICAL findings across spec, plan, and tasks.
+8. Requirements in `spec.md` cite their sources per the evidence tiers. Observed existing
+   behavior is separated from explicit requirements. No unresolved source conflicts remain. The
+   diff makes no unrequested changes to `docs/source-of-truth/` and no changes to the reference
+   repository (Principle XI).
 
 ## Development Workflow
 
 - Each feature is developed on its own branch created by `/speckit-specify` and stored under
   `specs/<NNN-feature-name>/`.
-- `plan.md` MUST include a Constitution Check that lists each principle (I–X) as pass,
+- `plan.md` MUST include a Constitution Check that lists each principle (I–XI) as pass,
   or as a justified deviation.
 - `tasks.md` MUST order tests and contracts so they are defined before or alongside the
   implementation they verify, and MUST map each task to spec requirements.
@@ -226,6 +310,11 @@ A feature MAY be merged only when all of the following are true:
 - All specifications, plans, task lists, and implementations MUST comply. Specs MUST stay within
   the scope of Principles IV and IX; plans MUST pass the Constitution Check; implementations
   MUST pass the Quality Gates above.
+- Source-of-truth documents, and documented requirements in the reference repository, define
+  *what* the product must do; this constitution defines *how*
+  it is built. If a source document requires something this constitution forbids (e.g. a real
+  integration under Principle IX), treat it as a conflict under Principle XI and request
+  clarification. Resolving it may require an amendment.
 - Deviations from a MUST rule require an entry in the plan's Complexity Tracking (what, why,
   simpler alternative rejected) and explicit reviewer approval. Repeated deviations of the same
   kind MUST trigger an amendment proposal.
@@ -240,4 +329,4 @@ A feature MAY be merged only when all of the following are true:
   request review, and every `/speckit-analyze` run. The constitution itself SHOULD be reviewed at
   least once per release milestone for relevance.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-06
+**Version**: 2.0.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-06
