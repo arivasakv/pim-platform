@@ -49,27 +49,27 @@ US3 components (P3), US2 identity documentation (P4).
 **Purpose**: Bring the frontend tooling in line with the constitution (ESLint + Prettier, Vitest,
 strict TypeScript) before any UI work.
 
-- [ ] T001 Record the baseline before any change. From the repository root run `git status --short -- backend/ | Out-File -Encoding utf8 "$env:TEMP\pim-backend-before.txt"` and `git ls-files -o -c --exclude-standard frontend/ | Sort-Object | Out-File -Encoding utf8 "$env:TEMP\pim-frontend-files-before.txt"` (quickstart.md, "Before you start")
-- [ ] T002 Update dev dependencies in `frontend\package.json` and `frontend\package-lock.json`. In `frontend\`, run in order:
+- [X] T001 Record the baseline before any change. From the repository root run `git status --short -- backend/ | Out-File -Encoding utf8 "$env:TEMP\pim-backend-before.txt"` and `git ls-files -o -c --exclude-standard frontend/ | Sort-Object | Out-File -Encoding utf8 "$env:TEMP\pim-frontend-files-before.txt"` (quickstart.md, "Before you start")
+- [X] T002 Update dev dependencies in `frontend\package.json` and `frontend\package-lock.json`. In `frontend\`, run in order:
   1. `npm uninstall oxlint`
   2. `npm install -D typescript@~6.0.3`
   3. `npm install -D eslint@^10.14.0 @eslint/js@^10.0.1 typescript-eslint@^8.72.1 eslint-plugin-react-hooks@^7.1.1 eslint-plugin-react-refresh@^0.5.7 globals@^17.14.0 eslint-config-prettier@^10.1.8 prettier@^3.9.10 jiti@^2.7.0`
   4. `npm install -D vitest@^5.1.0 jsdom@^31.0.0 @testing-library/react@^16.3.3 @testing-library/dom@^10.4.2`
   
   Confirm `npx tsc -v` prints `Version 6.0.x` and `npm ls --depth=0` shows no peer-dependency errors
-- [ ] T003 Set the npm scripts in `frontend\package.json` to exactly: `"dev": "vite"`, `"build": "tsc -b && vite build"`, `"lint": "eslint ."`, `"format": "prettier --write ."`, `"format:check": "prettier --check ."`, `"test": "vitest run"`, `"preview": "vite preview"`
-- [ ] T004 Remove the Oxlint leftovers.
+- [X] T003 Set the npm scripts in `frontend\package.json` to exactly: `"dev": "vite"`, `"build": "tsc -b && vite build"`, `"lint": "eslint ."`, `"format": "prettier --write ."`, `"format:check": "prettier --check ."`, `"test": "vitest run"`, `"preview": "vite preview"`
+- [X] T004 Remove the Oxlint leftovers.
   1. Delete the config with `Remove-Item frontend\.oxlintrc.json`.
   2. In `frontend\README.md`, replace only the section "Expanding the Oxlint configuration" (heading, text and JSON block) with a short "Comandos" section listing `npm run dev`, `npm run build`, `npm run lint`, `npm run format`, `npm run format:check` and `npm test`.
   3. From the repository root, confirm `git grep -i --untracked -n oxlint -- frontend` prints nothing (it skips the git-ignored `node_modules`).
-- [ ] T005 [P] Create `frontend\eslint.config.ts` as an ESLint flat config using `defineConfig` and `globalIgnores` from `eslint/config`:
+- [X] T005 [P] Create `frontend\eslint.config.ts` as an ESLint flat config using `defineConfig` and `globalIgnores` from `eslint/config`:
   - `globalIgnores(['dist', 'coverage'])`;
   - one block for `files: ['**/*.{ts,tsx}']` that extends `js.configs.recommended` (`@eslint/js`), `tseslint.configs.recommended` (`typescript-eslint`, no type-aware rules), the flat-config recommended preset of `eslint-plugin-react-hooks` v7 (check the plugin README for the export name) and `reactRefresh.configs.vite`, with `languageOptions.globals: globals.browser`;
   - `eslint-config-prettier` as the last entry
-- [ ] T006 [P] Create `frontend\.prettierrc.json` with exactly `{ "semi": false, "singleQuote": true, "trailingComma": "all", "printWidth": 100 }` and `frontend\.prettierignore` listing `dist`, `coverage` and `package-lock.json`
-- [ ] T007 [P] Add `"strict": true` to `compilerOptions` in `frontend\tsconfig.app.json` and `frontend\tsconfig.node.json`. In `frontend\tsconfig.node.json`, set `"include": ["vite.config.ts", "eslint.config.ts"]`
-- [ ] T008 Configure Vitest in `frontend\vite.config.ts`: import `defineConfig` from `vitest/config` instead of `vite`, keep `plugins: [react()]`, and add `test: { environment: 'jsdom', setupFiles: ['./src/test/setup.ts'] }`. Create `frontend\src\test\setup.ts` that imports `afterEach` from `vitest` and `cleanup` from `@testing-library/react` and calls `cleanup()` after each test. Tests import `describe`/`it`/`expect`/`vi` from `vitest` explicitly
-- [ ] T009 Run `npm run format` once (expect small changes in `frontend\src\App.tsx` and `frontend\src\main.tsx`). Then confirm `npm run lint`, `npm run format:check` and `npm run build` finish with zero errors, and that `npx vitest run --passWithNoTests` runs
+- [X] T006 [P] Create `frontend\.prettierrc.json` with exactly `{ "semi": false, "singleQuote": true, "trailingComma": "all", "printWidth": 100 }` and `frontend\.prettierignore` listing `dist`, `coverage` and `package-lock.json`
+- [X] T007 [P] Add `"strict": true` to `compilerOptions` in `frontend\tsconfig.app.json` and `frontend\tsconfig.node.json`. In `frontend\tsconfig.node.json`, set `"include": ["vite.config.ts", "eslint.config.ts"]`
+- [X] T008 Configure Vitest in `frontend\vite.config.ts`: import `defineConfig` from `vitest/config` instead of `vite`, keep `plugins: [react()]`, and add `test: { environment: 'jsdom', setupFiles: ['./src/test/setup.ts'] }`. Create `frontend\src\test\setup.ts` that imports `afterEach` from `vitest` and `cleanup` from `@testing-library/react` and calls `cleanup()` after each test. Tests import `describe`/`it`/`expect`/`vi` from `vitest` explicitly
+- [X] T009 Run `npm run format` once (expect small changes in `frontend\src\App.tsx` and `frontend\src\main.tsx`). Then confirm `npm run lint`, `npm run format:check` and `npm run build` finish with zero errors, and that `npx vitest run --passWithNoTests` runs
 
 **Checkpoint**: Tooling complies with constitution II, V and VI. The app still shows the old page.
 
