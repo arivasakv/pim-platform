@@ -1,0 +1,75 @@
+.notification {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border-left: var(--space-1) solid transparent;
+  color: var(--color-text);
+}
+
+.icon {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  margin: 0 0 var(--space-1);
+  font-weight: var(--weight-semibold);
+}
+
+.closeButton {
+  display: flex;
+  flex-shrink: 0;
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  color: var(--color-text);
+}
+
+.success {
+  background: var(--color-success-subtle);
+  border-left-color: var(--color-success);
+}
+
+.success .icon {
+  color: var(--color-success);
+}
+
+.warning {
+  background: var(--color-warning-subtle);
+  border-left-color: var(--color-warning);
+}
+
+.warning .icon {
+  color: var(--color-warning);
+}
+
+.error {
+  background: var(--color-error-subtle);
+  border-left-color: var(--color-error);
+}
+
+.error .icon {
+  color: var(--color-error);
+}
+
+.info {
+  background: var(--color-info-subtle);
+  border-left-color: var(--color-info);
+}
+
+.info .icon {
+  color: var(--color-info);
+}

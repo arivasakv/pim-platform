@@ -133,19 +133,19 @@ never appears (quickstart scenarios 1, 3, 4).
 
 ### Tests for User Story 1 (write first, confirm they fail)
 
-- [ ] T014 [P] [US1] Write `frontend\src\navigation.test.ts`:
+- [X] T014 [P] [US1] Write `frontend\src\navigation.test.ts`:
   - `getPathFromHash('')`, `getPathFromHash('#/')` and `getPathFromHash('#/desconocido')` all return `'/'` (data-model.md: "Unknown or empty hashes resolve to `/`");
   - `useCurrentPath()` (via `renderHook`) returns `'/'` after `window.location.hash = '#/'` and a `hashchange` event
-- [ ] T015 [P] [US1] Write `frontend\src\components\ui\Notification.test.tsx`:
+- [X] T015 [P] [US1] Write `frontend\src\components\ui\Notification.test.tsx`:
   - `variant="error"` has `role="alert"`; `success`, `info` and `warning` have `role="status"`;
   - title and text are shown;
   - with `onDismiss`, the button "Cerrar notificación" calls it on click; without it, no button
-- [ ] T016 [P] [US1] Write `frontend\src\pages\HomePage.test.tsx`, stubbing `fetch` with `vi.stubGlobal` and restoring it after each test:
+- [X] T016 [P] [US1] Write `frontend\src\pages\HomePage.test.tsx`, stubbing `fetch` with `vi.stubGlobal` and restoring it after each test:
   - a pending fetch shows "Verificando conexión con el servidor…";
   - `ok: true` with `text()` returning `'Hello from PIM Backend!'` shows "Conexión con el servidor establecida." and `queryByText(/Hello from PIM Backend/)` is `null`;
   - `ok: false` and a rejected fetch both show "No se pudo conectar con el servidor.";
   - `fetch` is called once with `'http://localhost:8080/api/v1/hello'`
-- [ ] T017 [P] [US1] Write `frontend\src\components\layout\AppShell.test.tsx`:
+- [X] T017 [P] [US1] Write `frontend\src\components\layout\AppShell.test.tsx`:
   - landmarks: `banner` containing "Plataforma PIM", `navigation` named "Navegación principal", `main` with `id="contenido"` containing the children;
   - the active link has `aria-current="page"`;
   - the first link is "Saltar al contenido" with `href="#contenido"`;
@@ -153,29 +153,29 @@ never appears (quickstart scenarios 1, 3, 4).
 
 ### Implementation for User Story 1
 
-- [ ] T018 [P] [US1] Create `frontend\src\navigation.ts` exporting:
+- [X] T018 [P] [US1] Create `frontend\src\navigation.ts` exporting:
   - `type NavigationEntry = { path: string; label: string; icon: IconName }`;
   - `NAVIGATION_ENTRIES` with only `{ path: '/', label: 'Inicio', icon: 'home' }` (Componentes is added in T040);
   - `getPathFromHash(hash)`, which returns the matching entry path or `'/'`;
   - `useCurrentPath()`, which reads `window.location.hash` and updates on `hashchange` with cleanup.
   
   Rules: "Hash path starting with `/`, unique"; "Entries for PIM business sections MUST NOT be added by this feature (FR-017)"
-- [ ] T019 [P] [US1] Create `frontend\src\components\ui\Notification.tsx` + `Notification.module.css` (contracts, Notification):
+- [X] T019 [P] [US1] Create `frontend\src\components\ui\Notification.tsx` + `Notification.module.css` (contracts, Notification):
   - banner with `--radius-md`, padding `--space-3` `--space-4`, background `--color-<variant>-subtle`, left border of width `--space-1` in `--color-<variant>`;
   - the variant `Icon`, an optional bold title, the children;
   - `role="alert"` for `error`, else `role="status"`;
   - optional close button (`Icon name="close"`, `aria-label="Cerrar notificación"`)
-- [ ] T020 [P] [US1] Create `frontend\src\components\ui\PageHeader.tsx` + `PageHeader.module.css`:
+- [X] T020 [P] [US1] Create `frontend\src\components\ui\PageHeader.tsx` + `PageHeader.module.css`:
   - props `{ title; description?; actions? }`;
   - the single `<h1>` at `--text-xl` `--weight-bold`, description in `--color-text-secondary`;
   - actions on the right, wrapping below on narrow widths;
   - bottom margin `--space-5`
-- [ ] T021 [P] [US1] Create `frontend\src\components\ui\Card.tsx` + `Card.module.css`:
+- [X] T021 [P] [US1] Create `frontend\src\components\ui\Card.tsx` + `Card.module.css`:
   - props `{ title?; actions?; children }`;
   - `<section>` with `--color-surface`, `--border-width` solid `--color-border-subtle`, `--radius-md`, `--shadow-sm`, padding `--space-5`;
   - an optional `title` as `<h2>` at `--text-lg` `--weight-semibold`, labelling the section with `aria-labelledby`
-- [ ] T022 [US1] Create `frontend\src\components\ui\index.ts` exporting `Icon` (+ type `IconName`), `Notification`, `PageHeader` and `Card`
-- [ ] T023 [US1] Replace the content of `frontend\src\App.css` (keep the file) with the desktop app frame, using `app-` class names:
+- [X] T022 [US1] Create `frontend\src\components\ui\index.ts` exporting `Icon` (+ type `IconName`), `Notification`, `PageHeader` and `Card`
+- [X] T023 [US1] Replace the content of `frontend\src\App.css` (keep the file) with the desktop app frame, using `app-` class names:
   - `.app-shell`: grid with header row `--layout-header-height`; at 1024px and wider, columns `--layout-nav-width minmax(0, 1fr)`; `min-height: 100vh`;
   - `.app-header`: `--color-primary` background, `--color-text-on-primary` text, `--shadow-md`, `z-index: var(--z-header)`, title at `--text-lg` `--weight-semibold`;
   - `.app-nav`: `--color-surface` background, right border `--color-border-subtle`;
@@ -185,14 +185,14 @@ never appears (quickstart scenarios 1, 3, 4).
   - `.app-skip-link`: visible only on focus.
   
   Remove the scaffold rules. Tablet rules come in T031
-- [ ] T024 [P] [US1] Create `frontend\src\components\layout\AppHeader.tsx`: `<header className="app-header">` with "Plataforma PIM" and an empty logo slot (FR-007, A-003); no search, user menu, cart or promotions (FR-006, A-005). The menu button comes in T032
-- [ ] T025 [P] [US1] Create `frontend\src\components\layout\SideNavigation.tsx` with props `{ id; entries; activePath }`. Render `<nav className="app-nav" aria-label="Navegación principal">` with one link per entry: `href={'#' + entry.path}`, `Icon` + label, and `aria-current="page"` when `path === activePath`. Drawer props come in T033
-- [ ] T026 [US1] Create `frontend\src\components\layout\AppShell.tsx` with props `{ entries; activePath; children }`. Inside `<div className="app-shell">`, render:
+- [X] T024 [P] [US1] Create `frontend\src\components\layout\AppHeader.tsx`: `<header className="app-header">` with "Plataforma PIM" and an empty logo slot (FR-007, A-003); no search, user menu, cart or promotions (FR-006, A-005). The menu button comes in T032
+- [X] T025 [P] [US1] Create `frontend\src\components\layout\SideNavigation.tsx` with props `{ id; entries; activePath }`. Render `<nav className="app-nav" aria-label="Navegación principal">` with one link per entry: `href={'#' + entry.path}`, `Icon` + label, and `aria-current="page"` when `path === activePath`. Drawer props come in T033
+- [X] T026 [US1] Create `frontend\src\components\layout\AppShell.tsx` with props `{ entries; activePath; children }`. Inside `<div className="app-shell">`, render:
   1. `<a className="app-skip-link" href="#contenido">Saltar al contenido</a>`;
   2. `AppHeader`;
   3. `SideNavigation id="navegacion-principal"`;
   4. `<main id="contenido" className="app-main" tabIndex={-1}>`
-- [ ] T027 [US1] Create `frontend\src\pages\HomePage.tsx`, moving the connection check out of `App.tsx`:
+- [X] T027 [US1] Create `frontend\src\pages\HomePage.tsx`, moving the connection check out of `App.tsx`:
   - `useEffect` calls `fetch('http://localhost:8080/api/v1/hello')` once (URL unchanged, R-15), with an `ignore` flag in the cleanup;
   - status goes `checking` → `connected` if `response.ok`, otherwise (non-OK status or rejected promise) `unavailable`;
   - never read or display the response body (R-13).
@@ -201,14 +201,14 @@ never appears (quickstart scenarios 1, 3, 4).
   - `info` "Verificando conexión con el servidor…";
   - `success` "Conexión con el servidor establecida.";
   - `error` "No se pudo conectar con el servidor."
-- [ ] T028 [US1] Replace `frontend\src\App.tsx`:
+- [X] T028 [US1] Replace `frontend\src\App.tsx`:
   - import `./App.css`;
   - get `path` from `useCurrentPath()`;
   - render `<AppShell entries={NAVIGATION_ENTRIES} activePath={path}>` with a plain `switch (path)` whose default is `<HomePage />`;
   - remove the old inline fetch.
   
   `frontend\src\main.tsx` stays unchanged
-- [ ] T029 [US1] Run `npm test`, `npm run lint`, `npm run format:check` and `npm run build`; all must pass. Check quickstart scenarios 1, 3 and 4: start the backend in a second PowerShell window from `backend\` with `.\gradlew.bat bootRun` for scenario 3, stop it with Ctrl+C for scenario 4, and edit no backend file
+- [X] T029 [US1] Run `npm test`, `npm run lint`, `npm run format:check` and `npm run build`; all must pass. Check quickstart scenarios 1, 3 and 4: start the backend in a second PowerShell window from `backend\` with `.\gradlew.bat bootRun` for scenario 3, stop it with Ctrl+C for scenario 4, and edit no backend file
 
 **Checkpoint (MVP)**: Shell and home page work at desktop width, with Spanish connection
 messages.

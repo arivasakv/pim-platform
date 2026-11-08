@@ -1,26 +1,23 @@
-import { useEffect, useState } from 'react'
 import './App.css'
+import { AppShell } from './components/layout/AppShell'
+import { NAVIGATION_ENTRIES, useCurrentPath } from './navigation'
+import { HomePage } from './pages/HomePage'
+
+function renderPage(path: string) {
+  switch (path) {
+    case '/':
+    default:
+      return <HomePage />
+  }
+}
 
 function App() {
-  const [message, setMessage] = useState('Loading...')
-
-  useEffect(() => {
-    fetch('http://localhost:8080/api/v1/hello')
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Request failed')
-        }
-        return response.text()
-      })
-      .then(setMessage)
-      .catch(() => setMessage('Could not connect to backend'))
-  }, [])
+  const path = useCurrentPath()
 
   return (
-    <main>
-      <h1>PIM Platform</h1>
-      <p>{message}</p>
-    </main>
+    <AppShell entries={NAVIGATION_ENTRIES} activePath={path}>
+      {renderPage(path)}
+    </AppShell>
   )
 }
 
