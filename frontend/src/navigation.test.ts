@@ -14,6 +14,10 @@ describe('getPathFromHash', () => {
   it('returns the home path for an unknown hash', () => {
     expect(getPathFromHash('#/desconocido')).toBe('/')
   })
+
+  it('returns the components path for "#/componentes"', () => {
+    expect(getPathFromHash('#/componentes')).toBe('/componentes')
+  })
 })
 
 describe('useCurrentPath', () => {

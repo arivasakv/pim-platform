@@ -50,10 +50,10 @@ luminance formula.
 | `--color-text` | `#1F1F24` | Body text, headings | on white 16.41:1 |
 | `--color-text-secondary` | `#4A4A55` | Secondary text, labels | on page background 8.03:1 |
 | `--color-text-muted` | `#6B6B76` | Hints, placeholders, captions | on white 5.26:1 |
-| `--color-surface` | `#FFFFFF` | Cards, panels, tables, navigation | — |
+| `--color-surface` | `#FFFFFF` | Cards, panels, navigation, inputs | — |
 | `--color-background` | `#F5F5F7` | Page background behind panels | — |
-| `--color-border-control` | `#8A8A94` | Input, select, checkbox borders | on white 3.42:1 (≥3:1 UI boundary) |
-| `--color-border-subtle` | `#E3E3E8` | Dividers, card and table borders (decorative) | exempt |
+| `--color-border-control` | `#8A8A94` | Input borders | on white 3.42:1 (≥3:1 UI boundary) |
+| `--color-border-subtle` | `#E3E3E8` | Card and navigation borders (decorative) | exempt |
 | `--color-success` / `-subtle` | `#176B34` / `#E7F4EC` | Success status | 5.82:1 on subtle |
 | `--color-warning` / `-subtle` | `#9A5B00` / `#FDF3E1` | Warning status | 4.93:1 on subtle |
 | `--color-error` / `-subtle` | `#C62828` / `#FDECEC` | Error status, field errors | 4.92:1 on subtle |
@@ -71,9 +71,11 @@ luminance formula.
 
 - **Decision**: System font stack `"Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue",
   Arial, sans-serif`. No web fonts.
-  Scale (rem on a 16 px root): caption 12 px, body/table 14 px, body-large 16 px, section heading
-  20 px, page title 24 px, display 32 px (reserved). Weights: 400 regular, 600 semibold, 700 bold.
-  Line heights: 1.5 body, 1.25 headings.
+  Scale (rem on a 16 px root): caption 12 px, body 14 px, body-large 16 px, section heading
+  20 px, page title 24 px. Weights: 400 regular, 600 semibold, 700 bold. Line heights: 1.5 body,
+  1.25 headings.
+  - *Deferred*: a 32 px display size (`--text-2xl`) was dropped when the scope was reduced. It is
+    not in `tokens.css` and can be added when a screen needs it.
 - **Rationale**: Liverpool's official typefaces are unknown and not licensed to the project, so no
   official font is claimed or approximated (feature request §Design Guidelines). System fonts load
   instantly and need no files or licences. 14 px body suits dense business screens.
@@ -82,7 +84,9 @@ luminance formula.
 
 ## R-04 Spacing, borders, radius, shadows (design choice)
 
-- **Spacing** (4 px base): `--space-1` 4, `-2` 8, `-3` 12, `-4` 16, `-5` 24, `-6` 32, `-7` 48 (px).
+- **Spacing** (4 px base): `--space-1` 4, `-2` 8, `-3` 12, `-4` 16, `-5` 24, `-6` 32 (px).
+  *Deferred*: a 48 px step (`--space-7`) was dropped when the scope was reduced; it is not in
+  `tokens.css`.
 - **Borders**: 1 px solid; focus ring 2 px `--color-primary` with 2 px offset.
 - **Radius**: `--radius-sm` 4 px (inputs, buttons), `--radius-md` 8 px (cards, panels,
   notifications), `--radius-pill` 999 px (status badges).
@@ -278,9 +282,29 @@ development machine runs Node 26.10.0.
 - **Rationale**: Reusing existing files keeps the project structure familiar and the diff small.
   Deleting unused assets brings no benefit to this feature.
 
-## R-15 Unchanged on purpose
+## R-15 Backend URL from environment configuration (revised after analysis finding C1)
 
-- The backend URL `http://localhost:8080` stays hard-coded in the home page as it is today.
-  Moving it to a Vite environment variable is a separate concern (constitution VIII); no new
-  endpoint is called.
+- **Finding**: The home page called `http://localhost:8080/api/v1/hello` with the base URL written
+  in source code. Constitution VIII requires environment-specific configuration outside source
+  code. The original plan deferred this; `/speckit-analyze` reported it as CRITICAL (C1).
+- **Decision**:
+  - The home page builds the URL as `${import.meta.env.VITE_API_BASE_URL}/api/v1/hello`. A
+    trailing slash in the base URL is removed, so both `http://localhost:8080` and
+    `http://localhost:8080/` work. The endpoint path itself is unchanged.
+  - The variable is read when the check runs, not when the module loads, so tests can set it.
+  - A tracked `frontend/.env.example` contains `VITE_API_BASE_URL=http://localhost:8080`.
+    Developers copy it to `frontend/.env` (or `.env.local`), which stays git-ignored.
+  - `.gitignore` keeps ignoring `.env` and `.env.*`, with the exception `!.env.example` so the
+    template is tracked.
+  - `src/vite-env.d.ts` declares `VITE_API_BASE_URL?: string` so the value is typed.
+  - If the variable is missing or empty, the home page does not call the backend. It shows the
+    Spanish "No se pudo conectar con el servidor." message and logs a developer hint to the
+    console (spec TD-004).
+- **Rationale**: Uses Vite's built-in environment support, so nothing is added. The URL is not
+  secret, so exposing it to the bundle is allowed (constitution VIII: "Only non-sensitive values
+  MAY be exposed to the frontend bundle").
+- **Alternatives**:
+  - A fallback to `http://localhost:8080` in code (rejected: still configuration in source code);
+  - a committed `.env.development` (rejected: the user asked for a tracked `.env.example` template).
+- No backend change and no new endpoint.
 - No changes under `backend/` (FR-016).

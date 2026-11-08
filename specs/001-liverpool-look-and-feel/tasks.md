@@ -49,7 +49,7 @@ US3 components (P3), US2 identity documentation (P4).
 **Purpose**: Bring the frontend tooling in line with the constitution (ESLint + Prettier, Vitest,
 strict TypeScript) before any UI work.
 
-- [X] T001 Record the baseline before any change. From the repository root run `git status --short -- backend/ | Out-File -Encoding utf8 "$env:TEMP\pim-backend-before.txt"` and `git ls-files -o -c --exclude-standard frontend/ | Sort-Object | Out-File -Encoding utf8 "$env:TEMP\pim-frontend-files-before.txt"` (quickstart.md, "Before you start")
+- [X] T001 Record the baseline before any change. From the repository root run `git rev-parse HEAD | Out-File -Encoding utf8 "$env:TEMP\pim-baseline-commit.txt"` (the backend must be committed and clean; baseline commit for this feature: `29f5e27`) and `git ls-files -o -c --exclude-standard frontend/ | Sort-Object | Out-File -Encoding utf8 "$env:TEMP\pim-frontend-files-before.txt"` (quickstart.md, "Before you start")
 - [X] T002 Update dev dependencies in `frontend\package.json` and `frontend\package-lock.json`. In `frontend\`, run in order:
   1. `npm uninstall oxlint`
   2. `npm install -D typescript@~6.0.3`
@@ -140,7 +140,7 @@ never appears (quickstart scenarios 1, 3, 4).
   - `variant="error"` has `role="alert"`; `success`, `info` and `warning` have `role="status"`;
   - title and text are shown;
   - with `onDismiss`, the button "Cerrar notificación" calls it on click; without it, no button
-- [X] T016 [P] [US1] Write `frontend\src\pages\HomePage.test.tsx`, stubbing `fetch` with `vi.stubGlobal` and restoring it after each test:
+- [X] T016 [P] [US1] Write `frontend\src\pages\HomePage.test.tsx`, stubbing `fetch` with `vi.stubGlobal` and restoring it after each test. **Superseded in part by T048 (finding C1):** the URL check below now uses `VITE_API_BASE_URL`, not a hard-coded `http://localhost:8080`; follow T048 for the current test cases:
   - a pending fetch shows "Verificando conexión con el servidor…";
   - `ok: true` with `text()` returning `'Hello from PIM Backend!'` shows "Conexión con el servidor establecida." and `queryByText(/Hello from PIM Backend/)` is `null`;
   - `ok: false` and a rejected fetch both show "No se pudo conectar con el servidor.";
@@ -192,7 +192,7 @@ never appears (quickstart scenarios 1, 3, 4).
   2. `AppHeader`;
   3. `SideNavigation id="navegacion-principal"`;
   4. `<main id="contenido" className="app-main" tabIndex={-1}>`
-- [X] T027 [US1] Create `frontend\src\pages\HomePage.tsx`, moving the connection check out of `App.tsx`:
+- [X] T027 [US1] Create `frontend\src\pages\HomePage.tsx`, moving the connection check out of `App.tsx`. **Superseded in part by T050 (finding C1):** do not hard-code `http://localhost:8080`; the base URL comes from `VITE_API_BASE_URL` (spec TD-004, research R-15). Follow T050 for the current behavior:
   - `useEffect` calls `fetch('http://localhost:8080/api/v1/hello')` once (URL unchanged, R-15), with an `ignore` flag in the cleanup;
   - status goes `checking` → `connected` if `response.ok`, otherwise (non-OK status or rejected promise) `unavailable`;
   - never read or display the response body (R-13).
@@ -270,7 +270,7 @@ and error states; keyboard focus is visible (quickstart scenarios 7, 8).
 
 ### Tests for User Story 3 (write first, confirm they fail)
 
-- [ ] T035 [P] [US3] Write `frontend\src\components\ui\Components.test.tsx`:
+- [X] T035 [P] [US3] Write `frontend\src\components\ui\Components.test.tsx`:
   - **Button**:
     - defaults to `type="button"`;
     - calls `onClick` when enabled;
@@ -281,32 +281,32 @@ and error states; keyboard focus is visible (quickstart scenarios 7, 8).
     - with `error="Campo obligatorio"`: `aria-invalid="true"` and an `aria-describedby` element containing the message;
     - `hint` is referenced by `aria-describedby`;
     - `disabled` disables the input.
-- [ ] T036 [P] [US3] Write `frontend\src\pages\ComponentGalleryPage.test.tsx` (smoke test):
+- [X] T036 [P] [US3] Write `frontend\src\pages\ComponentGalleryPage.test.tsx` (smoke test):
   - heading "Componentes";
   - section headings "Botones", "Campos de texto", "Tarjetas", "Títulos", "Estados y notificaciones";
   - at least one disabled button and one field with an error message
 
 ### Implementation for User Story 3
 
-- [ ] T037 [P] [US3] Create `frontend\src\components\ui\Button.tsx` + `Button.module.css` (contracts, Button):
+- [X] T037 [P] [US3] Create `frontend\src\components\ui\Button.tsx` + `Button.module.css` (contracts, Button):
   - default `type="button"`, `variant` `'primary' | 'secondary'`, optional leading `icon`;
   - primary: `--color-primary` background, `--color-text-on-primary`, hover `--color-primary-hover`;
   - secondary: `--color-surface` background, `--border-width` solid `--color-primary`, `--color-primary` text, hover `--color-primary-subtle`;
   - `--radius-sm`, padding `--space-2` `--space-4`, `--text-sm` `--weight-semibold`;
   - disabled: `opacity: 0.5`, `cursor: not-allowed`, no hover change
-- [ ] T038 [P] [US3] Create `frontend\src\components\ui\TextField.tsx` + `TextField.module.css` (contracts, TextField):
+- [X] T038 [P] [US3] Create `frontend\src\components\ui\TextField.tsx` + `TextField.module.css` (contracts, TextField):
   - **Label**: `<label>` linked by `id` (`--text-sm` `--weight-semibold` `--color-text-secondary`); `hideLabel` applies `visually-hidden`.
   - **Input**: `--border-width` solid `--color-border-control`, `--radius-sm`, padding `--space-2` `--space-3`, `--color-surface`; disabled background `--color-background`.
   - **Search variant**: `type="search"` adds a leading `Icon name="search"`.
   - **Hint**: `--text-xs` `--color-text-muted`.
   - **Error**: message at `--text-xs` in `--color-error` with `Icon name="error" size={16}`; error border `--color-error`; `aria-invalid="true"`; `aria-describedby` lists the hint and error ids.
-- [ ] T039 [P] [US3] Create `frontend\src\components\ui\StatusBadge.tsx` + `StatusBadge.module.css`:
+- [X] T039 [P] [US3] Create `frontend\src\components\ui\StatusBadge.tsx` + `StatusBadge.module.css`:
   - pill (`--radius-pill`), padding `--space-1` `--space-2`, `--text-xs` `--weight-semibold`;
   - `--color-<variant>-subtle` background and `--color-<variant>` text with the variant `Icon` at size 16;
   - `neutral` uses `--color-background` / `--color-text-secondary` and no icon;
   - the text always names the status
-- [ ] T040 [US3] Add `{ path: '/componentes', label: 'Componentes', icon: 'components' }` to `NAVIGATION_ENTRIES` in `frontend\src\navigation.ts`, and add `getPathFromHash('#/componentes')` → `'/componentes'` to `frontend\src\navigation.test.ts`. Export `Button`, `TextField` and `StatusBadge` from `frontend\src\components\ui\index.ts`
-- [ ] T041 [US3] Create `frontend\src\pages\ComponentGalleryPage.tsx`: `PageHeader title="Componentes"` with the description "Referencia visual de los componentes reutilizables de la plataforma." and one `Card` per group, with Spanish sample content:
+- [X] T040 [US3] Add `{ path: '/componentes', label: 'Componentes', icon: 'components' }` to `NAVIGATION_ENTRIES` in `frontend\src\navigation.ts`, and add `getPathFromHash('#/componentes')` → `'/componentes'` to `frontend\src\navigation.test.ts`. Export `Button`, `TextField` and `StatusBadge` from `frontend\src\components\ui\index.ts`
+- [X] T041 [US3] Create `frontend\src\pages\ComponentGalleryPage.tsx`: `PageHeader title="Componentes"` with the description "Referencia visual de los componentes reutilizables de la plataforma." and one `Card` per group, with Spanish sample content:
   1. **"Botones"**: primary, secondary, primary with icon, and disabled primary and secondary.
   2. **"Campos de texto"**:
      - a field with a hint;
@@ -318,7 +318,7 @@ and error states; keyboard focus is visible (quickstart scenarios 7, 8).
   5. **"Estados y notificaciones"**: all 5 StatusBadge variants, and all 4 Notification variants, one with `onDismiss` that hides it.
   
   No product, price or shopping terms (FR-006, FR-017)
-- [ ] T042 [US3] Add `case '/componentes': return <ComponentGalleryPage />` to the `switch` in `frontend\src\App.tsx`. Run `npm test`, `npm run lint`, `npm run format:check` and `npm run build`, and check quickstart scenarios 2, 7 and 8
+- [X] T042 [US3] Add `case '/componentes': return <ComponentGalleryPage />` to the `switch` in `frontend\src\App.tsx`. Run `npm test`, `npm run lint`, `npm run format:check` and `npm run build`, and check quickstart scenarios 2, 7 and 8
 
 **Checkpoint**: All components available and visible on `#/componentes`. Navigation between both
 pages works, including Back.
@@ -333,7 +333,7 @@ verified (FR-001–FR-007, SC-003, SC-006).
 **Independent Test**: `docs\architecture\design-system.md` lists every token from `tokens.css`
 labeled "Design choice", and the contrast pairs pass AA (quickstart scenarios 10, 12, 13).
 
-- [ ] T043 [US2] Create `docs\architecture\design-system.md`:
+- [X] T043 [US2] Create `docs\architecture\design-system.md`:
   - a purpose statement: Liverpool (the Mexican department store) is a visual reference only; no official guidelines were available (spec A-001, OQ-002); every value is a project design choice;
   - one table per token category (Token | Value | Use | Origin) with Origin `Design choice` on every row and values exactly as in `frontend\src\styles\tokens.css`;
   - the research R-02 contrast table, re-checked for every text/background pair the components actually use, with any extra pair added together with its ratio (≥4.5:1 text, ≥3:1 control borders);
@@ -347,13 +347,45 @@ labeled "Design choice", and the contrast pairs pass AA (quickstart scenarios 10
 
 ## Phase 7: Polish & Validation
 
-- [ ] T044 Check the scope limits against the T001 baseline, from the repository root:
-  - `Compare-Object (Get-Content "$env:TEMP\pim-backend-before.txt") (git status --short -- backend/)` prints nothing (FR-016);
+- [X] T044 Check the scope limits against the T001 baseline, from the repository root:
+  - `git status --short -- backend/` and `git diff --stat 29f5e27 -- backend/` both print nothing (FR-016);
   - `Compare-Object (Get-Content "$env:TEMP\pim-frontend-files-before.txt") (git ls-files -o -c --exclude-standard frontend/ | Sort-Object)` shows `frontend/.oxlintrc.json` as the only `<=` line;
   - `git diff -- .specify/memory/constitution.md` shows no change from this feature;
   - in `frontend\`, `npm ls --depth=0` lists `typescript` 6.0.x, no `oxlint`, and only `react` and `react-dom` as runtime dependencies
-- [ ] T045 Audit identity values (SC-002) with the scenario 11 commands in quickstart.md (`Get-ChildItem … | Select-String …` over `frontend\src`). Replace every hit with a token, except the allowed literals (`0`, `1px`, `100%`, `transparent`, `1024px`/`1023.98px`). Then confirm the edge cases (quickstart scenario 9: long text wraps, no horizontal scroll at 768 px, 200% zoom usable) and fix any issue in `frontend\src\App.css` or the relevant `.module.css`
-- [ ] T046 Run the full validation in `specs\001-liverpool-look-and-feel\quickstart.md`: the automated checks, the tooling-file checks and manual scenarios 1–14. Report the results directly in the implementation summary: pass or fail per check and per scenario, with the error output for any failure
+- [X] T045 Audit identity values (SC-002) with the scenario 11 commands in quickstart.md (`Get-ChildItem … | Select-String …` over `frontend\src`). Replace every hit with a token, except the allowed literals (`0`, `1px`, `100%`, `transparent`, `1024px`/`1023.98px`). Then confirm the edge cases (quickstart scenario 9: long text wraps, no horizontal scroll at 768 px, 200% zoom usable) and fix any issue in `frontend\src\App.css` or the relevant `.module.css`
+- [X] T046 Run the full validation in `specs\001-liverpool-look-and-feel\quickstart.md`: the automated checks, the tooling-file checks and manual scenarios 1–14. Report the results directly in the implementation summary: pass or fail per check and per scenario, with the error output for any failure. **Re-check (finding G3):** scenario 9 was extended with the 375 px check after this task first ran; the 375 px check passed, verified in the browser by the project owner on 2026-11-08
+
+---
+
+## Phase 8: Analysis remediation (findings C1, C2, I1, U1, G1)
+
+**Purpose**: Resolve the five `/speckit-analyze` findings selected by the user. Order follows the
+constitution: spec and plan, then tests, then code.
+
+- [X] T047 Update the planning documents (no code):
+  - `specs\001-liverpool-look-and-feel\spec.md`: Status `Approved`, approved 2026-11-08 by the project owner (C2), and TD-004 for the backend URL from environment configuration (C1);
+  - `plan.md`: Configuration line, constitution row VIII, source tree (`.env.example`, `.gitignore`, `src\vite-env.d.ts`) (C1);
+  - `research.md`: R-15 rewritten (C1); dropped tokens (`--text-2xl`, `--space-7`) marked deferred and table references removed (I1);
+  - `quickstart.md`: `.env` setup step and scenario 3 (C1); backend checks with `git status --short -- backend/` and `git diff --stat` (U1); 375 px check in scenario 9 (G1);
+  - `tasks.md`: backend commands in T001 and T044 (U1)
+- [X] T048 Update `frontend\src\pages\HomePage.test.tsx` first and confirm the new cases fail (research R-15, spec TD-004, FR-015):
+  - set `VITE_API_BASE_URL` with `vi.stubEnv` in each test and reset with `vi.unstubAllEnvs()`;
+  - `fetch` is called once with `` `${VITE_API_BASE_URL}/api/v1/hello` `` for a configured value such as `http://servidor.ejemplo:9090`;
+  - a trailing slash in the base URL is removed;
+  - with the variable empty, `fetch` is not called and "No se pudo conectar con el servidor." is shown
+- [X] T049 Add the configuration files (C1):
+  - `frontend\.env.example` with `VITE_API_BASE_URL=http://localhost:8080` and a comment;
+  - `!.env.example` exception in `frontend\.gitignore` after the `.env.*` rule;
+  - `frontend\src\vite-env.d.ts` declaring `interface ImportMetaEnv { readonly VITE_API_BASE_URL?: string }`
+- [X] T050 Update `frontend\src\pages\HomePage.tsx`:
+  - read `import.meta.env.VITE_API_BASE_URL` when the check runs, remove a trailing slash and call `<base>/api/v1/hello`;
+  - if the value is missing or empty, skip the request, set the status to `unavailable` and log a developer hint with `console.error`;
+  - remove the hard-coded `http://localhost:8080`
+- [X] T051 Verify:
+  - `npm run lint`, `npm run format:check`, `npm test` and `npm run build` pass;
+  - `git check-ignore frontend/.env.example` prints nothing (tracked) and `git check-ignore frontend/.env` prints the path (ignored);
+  - no `localhost:8080` remains in `frontend\src` outside tests;
+  - `git status --short -- backend/` and `git diff --stat 29f5e27 -- backend/` print nothing
 
 **After implementation (not a task)**: the SC-007 review by at least 3 PIM stakeholders (quickstart
 scenarios 1, 7 and 10), and the follow-up feature for dropdowns, selection controls and tables.

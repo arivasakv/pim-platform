@@ -13,7 +13,10 @@ export type NavigationEntry = {
  * Pages shown in the side navigation. Entries for PIM business sections are
  * added by the features that introduce them (FR-017), not here.
  */
-export const NAVIGATION_ENTRIES: NavigationEntry[] = [{ path: '/', label: 'Inicio', icon: 'home' }]
+export const NAVIGATION_ENTRIES: NavigationEntry[] = [
+  { path: '/', label: 'Inicio', icon: 'home' },
+  { path: '/componentes', label: 'Componentes', icon: 'components' },
+]
 
 const HOME_PATH = '/'
 

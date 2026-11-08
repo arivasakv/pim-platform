@@ -104,6 +104,10 @@ listed above. No new runtime dependencies.
 
 **Storage**: N/A
 
+**Configuration**: `VITE_API_BASE_URL` (backend base URL, non-sensitive, exposed to the bundle).
+Developers copy `frontend/.env.example` to `frontend/.env` (git-ignored). Without it, the home
+page reports the backend as unavailable without calling it (spec TD-004, R-15).
+
 **Testing**: Vitest + Testing Library, a few behavior-focused tests (navigation, shell and
 tablet drawer, notifications, home page connection messages, Button and TextField states) and one
 smoke test of the component reference page. Manual visual and responsive checks per [quickstart.md](./quickstart.md).
@@ -138,7 +142,7 @@ PowerShell-compatible; the backend is started with `.\gradlew.bat bootRun`.
 | V | Code Quality | ✅ Pass | ESLint (typescript-eslint, React Hooks, React Refresh rules) + Prettier, configured to not conflict; `lint` and `format:check` must pass with zero errors. New dev dependencies justified in Technical Context and R-09/R-10/R-16; Oxlint removed |
 | VI | Testing | ✅ Pass | Tests for all frontend logic and interactive components; `npm test` added. No new endpoints, so no API integration tests |
 | VII | API Design | ✅ N/A | No new or changed endpoints. UI contracts in `contracts/ui-components.md` |
-| VIII | Security | ✅ Pass | No secrets; existing hard-coded `localhost` URL left as is (R-15) |
+| VIII | Security | ✅ Pass | No secrets. The backend base URL is environment configuration (`VITE_API_BASE_URL`), documented in a tracked `.env.example`; local `.env` files stay git-ignored (spec TD-004, R-15). Corrected after analysis finding C1 |
 | IX | Development Scope | ✅ Pass | No persistence, integrations, auth or AI |
 | X | AI Governance | ✅ Pass | Tooling changes and TypeScript version change explained with alternatives (R-10, R-16) and approved by the user; only `.oxlintrc.json` removed (necessary, R-10) |
 | XI | Source of Truth | ✅ Pass | Sources listed in spec; colors and typography labeled as design choices (R-02, R-03, R-08); reference repository read only |
@@ -185,6 +189,8 @@ frontend/
 ├── .prettierignore            [new]    dist, coverage, package-lock.json
 ├── .oxlintrc.json             [remove] unused after Oxlint is replaced (R-10)
 ├── README.md                  [update] Oxlint section replaced by the lint/format/test commands
+├── .env.example               [new]    tracked template: VITE_API_BASE_URL=http://localhost:8080 (R-15)
+├── .gitignore                 [update] + coverage, .env, .env.*; exception !.env.example (R-15)
 ├── tsconfig.json              [keep]
 ├── tsconfig.app.json          [update] + "strict": true (tests import Vitest functions explicitly, so no global test types)
 ├── tsconfig.node.json         [update] + "strict": true; include eslint.config.ts
@@ -194,6 +200,7 @@ frontend/
 │   └── icons.svg              [keep] unused today, not deleted
 └── src/
     ├── main.tsx               [keep] entry point (may be reformatted by Prettier)
+    ├── vite-env.d.ts          [new] type for import.meta.env.VITE_API_BASE_URL (R-15)
     ├── index.css              [update] scaffold styles replaced by global base styles; imports tokens.css
     ├── App.css                [update] scaffold styles replaced by the app frame layout (header, navigation, content, drawer)
     ├── App.tsx                [update] renders AppShell and the current page
@@ -208,7 +215,7 @@ frontend/
     │                                Notification (each .tsx + .module.css), Notification.test.tsx,
     │                                Components.test.tsx (Button + TextField), index.ts
     ├── pages/
-    │   ├── HomePage.tsx       [new] connection check moved from App.tsx; Spanish messages (+ test)
+    │   ├── HomePage.tsx       [new] connection check moved from App.tsx; backend URL from VITE_API_BASE_URL; Spanish messages (+ test)
     │   └── ComponentGalleryPage.tsx [new] component reference page, FR-012 (+ smoke test)
     └── test/
         └── setup.ts           [new] Testing Library cleanup

@@ -4,7 +4,9 @@
 
 **Created**: 2026-11-08
 
-**Status**: Draft
+**Status**: Approved
+
+**Approved**: 2026-11-08, by the project owner
 
 **Input**: User description: "Feature: Liverpool-Inspired Frontend Look & Feel — establish a consistent visual identity for the PIM frontend inspired by the Mexican Liverpool department store's digital experience. The application must remain a PIM application; Liverpool is a visual reference, not the functional scope." (full description supplied by the user in the `/speckit-specify` request of 2026-11-08; referred to below as *the feature request*)
 
@@ -251,6 +253,11 @@ These items come from tier 3 evidence. They are not requirements and are listed 
 - **TD-003**: No new UI component library or icon library is assumed; whether one is needed is
   decided and justified in `plan.md`. Rationale: feature request §Technical Constraints ("do not
   introduce unnecessary dependencies"); constitution Principles II and V.
+- **TD-004**: The backend base URL used by the connection check (FR-015) comes from environment
+  configuration (`VITE_API_BASE_URL`), not from source code. A tracked `frontend/.env.example`
+  documents the local development value. If the value is not configured, the home page shows the
+  Spanish "could not connect" message without calling the backend. Rationale: constitution
+  Principle VIII (environment-specific configuration outside source code); analysis finding C1.
 
 ### Key Entities
 

@@ -2,8 +2,14 @@ import { useEffect, useState } from 'react'
 import { Card, Notification, PageHeader } from '../components/ui'
 import type { NotificationVariant } from '../components/ui'
 
-// Existing backend endpoint, unchanged (research R-15).
-const BACKEND_HELLO_URL = 'http://localhost:8080/api/v1/hello'
+// Existing backend endpoint path, unchanged. The base URL is environment configuration (R-15).
+const HELLO_PATH = '/api/v1/hello'
+
+/** Full URL of the connection check, or null when VITE_API_BASE_URL is not configured. */
+function getHelloUrl(): string | null {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/+$/, '')
+  return baseUrl ? `${baseUrl}${HELLO_PATH}` : null
+}
 
 type ConnectionStatus = 'checking' | 'connected' | 'unavailable'
 
@@ -15,13 +21,22 @@ const STATUS_MESSAGES: Record<ConnectionStatus, { variant: NotificationVariant; 
 }
 
 export function HomePage() {
-  const [status, setStatus] = useState<ConnectionStatus>('checking')
+  const helloUrl = getHelloUrl()
+  // Without a configured backend URL there is nothing to check: report it as unavailable.
+  const [status, setStatus] = useState<ConnectionStatus>(helloUrl ? 'checking' : 'unavailable')
 
   useEffect(() => {
+    if (!helloUrl) {
+      console.error(
+        'VITE_API_BASE_URL is not set. Copy frontend/.env.example to frontend/.env and restart the dev server.',
+      )
+      return
+    }
+
     // Ignore a late answer if the page was left before the request finished.
     let ignore = false
 
-    fetch(BACKEND_HELLO_URL)
+    fetch(helloUrl)
       .then((response) => {
         if (!ignore) setStatus(response.ok ? 'connected' : 'unavailable')
       })
@@ -32,7 +47,7 @@ export function HomePage() {
     return () => {
       ignore = true
     }
-  }, [])
+  }, [helloUrl])
 
   const message = STATUS_MESSAGES[status]
 
