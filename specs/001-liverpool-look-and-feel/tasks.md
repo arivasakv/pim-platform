@@ -226,7 +226,7 @@ scrolls horizontally (quickstart scenarios 5, 6).
 
 ### Tests for User Story 4 (write first, confirm they fail)
 
-- [ ] T030 [US4] Extend `frontend\src\components\layout\AppShell.test.tsx`. jsdom ignores media queries, so assert state and attributes:
+- [X] T030 [US4] Extend `frontend\src\components\layout\AppShell.test.tsx`. jsdom ignores media queries, so assert state and attributes:
   - the button "Abrir menú de navegación" has `aria-expanded="false"` and `aria-controls="navegacion-principal"`;
   - clicking it sets `aria-expanded="true"` and the nav gets `data-open="true"`;
   - each of these closes the drawer: `fireEvent.keyDown(document, { key: 'Escape' })`, a nav link click, a backdrop click, and the "Cerrar menú de navegación" button;
@@ -234,7 +234,7 @@ scrolls horizontally (quickstart scenarios 5, 6).
 
 ### Implementation for User Story 4
 
-- [ ] T031 [P] [US4] Add to `frontend\src\App.css` a `@media (max-width: 1023.98px)` block:
+- [X] T031 [P] [US4] Add to `frontend\src\App.css` a `@media (max-width: 1023.98px)` block:
   - `.app-shell` becomes a single column;
   - `.app-header__menu-button` is shown (hidden at 1024px and wider), `transparent` background, `--color-text-on-primary`, at least 44 px square using `--space-*` tokens;
   - `.app-nav` becomes `position: fixed`, top `--layout-header-height`, left/bottom `0`, width `--layout-nav-width`, `--shadow-md`, `z-index: var(--z-drawer)`, `transform: translateX(-100%)` and `visibility: hidden`, so closed links are not focusable;
@@ -243,13 +243,13 @@ scrolls horizontally (quickstart scenarios 5, 6).
   - `.app-nav__close` is shown only in this range.
   
   Make sure `html` and `body` never scroll horizontally (FR-014)
-- [ ] T032 [P] [US4] Update `frontend\src\components\layout\AppHeader.tsx` to the contract props `{ onMenuClick; isMenuOpen; menuId; menuButtonRef }`. Add `<button className="app-header__menu-button" type="button">` with `Icon name="menu"`, `aria-label="Abrir menú de navegación"`, `aria-expanded={isMenuOpen}`, `aria-controls={menuId}` and `ref={menuButtonRef}`
-- [ ] T033 [P] [US4] Update `frontend\src\components\layout\SideNavigation.tsx` with the props `isOpen` and `onClose`:
+- [X] T032 [P] [US4] Update `frontend\src\components\layout\AppHeader.tsx` to the contract props `{ onMenuClick; isMenuOpen; menuId; menuButtonRef }`. Add `<button className="app-header__menu-button" type="button">` with `Icon name="menu"`, `aria-label="Abrir menú de navegación"`, `aria-expanded={isMenuOpen}`, `aria-controls={menuId}` and `ref={menuButtonRef}`
+- [X] T033 [P] [US4] Update `frontend\src\components\layout\SideNavigation.tsx` with the props `isOpen` and `onClose`:
   - set `data-open={isOpen}` on the `<nav>`;
   - add a close button (`Icon name="close"`, `aria-label="Cerrar menú de navegación"`, class `app-nav__close`);
   - call `onClose` on any link click;
   - when `isOpen` becomes true, focus the first link
-- [ ] T034 [US4] Update `frontend\src\components\layout\AppShell.tsx`:
+- [X] T034 [US4] Update `frontend\src\components\layout\AppShell.tsx`:
   - hold `isMenuOpen` and a `menuButtonRef`, and wire them to `AppHeader` (toggle) and `SideNavigation` (`isOpen`, `onClose`);
   - while open, listen for Escape on `document` (with cleanup) and render `<div className="app-backdrop" onClick={close} />`;
   - on close, focus the menu button.

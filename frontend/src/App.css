@@ -3,26 +3,16 @@
  * Used by the components in src/components/layout. All values come from the design tokens.
  */
 
+/* Desktop (1024px and wider): navigation always visible next to the content. */
 .app-shell {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: var(--layout-header-height) auto 1fr;
+  grid-template-columns: var(--layout-nav-width) minmax(0, 1fr);
+  grid-template-rows: var(--layout-header-height) 1fr;
   grid-template-areas:
-    'header'
-    'nav'
-    'main';
+    'header header'
+    'nav main';
   min-height: 100vh;
-}
-
-@media (min-width: 1024px) {
-  .app-shell {
-    grid-template-columns: var(--layout-nav-width) minmax(0, 1fr);
-    grid-template-rows: var(--layout-header-height) 1fr;
-    grid-template-areas:
-      'header header'
-      'nav main';
-  }
 }
 
 /* Skip link: hidden until it receives keyboard focus. */
@@ -61,6 +51,27 @@
   font-weight: var(--weight-semibold);
 }
 
+/* Menu button: only shown below 1024px (see the tablet block at the end). */
+.app-header__menu-button {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  /* 44px touch target: 32px + 12px */
+  width: calc(var(--space-6) + var(--space-3));
+  height: calc(var(--space-6) + var(--space-3));
+  margin-left: calc(-1 * var(--space-3));
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-on-primary);
+  cursor: pointer;
+}
+
+.app-header__menu-button:focus-visible {
+  outline-color: var(--color-text-on-primary);
+}
+
 /* Reserved for an official logo asset (FR-007); empty until one is supplied. */
 .app-header__logo:empty {
   display: none;
@@ -72,6 +83,24 @@
   padding: var(--space-3) 0;
   background: var(--color-surface);
   border-right: var(--border-width) solid var(--color-border-subtle);
+}
+
+/* Drawer close button and backdrop: only used below 1024px. */
+.app-nav__close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  margin: 0 var(--space-3) var(--space-2) auto;
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.app-backdrop {
+  display: none;
 }
 
 .app-nav__list {
@@ -112,4 +141,65 @@
 
 .app-main:focus {
   outline: none;
+}
+
+/*
+ * Tablet (below 1024px): the navigation becomes a drawer opened from the header.
+ * The breakpoint is written literally because custom properties cannot be used in media queries.
+ */
+@media (max-width: 1023.98px) {
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'header'
+      'main';
+  }
+
+  .app-header__menu-button {
+    display: flex;
+  }
+
+  .app-nav {
+    position: fixed;
+    top: var(--layout-header-height);
+    bottom: 0;
+    left: 0;
+    z-index: var(--z-drawer);
+    display: flex;
+    flex-direction: column;
+    width: var(--layout-nav-width);
+    max-width: 100%;
+    overflow-y: auto;
+    box-shadow: var(--shadow-md);
+    /* Hidden off-screen; visibility keeps closed links out of the keyboard order. */
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 150ms ease-out;
+  }
+
+  .app-nav[data-open='true'] {
+    transform: none;
+    visibility: visible;
+  }
+
+  .app-nav__close {
+    display: flex;
+  }
+
+  .app-backdrop {
+    position: fixed;
+    top: var(--layout-header-height);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: var(--z-backdrop);
+    display: block;
+    background: var(--color-backdrop);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-nav {
+    transition: none;
+  }
 }
