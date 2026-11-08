@@ -81,7 +81,7 @@ strict TypeScript) before any UI work.
 
 **⚠️ CRITICAL**: No user story work starts until this phase is complete.
 
-- [ ] T010 Create `frontend\src\styles\tokens.css` with one `:root` block and a header comment saying all values are project design choices, not official Liverpool specifications (research R-02–R-04).
+- [X] T010 Create `frontend\src\styles\tokens.css` with one `:root` block and a header comment saying all values are project design choices, not official Liverpool specifications (research R-02–R-04).
   - **Colors**:
     - `--color-primary: #C4007F`, `--color-primary-hover: #A3006C`, `--color-primary-subtle: #FCE6F3`, `--color-text-on-primary: #FFFFFF`;
     - `--color-text: #1F1F24`, `--color-text-secondary: #4A4A55`, `--color-text-muted: #6B6B76`;
@@ -100,7 +100,7 @@ strict TypeScript) before any UI work.
   - **Shadows**: `--shadow-sm: 0 1px 2px rgba(31, 31, 36, 0.08)`, `--shadow-md: 0 4px 12px rgba(31, 31, 36, 0.12)`.
   - **Layout**: `--layout-header-height: 56px`, `--layout-nav-width: 240px`.
   - **Z-index**: `--z-header: 10`, `--z-backdrop: 20`, `--z-drawer: 30`.
-- [ ] T011 Replace the content of `frontend\src\index.css` (keep the file; `main.tsx` imports it) with global base styles:
+- [X] T011 Replace the content of `frontend\src\index.css` (keep the file; `main.tsx` imports it) with global base styles:
   - `@import './styles/tokens.css';` and `color-scheme: light`;
   - `box-sizing: border-box` on all elements;
   - `body`: `margin: 0`, `font-family: var(--font-family-base)`, `font-size: var(--text-sm)`, `line-height: var(--leading-body)`, `color: var(--color-text)`, `background: var(--color-background)`;
@@ -110,8 +110,8 @@ strict TypeScript) before any UI work.
   - a `.visually-hidden` screen-reader-only utility class.
   
   Remove the scaffold's purple palette, dark-mode block and 1126 px `#root` column
-- [ ] T012 [P] Update `frontend\index.html`: `<html lang="es-MX">` and `<title>Plataforma PIM</title>`; keep everything else
-- [ ] T013 [P] Create `frontend\src\components\ui\Icon.tsx` exporting:
+- [X] T012 [P] Update `frontend\index.html`: `<html lang="es-MX">` and `<title>Plataforma PIM</title>`; keep everything else
+- [X] T013 [P] Create `frontend\src\components\ui\Icon.tsx` exporting:
   - `type IconName = 'menu' | 'close' | 'home' | 'components' | 'search' | 'info' | 'warning' | 'error' | 'success'`;
   - `Icon({ name, size = 20, label })` with `size?: 16 | 20 | 24`.
   
