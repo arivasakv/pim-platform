@@ -14,6 +14,17 @@
 
 - Q: Language of on-screen labels? → A: Spanish (es-MX); existing English texts are translated
   (FR-018).
+- Q: The backend returns an English text and cannot change; how is the connection result shown?
+  → A: Keep the existing endpoint unchanged. The frontend performs the connection check and shows
+  a Spanish success or error message. The English backend response is not shown to the user
+  (User Story 1 scenarios 3–4, FR-015, FR-018). Recorded during planning (plan R-13).
+- Q: How large should the initial scope be? → A: Simplify it (user decision during task review).
+  Prioritize the application shell, responsive layout, home page with backend connection status,
+  and a small set of reusable components. Priorities changed to US1 P1, US4 P2, US3 P3, US2 P4.
+  FR-010 is reduced to buttons, text/search inputs, cards with section headings, page titles,
+  status badges and notifications. Dropdowns, selection controls (select, checkbox, radio) and
+  tables, which the feature request §3 lists, are **deferred to a follow-up feature** (see Deferred
+  Scope).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -38,22 +49,24 @@ page.
 2. **Given** the user is on any page, **When** they select another navigation entry, **Then**
    only the main content area changes and the selected entry is visibly marked as active.
 3. **Given** the backend is running, **When** the user opens the home page, **Then** the existing
-   backend connection message is still displayed inside the main content area.
+   backend connection check succeeds and a Spanish success message is shown in the main content
+   area. The backend's own (English) response text is not shown.
 4. **Given** the backend is not running, **When** the user opens the home page, **Then** the shell
-   still renders and the existing "could not connect" message is shown in Spanish, styled as a
-   status notification.
+   still renders and a Spanish "could not connect" message is shown, styled as a status
+   notification.
 
 ---
 
-### User Story 2 - Recognisable, consistent visual identity (Priority: P2)
+### User Story 2 - Recognisable, consistent visual identity (Priority: P4)
 
 A PIM user perceives the interface as clean, modern and visually related to the Liverpool
 department store brand, while clearly being an internal business tool rather than a shopping
 website. Colors, typography, spacing, borders, shadows, corner radiuses and icons look the same on
 every page.
 
-**Why this priority**: The visual identity is the core purpose of the feature, but it needs the
-shell from Story 1 to be visible.
+**Why this priority**: The identity itself (tokens) is built in the foundation for every story.
+This story adds its documentation and review, which is useful only once the shell, layout and
+components exist.
 
 **Independent Test**: Review every page against the documented visual identity (palette,
 typography scale, spacing scale, radius, shadow and icon rules) and confirm no page uses values
@@ -73,12 +86,12 @@ outside it.
 
 ---
 
-### User Story 3 - Reusable UI components (Priority: P2)
+### User Story 3 - Reusable UI components (Priority: P3)
 
-A frontend developer building future PIM screens can reuse a shared set of styled components —
-primary and secondary buttons, text inputs, search fields, dropdowns and selection controls,
-tables, cards and content panels, page titles and section headings, status indicators and
-notifications — instead of styling each screen from scratch.
+A frontend developer building future PIM screens can reuse a small shared set of styled
+components — primary and secondary buttons, text and search inputs, cards with section headings,
+page titles, status badges and notifications — instead of styling each screen from scratch.
+Dropdowns, selection controls and tables follow in a later feature.
 
 **Why this priority**: Reusable components are what keep the identity consistent as product
 features are added later.
@@ -101,13 +114,13 @@ visual identity.
 
 ---
 
-### User Story 4 - Desktop and tablet use (Priority: P3)
+### User Story 4 - Desktop and tablet use (Priority: P2)
 
 A PIM user works on a desktop monitor or a tablet. On both, navigation remains reachable, content
 fits the screen width and nothing is cut off.
 
-**Why this priority**: Layout adaptation refines the shell; the application is usable on desktop
-without it.
+**Why this priority**: The shell must be usable on tablets from the start (user priority). It
+builds directly on Story 1.
 
 **Independent Test**: View every page at 1440 px, 1024 px and 768 px wide (portrait and landscape
 tablet) and confirm navigation is reachable and no horizontal page scrolling occurs.
@@ -119,15 +132,14 @@ tablet) and confirm navigation is reachable and no horizontal page scrolling occ
 2. **Given** a tablet-width screen (768 px to 1023 px), **When** the user opens the application,
    **Then** the navigation is reachable through a clearly visible control in the header and does
    not cover content until opened.
-3. **Given** any supported width, **When** a page contains a table wider than the content area,
-   **Then** the table scrolls within its own container and the page itself does not scroll
-   horizontally.
+3. **Given** any supported width, **When** a page contains long content (long titles, long
+   unbroken text), **Then** the content wraps within the content area and the page itself does
+   not scroll horizontally.
 
 ### Edge Cases
 
-- Very long page titles, navigation labels or table cell text: text wraps or is truncated with the
-  full value available (e.g. on hover/focus); the layout does not break.
-- Empty table: a styled empty-state message is shown instead of a blank area.
+- Very long page titles, navigation labels or notification text: text wraps; the layout does not
+  break.
 - Screen narrower than 768 px (phone): not a supported target; the shell must still not overflow
   horizontally, but no phone-specific layout is required.
 - Browser zoom at 200%: content remains readable and reachable (it may reflow to the tablet
@@ -150,7 +162,7 @@ of 2026-11-08 and are cited as `[Source: feature request §<section>]`.
   Liverpool department store, including a primary brand color, neutrals, text colors, and semantic
   colors for success, warning, error and information. [Source: feature request §1]
 - **FR-002**: The application MUST use a single documented typography scale (font families, sizes
-  and weights) for page titles, section headings, body text, labels and table text.
+  and weights) for page titles, section headings, body text and labels.
   [Source: feature request §1]
 - **FR-003**: The application MUST use documented scales for spacing, borders, shadows and corner
   radiuses, and every component MUST use only values from those scales. [Source: feature request §1]
@@ -175,10 +187,16 @@ of 2026-11-08 and are cited as `[Source: feature request §<section>]`.
 
 #### Reusable components
 
-- **FR-010**: The application MUST provide reusable, consistently styled components for: primary
-  and secondary buttons; text inputs and search fields; dropdowns and selection controls (at least
-  select, checkbox and radio); tables; cards and content panels; page titles and section headings;
-  status indicators and notifications. [Source: feature request §3]
+- **FR-010**: The application MUST provide reusable, consistently styled components for these 5
+  groups:
+  1. primary and secondary buttons;
+  2. text inputs, including a search variant;
+  3. cards and content panels, with an optional section heading;
+  4. page titles;
+  5. status badges and notifications.
+  
+  [Source: feature request §3, reduced by user decision 2026-11-08; see Clarifications and
+  Deferred Scope]
 - **FR-011**: Interactive components MUST have distinct normal, hover, focus and disabled states;
   input components MUST also have an error state with a message. [Source: feature request §3]
   (states are a design choice derived from "consistent reusable components")
@@ -196,7 +214,9 @@ of 2026-11-08 and are cited as `[Source: feature request §<section>]`.
 #### Preservation and scope limits
 
 - **FR-015**: The existing frontend behavior (application start-up and the backend connection
-  message on the home page) MUST keep working. [Source: feature request §Acceptance Criteria 6]
+  check on the home page, using the unchanged existing endpoint) MUST keep working. The result
+  MUST be shown as a Spanish success or error message; the backend's response text MUST NOT be
+  displayed. [Source: feature request §Acceptance Criteria 6; user clarification, 2026-11-08]
 - **FR-016**: The backend MUST NOT be changed. [Source: feature request §Technical Constraints,
   §Acceptance Criteria 7]
 - **FR-017**: The feature MUST NOT add product management, authentication, data persistence, API
@@ -204,8 +224,8 @@ of 2026-11-08 and are cited as `[Source: feature request §<section>]`.
   sections that no specification defines yet. [Source: feature request §Out of Scope; constitution
   Principle IV]
 - **FR-018**: All user-visible labels and messages MUST be in Spanish (es-MX), including the
-  existing home page texts (application name subtitle and backend connection messages), which are
-  translated. A language switcher is out of scope. [Source: user clarification, 2026-11-08, Q1]
+  existing home page texts (application name and backend connection messages), which are
+  replaced by Spanish texts written in the frontend. A language switcher is out of scope. [Source: user clarification, 2026-11-08, Q1]
 
 ### Observed Existing Behavior
 
@@ -248,7 +268,7 @@ These items come from tier 3 evidence. They are not requirements and are listed 
   the interface come from the documented visual identity (verified by review of the styling).
 - **SC-003**: 100% of palette and typography values are labeled as official (with source) or as a
   design choice.
-- **SC-004**: All 7 component groups in FR-010 appear on the component reference page in all
+- **SC-004**: All 5 component groups in FR-010 appear on the component reference page in all
   applicable states.
 - **SC-005**: At 1440 px, 1024 px, 1023 px and 768 px wide, no page scrolls horizontally and
   navigation is reachable within one interaction.
@@ -267,7 +287,7 @@ These items come from tier 3 evidence. They are not requirements and are listed 
   proposed as design choices compatible with the Liverpool digital look (FR-005) until official
   assets are supplied.
 - **A-002**: The side navigation will contain only non-business entries for now: a home page
-  (showing the existing backend connection message) and the component reference page. Business
+  (showing the result of the existing backend connection check) and the component reference page. Business
   entries are added by the specifications that introduce those sections.
 - **A-003**: The header shows the application name as text and reserves space for an official logo
   to be added later (FR-007).
@@ -276,6 +296,15 @@ These items come from tier 3 evidence. They are not requirements and are listed 
 - **A-005**: There is no user identity yet, so the header shows no user menu and navigation is not
   filtered by profile.
 - **A-006**: WCAG 2.1 AA contrast is the accessibility baseline.
+
+## Deferred Scope
+
+Listed in the feature request §3 but moved to a follow-up feature by user decision (2026-11-08):
+
+- dropdowns and selection controls (select, checkbox, radio group);
+- tables (including empty state and horizontal scrolling inside the table).
+
+They will reuse this feature's tokens, form-field styles and component patterns.
 
 ## Open Questions
 
