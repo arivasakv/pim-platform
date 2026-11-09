@@ -61,16 +61,16 @@ and frontend work for US1 are separate sub-sections, so they can proceed in para
 
 **Purpose**: Bring the backend in line with constitution V and VII before writing feature code.
 
-- [ ] T001 From the repository root, record the baseline commit with `git rev-parse HEAD | Out-File -Encoding utf8 "$env:TEMP\pim-002-baseline.txt"` (expected `92b191e…`). Confirm `git status --short -- backend/ frontend/` prints nothing before starting
-- [ ] T002 Update `backend\build.gradle` (research R-06, R-11; plan D-2, D-3):
+- [X] T001 From the repository root, record the baseline commit with `git rev-parse HEAD | Out-File -Encoding utf8 "$env:TEMP\pim-002-baseline.txt"` (expected `92b191e…`). Confirm `git status --short -- backend/ frontend/` prints nothing before starting
+- [X] T002 Update `backend\build.gradle` (research R-06, R-11; plan D-2, D-3):
   - add the plugin `id 'com.diffplug.spotless' version '8.11.0'`;
   - add the dependency `implementation 'org.springframework.boot:spring-boot-starter-validation'`, with no version (managed by Spring Boot 4.1.2);
   - add `spotless { java { target 'src/*/java/**/*.java'; palantirJavaFormat('2.103.0'); removeUnusedImports(); trimTrailingWhitespace(); endWithNewline() } }`;
   - add `tasks.named('compileJava') { options.compilerArgs += ['-Xlint:all', '-Werror'] }`.
   
   Do not add any persistence dependency. If `-Xlint:all -Werror` fails on a warning that does not come from project code, stop and report it instead of weakening the flag
-- [ ] T003 In `backend\`, run `.\gradlew.bat spotlessApply`. This reformats `BackendApplication.java`, `HelloController.java` and `BackendApplicationTests.java`, whitespace only. Then confirm `.\gradlew.bat build` reports BUILD SUCCESSFUL, which proves `spotlessCheck` and the existing `contextLoads` test pass. `git diff -w -- backend/src` must show no change other than import order
-- [ ] T004 [P] Create `docs\decisions\0001-api-conventions.md` (research R-07, plan D-4). This ADR records:
+- [X] T003 In `backend\`, run `.\gradlew.bat spotlessApply`. This reformats `BackendApplication.java`, `HelloController.java` and `BackendApplicationTests.java`, whitespace only. Then confirm `.\gradlew.bat build` reports BUILD SUCCESSFUL, which proves `spotlessCheck` and the existing `contextLoads` test pass. `git diff -w -- backend/src` must show no change other than import order
+- [X] T004 [P] Create `docs\decisions\0001-api-conventions.md` (research R-07, plan D-4). This ADR records:
   - **Status**: Accepted, 2026-11-08, approved by the project owner.
   - **Context**: constitution VII; this is the first real endpoint.
   - **Decision**:
