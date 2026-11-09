@@ -88,7 +88,8 @@ default.
 
 **Scale/Scope**:
 - 1 endpoint and 1 page.
-- Backend: about 9 production classes (≈7 domain, 2 web).
+- Backend: 23 production classes after the 2026-11-09 amendment (17 in `product`, 4 in
+  `common`, 1 in `config`, plus `BackendApplication`), laid out per constitution XII.
 - Frontend: about 4 modules (API config, products API, EAN rule, page).
 - 531 sample products.
 
@@ -112,7 +113,7 @@ default.
 | XI | Source of Truth | ✅ Pass | Spec cites its sources and tiers. No source-of-truth or reference-repository changes |
 
 **Gate result**: PASS. D-1 to D-5 approved by the project owner on 2026-11-08; D-6 to D-9 on
-2026-11-09. One recorded deviation (Complexity Tracking).
+2026-11-09. Two recorded deviations (Complexity Tracking).
 
 **Post-design re-check (after Phase 1)**: PASS. The data model, contract
 and quickstart add no database, no external integration and no frontend dataset.

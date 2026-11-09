@@ -24,11 +24,12 @@ Templates requiring updates:
   - ✅ .specify/templates/plan-template.md, spec-template.md, tasks-template.md: no change needed
   - ⚠ .specify/templates/spec-template.md: "Sources consulted" section and 5-category
     classification of Principle XI still pending (carried over from 2.0.0, separate change)
-Follow-up outside the constitution (to be done through feature 003, MongoDB product catalog):
-  - New specification 003 for MongoDB catalog storage (IX: own specification)
-  - docs/decisions/0002-mongodb-product-catalog.md: new ADR (Principle II)
-  - specs/002-existing-product-search/*: short notes that storage is superseded by feature 003
-  - CLAUDE.md: no change needed
+Follow-up outside the constitution (done 2026-11-09 as an amendment of feature 002, not a new
+feature; the IX "own specification" point is recorded in its plan's Complexity Tracking):
+  - ✅ specs/002-existing-product-search/*: spec, plan, research, data model, quickstart, tasks
+    (Phase 6) and contract (v1.1.0) updated for MongoDB catalog storage
+  - ✅ docs/decisions/0002-mongodb-product-catalog.md: new ADR (Principle II)
+  - ✅ CLAUDE.md: no change needed
 Known non-conforming code: none. HelloController, the flat `product` package and the `web`
 package were moved into the XII structure by the backend refactor (commit e8fba29). The examples
 in XII's "Existing code" rule are kept as historical illustrations.

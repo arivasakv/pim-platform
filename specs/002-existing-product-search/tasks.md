@@ -375,6 +375,11 @@ Task: "T012 ProductControllerIntegrationTest.java"
    `Invoke-RestMethod` (quickstart A1–A9) before any UI exists.
 3. **Frontend** (T022–T029): the page against the real endpoint.
 4. **Validation** (T030–T033): contract, scope, and the end-to-end run, reported in the summary.
+5. **Analysis remediation** (T034–T036): documents first, then the guarding test, then the
+   `HelloController` change.
+6. **Amendment 2026-11-09, MongoDB catalog** (T037–T047): documents and ADR 0002 first, then
+   configuration, tests, the MongoDB repository, loader and 503 handler, verification against
+   the local MongoDB, and the owner's browser check.
 
 Each step leaves `.\gradlew.bat build` and the npm checks green (constitution X). Commits only when
 the user asks.
