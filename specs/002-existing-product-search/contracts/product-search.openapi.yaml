@@ -1,0 +1,130 @@
+openapi: 3.1.0
+info:
+  title: PIM Platform – Existing product search
+  version: 1.0.0
+  description: >
+    Feature 002 (specs/002-existing-product-search). Finds existing Mercaderías products
+    (Liverpool and Suburbia) by exact EAN. Marketplace products are never returned (FR-014).
+    The search never creates, changes or reserves anything (FR-012).
+    Data comes from an in-memory sample catalog in this phase (constitution IX).
+servers:
+  - url: http://localhost:8080
+    description: Local development (the frontend reads it from VITE_API_BASE_URL)
+paths:
+  /api/v1/products:
+    get:
+      operationId: searchProductsByEan
+      summary: Find existing Mercaderías products with an exact EAN
+      description: >
+        Spaces and dashes in `ean` are removed before searching. The remaining value must be
+        8, 12, 13 or 14 digits (check digit not validated). Results are ordered Liverpool first,
+        then Suburbia, then by SKU. An EAN with no match returns an empty collection (200), not 404.
+      tags: [products]
+      parameters:
+        - name: ean
+          in: query
+          required: true
+          description: EAN to search; digits, spaces and dashes only, at most 20 characters.
+          schema:
+            type: string
+            maxLength: 20
+            pattern: '^[0-9 -]*$'
+          examples:
+            liverpoolOnly: { value: '7501234567890' }
+            twoBusinesses: { value: '7502000000017' }
+            withSeparators: { value: '750 1234-567890' }
+      responses:
+        '200':
+          description: Matching products (possibly none).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductCollection' }
+              examples:
+                found:
+                  summary: Same EAN in Liverpool and Suburbia
+                  value:
+                    items:
+                      - { sku: '1000002', ean: '7502000000017', title: 'Batidora de mano 300 W', brand: 'HOGAR DEMO', business: LIVERPOOL }
+                      - { sku: '1000003', ean: '7502000000017', title: 'Batidora de mano 300 W', brand: 'HOGAR DEMO', business: SUBURBIA }
+                    total: 2
+                notFound:
+                  summary: Absent EAN, or an EAN that only a Marketplace product has
+                  value: { items: [], total: 0 }
+        '400':
+          description: Missing or invalid `ean`.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                invalidLength:
+                  value:
+                    type: about:blank
+                    title: EAN no válido
+                    status: 400
+                    detail: La solicitud tiene datos no válidos.
+                    instance: /api/v1/products
+                    errors:
+                      - { field: ean, code: INVALID_LENGTH, message: 'El EAN debe tener 8, 12, 13 o 14 dígitos.' }
+                invalidCharacters:
+                  value:
+                    type: about:blank
+                    title: EAN no válido
+                    status: 400
+                    detail: La solicitud tiene datos no válidos.
+                    instance: /api/v1/products
+                    errors:
+                      - { field: ean, code: INVALID_CHARACTERS, message: 'El EAN solo puede contener números.' }
+                required:
+                  value:
+                    type: about:blank
+                    title: EAN no válido
+                    status: 400
+                    detail: La solicitud tiene datos no válidos.
+                    instance: /api/v1/products
+                    errors:
+                      - { field: ean, code: REQUIRED, message: 'Escribe un EAN.' }
+components:
+  schemas:
+    Business:
+      type: string
+      enum: [LIVERPOOL, SUBURBIA]
+      description: Only Mercaderías businesses are ever returned.
+    ProductSummary:
+      type: object
+      required: [sku, ean, title, brand, business]
+      properties:
+        sku: { type: string, pattern: '^[0-9]{7}$' }
+        ean: { type: string, pattern: '^([0-9]{8}|[0-9]{12,14})$', description: Normalized EAN }
+        title: { type: string, maxLength: 120 }
+        brand: { type: string, maxLength: 60 }
+        business: { $ref: '#/components/schemas/Business' }
+    ProductCollection:
+      type: object
+      description: Project-wide collection envelope (docs/decisions/0001-api-conventions.md).
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ProductSummary' }
+        total: { type: integer, minimum: 0 }
+    Problem:
+      type: object
+      description: RFC 9457 Problem Details, used by every API error.
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, code, message]
+            properties:
+              field: { type: string }
+              code:
+                type: string
+                enum: [REQUIRED, TOO_LONG, INVALID_CHARACTERS, INVALID_LENGTH]
+              message: { type: string }
