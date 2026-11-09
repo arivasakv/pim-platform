@@ -1,4 +1,4 @@
-package com.pim.backend.product;
+package com.pim.backend.product.controller;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.everyItem;

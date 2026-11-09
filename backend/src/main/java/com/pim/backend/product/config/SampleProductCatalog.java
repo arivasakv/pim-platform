@@ -1,5 +1,7 @@
-package com.pim.backend.product;
+package com.pim.backend.product.config;
 
+import com.pim.backend.product.model.Business;
+import com.pim.backend.product.model.Product;
 import java.util.ArrayList;
 import java.util.List;
 

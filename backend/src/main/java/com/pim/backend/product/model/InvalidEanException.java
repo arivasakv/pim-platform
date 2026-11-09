@@ -1,4 +1,4 @@
-package com.pim.backend.product;
+package com.pim.backend.product.model;
 
 import java.io.Serial;
 

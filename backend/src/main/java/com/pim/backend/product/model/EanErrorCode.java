@@ -1,4 +1,4 @@
-package com.pim.backend.product;
+package com.pim.backend.product.model;
 
 /**
  * Why an EAN was rejected. The code is the stable value clients rely on; the message is the Spanish

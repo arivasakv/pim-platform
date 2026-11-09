@@ -1,7 +1,9 @@
-package com.pim.backend.product;
+package com.pim.backend.product.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.pim.backend.product.model.Business;
+import com.pim.backend.product.model.Product;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;

@@ -1,4 +1,4 @@
-package com.pim.backend;
+package com.pim.backend.common;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;

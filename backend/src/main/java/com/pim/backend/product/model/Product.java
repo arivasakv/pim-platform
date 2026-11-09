@@ -1,4 +1,4 @@
-package com.pim.backend.product;
+package com.pim.backend.product.model;
 
 /**
  * An existing product in the catalog (data-model.md, "Product").

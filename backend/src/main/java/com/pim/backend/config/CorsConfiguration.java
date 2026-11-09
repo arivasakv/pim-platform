@@ -1,4 +1,4 @@
-package com.pim.backend.web;
+package com.pim.backend.config;
 
 import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Value;

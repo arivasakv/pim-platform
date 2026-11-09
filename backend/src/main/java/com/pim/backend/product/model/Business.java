@@ -1,4 +1,4 @@
-package com.pim.backend.product;
+package com.pim.backend.product.model;
 
 /**
  * Business line a product belongs to. Declaration order is the display order of search results

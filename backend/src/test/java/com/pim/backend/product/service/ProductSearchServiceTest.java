@@ -1,8 +1,14 @@
-package com.pim.backend.product;
+package com.pim.backend.product.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.pim.backend.product.model.Business;
+import com.pim.backend.product.model.Ean;
+import com.pim.backend.product.model.EanErrorCode;
+import com.pim.backend.product.model.InvalidEanException;
+import com.pim.backend.product.model.Product;
+import com.pim.backend.product.repository.InMemoryProductRepository;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -30,32 +36,42 @@ class ProductSearchServiceTest {
 
     @Test
     void returnsOnlyTheProductWithExactlyThatEan() {
-        assertThat(service.findExistingMercaderiasProducts(Ean.parse("7501234567890")))
-                .containsExactly(LIVERPOOL_LICUADORA);
+        assertThat(service.findExistingMercaderiasProducts("7501234567890")).containsExactly(LIVERPOOL_LICUADORA);
+    }
+
+    @Test
+    void removesSpacesAndDashesBeforeSearching() {
+        assertThat(service.findExistingMercaderiasProducts("750 1234-567890")).containsExactly(LIVERPOOL_LICUADORA);
     }
 
     @Test
     void returnsTheSameEanInLiverpoolAndSuburbiaWithLiverpoolFirst() {
-        assertThat(service.findExistingMercaderiasProducts(Ean.parse("7502000000017")))
+        assertThat(service.findExistingMercaderiasProducts("7502000000017"))
                 .containsExactly(LIVERPOOL_BATIDORA, SUBURBIA_BATIDORA);
     }
 
     @Test
     void neverReturnsMarketplaceProducts() {
-        assertThat(service.findExistingMercaderiasProducts(Ean.parse("7501112223334")))
-                .isEmpty();
+        assertThat(service.findExistingMercaderiasProducts("7501112223334")).isEmpty();
     }
 
     @Test
     void returnsNothingForAnAbsentEan() {
-        assertThat(service.findExistingMercaderiasProducts(Ean.parse("7509999999999")))
-                .isEmpty();
+        assertThat(service.findExistingMercaderiasProducts("7509999999999")).isEmpty();
+    }
+
+    @Test
+    void rejectsAnInvalidEanBeforeSearching() {
+        assertThatThrownBy(() -> service.findExistingMercaderiasProducts("750123456"))
+                .isInstanceOfSatisfying(
+                        InvalidEanException.class,
+                        exception -> assertThat(exception.code()).isEqualTo(EanErrorCode.INVALID_LENGTH));
     }
 
     @Test
     void searchingDoesNotChangeTheCatalog() {
-        service.findExistingMercaderiasProducts(Ean.parse("7502000000017"));
-        service.findExistingMercaderiasProducts(Ean.parse("7501112223334"));
+        service.findExistingMercaderiasProducts("7502000000017");
+        service.findExistingMercaderiasProducts("7501112223334");
 
         assertThat(repository.findByEan(Ean.parse("7502000000017")))
                 .containsExactlyInAnyOrder(LIVERPOOL_BATIDORA, SUBURBIA_BATIDORA);

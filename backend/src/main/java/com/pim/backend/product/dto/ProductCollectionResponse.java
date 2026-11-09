@@ -1,4 +1,4 @@
-package com.pim.backend.product;
+package com.pim.backend.product.dto;
 
 import java.util.List;
 
@@ -8,7 +8,7 @@ import java.util.List;
  */
 public record ProductCollectionResponse(List<ProductSummaryResponse> items, int total) {
 
-    static ProductCollectionResponse of(List<ProductSummaryResponse> items) {
-        return new ProductCollectionResponse(List.copyOf(items), items.size());
+    public ProductCollectionResponse {
+        items = List.copyOf(items);
     }
 }

@@ -1,4 +1,4 @@
-package com.pim.backend;
+package com.pim.backend.common;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;

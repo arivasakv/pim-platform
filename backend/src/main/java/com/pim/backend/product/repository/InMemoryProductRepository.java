@@ -1,5 +1,7 @@
-package com.pim.backend.product;
+package com.pim.backend.product.repository;
 
+import com.pim.backend.product.model.Ean;
+import com.pim.backend.product.model.Product;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
