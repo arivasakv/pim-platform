@@ -35,6 +35,21 @@ public final class ApiProblems {
     }
 
     /**
+     * A problem with any status, title and detail; {@code instance} is the request path. The {@code errors}
+     * property is set only when {@code errors} is not empty (for example, a 404 has none).
+     */
+    public static ProblemDetail problem(
+            HttpServletRequest request, HttpStatus status, String title, String detail, List<ApiFieldError> errors) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        problem.setTitle(title);
+        problem.setInstance(URI.create(request.getRequestURI()));
+        if (!errors.isEmpty()) {
+            problem.setProperty("errors", List.copyOf(errors));
+        }
+        return problem;
+    }
+
+    /**
      * A 503 problem for a request that needs a data store that cannot be reached
      * (docs/decisions/0002-mongodb-product-catalog.md); {@code instance} is the request path. It has no
      * {@code errors}, because the request itself was valid.

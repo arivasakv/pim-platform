@@ -1,0 +1,348 @@
+openapi: 3.1.0
+info:
+  title: PIM Platform – System identifiers
+  version: 1.0.0
+  description: >
+    Feature 003 (specs/003-identifier-management). Assigns system IDs to new objects of six types
+    (product, attribute, list of values, template, classification, interface), manually or from a
+    sequence configured per type, applies the duplicate-ID rule, and reads and changes each type's
+    configuration (FR-012). A system ID is unique across all six types (FR-001) and can never be
+    changed (FR-007). Data is held in memory and is lost on restart (research R-02). Error messages
+    are in Spanish (FR-011). Unknown fields in request bodies are ignored, as in the rest of the API.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: system-ids
+  - name: object-types
+paths:
+  /api/v1/system-ids:
+    post:
+      operationId: assignSystemId
+      summary: Give a system ID to a new object
+      description: >
+        Without `systemId` (or with a blank one), the ID is generated from the type's sequence,
+        skipping values already used (FR-005, R-06). With `systemId`, the caller must hold the
+        manual-ID permission for `objectType` (FR-003). If the ID already exists: same type and
+        identical key-field values → 200 `SAME_OBJECT` and nothing is created (FR-009a); otherwise
+        409 (FR-009b). A type with no declared key fields never matches (R-09).
+      tags: [system-ids]
+      parameters:
+        - $ref: '#/components/parameters/ManualIdPermissions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SystemIdAssignmentRequest' }
+            examples:
+              automatic:
+                value: { objectType: ATTRIBUTE, keyFieldValues: { code: COLOR } }
+              manual:
+                value: { objectType: CLASSIFICATION, systemId: CLS-ROPA, keyFieldValues: {} }
+      responses:
+        '201':
+          description: A new ID was assigned (outcome `ASSIGNED`).
+          headers:
+            Location:
+              description: /api/v1/system-ids/{systemId}
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemIdAssignment' }
+              example:
+                outcome: ASSIGNED
+                registration:
+                  systemId: ATR000001
+                  objectType: ATTRIBUTE
+                  keyFieldValues: { code: COLOR }
+                  assignment: AUTOMATIC
+                  registeredAt: '2026-11-09T18:00:00Z'
+        '200':
+          description: The ID already belongs to this same object (outcome `SAME_OBJECT`, FR-009a). Nothing was created or changed; the calling feature updates its own object.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemIdAssignment' }
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          description: A manual ID was given without the type's permission (FR-003). Nothing was saved. The detail and message name the requested ID (FR-011).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                title: ID manual no permitido
+                status: 403
+                detail: No tienes permiso para definir manualmente el ID CLS-OTRA para este tipo de objeto. Envía la solicitud sin ID para que el sistema genere uno.
+                instance: /api/v1/system-ids
+                errors:
+                  - { field: systemId, code: MANUAL_ID_NOT_PERMITTED, message: No tienes permiso para definir el ID CLS-OTRA para un objeto de tipo CLASSIFICATION. }
+        '409':
+          description: The ID belongs to a different object (FR-009b), or the type's sequence is exhausted (R-05). Nothing was created or changed.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                systemIdInUse:
+                  value:
+                    title: ID en uso
+                    status: 409
+                    detail: El ID CLS-ROPA ya pertenece a otro objeto. Indica un ID nuevo que no esté en uso.
+                    instance: /api/v1/system-ids
+                    errors:
+                      - { field: systemId, code: SYSTEM_ID_IN_USE, message: El ID CLS-ROPA ya pertenece a otro objeto. Indica un ID nuevo que no esté en uso. }
+                sequenceExhausted:
+                  value:
+                    title: Secuencia agotada
+                    status: 409
+                    detail: La secuencia de IDs de este tipo de objeto llegó a su valor máximo.
+                    instance: /api/v1/system-ids
+                    errors:
+                      - { field: objectType, code: SEQUENCE_EXHAUSTED, message: La secuencia de IDs de PRODUCT llegó a su valor máximo. }
+  /api/v1/system-ids/{systemId}:
+    parameters:
+      - name: systemId
+        in: path
+        required: true
+        description: Compared ignoring letter case (R-07).
+        schema: { type: string, maxLength: 40, pattern: '^[A-Za-z0-9._-]+$' }
+    get:
+      operationId: getSystemIdRegistration
+      summary: Read one registered system ID
+      tags: [system-ids]
+      responses:
+        '200':
+          description: The registration.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemIdRegistration' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: replaceSystemIdRejected
+      summary: Always rejected; a system ID can never be changed (FR-007)
+      tags: [system-ids]
+      responses:
+        '405':
+          $ref: '#/components/responses/SystemIdImmutable'
+    patch:
+      operationId: modifySystemIdRejected
+      summary: Always rejected; a system ID can never be changed (FR-007)
+      tags: [system-ids]
+      responses:
+        '405':
+          $ref: '#/components/responses/SystemIdImmutable'
+  /api/v1/object-types:
+    get:
+      operationId: listObjectTypeConfigurations
+      summary: The six object types and their configuration
+      tags: [object-types]
+      responses:
+        '200':
+          description: All six types, in the order of section 3.1.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ObjectTypeConfigurationCollection' }
+  /api/v1/object-types/{objectType}:
+    parameters:
+      - name: objectType
+        in: path
+        required: true
+        schema: { $ref: '#/components/schemas/ObjectType' }
+    get:
+      operationId: getObjectTypeConfiguration
+      summary: One type's sequence and key-field declaration
+      tags: [object-types]
+      responses:
+        '200':
+          description: The configuration.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ObjectTypeConfiguration' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: replaceObjectTypeConfiguration
+      summary: Replace one type's sequence and key-field declaration (FR-006, FR-013)
+      description: >
+        Applies to objects created afterwards. IDs already registered never change (FR-008).
+        Not restricted by any permission in this feature (research R-05).
+      tags: [object-types]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ObjectTypeConfigurationRequest' }
+            example:
+              sequence: { kind: NUMERIC, minimumDigits: 8, nextValue: 1000 }
+              keyFields: [sku]
+      responses:
+        '200':
+          description: The new configuration.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ObjectTypeConfiguration' }
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  parameters:
+    ManualIdPermissions:
+      name: X-Pim-Manual-Id-Permissions
+      in: header
+      required: false
+      description: >
+        Development stand-in for the authenticated user's permissions until authentication exists
+        (research R-08; constitution VIII). Comma-separated object-type codes for which the user
+        may give manual IDs. Absent = no permission. Unknown codes are ignored. Not needed for
+        automatic IDs.
+      schema: { type: string, example: 'PRODUCT,CLASSIFICATION' }
+  responses:
+    InvalidRequest:
+      description: Invalid request (Bean Validation and domain rules). Nothing was saved.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            title: Solicitud no válida
+            status: 400
+            detail: La solicitud tiene datos no válidos.
+            instance: /api/v1/system-ids
+            errors:
+              - { field: systemId, code: INVALID_SYSTEM_ID, message: 'El ID solo puede tener de 1 a 40 letras, números, guiones, guiones bajos o puntos.' }
+    NotFound:
+      description: No such system ID or object type.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            title: No encontrado
+            status: 404
+            detail: No existe un objeto con el ID XYZ-1.
+            instance: /api/v1/system-ids/XYZ-1
+    SystemIdImmutable:
+      description: A system ID can never be changed (FR-007). Nothing was changed.
+      headers:
+        Allow:
+          schema: { type: string, example: GET }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            title: ID no modificable
+            status: 405
+            detail: El ID de sistema ATR000001 no se puede modificar una vez guardado.
+            instance: /api/v1/system-ids/ATR000001
+  schemas:
+    ObjectType:
+      type: string
+      enum: [PRODUCT, ATTRIBUTE, LIST_OF_VALUES, TEMPLATE, CLASSIFICATION, INTERFACE]
+    SystemIdAssignmentRequest:
+      type: object
+      required: [objectType, keyFieldValues]
+      properties:
+        objectType: { $ref: '#/components/schemas/ObjectType' }
+        systemId:
+          type: [string, 'null']
+          maxLength: 60
+          description: >
+            Manual ID (FR-003). Trimmed; blank means "generate one" (A-004). After trimming: 1–40
+            characters from A–Z a–z 0–9 - _ . (R-07).
+        keyFieldValues:
+          type: object
+          description: One value for each key field declared for the type, and no others (R-09). Empty object when the type declares none.
+          maxProperties: 20
+          additionalProperties: { type: string, minLength: 1, maxLength: 200 }
+    SystemIdRegistration:
+      type: object
+      required: [systemId, objectType, keyFieldValues, assignment, registeredAt]
+      properties:
+        systemId: { type: string }
+        objectType: { $ref: '#/components/schemas/ObjectType' }
+        keyFieldValues:
+          type: object
+          additionalProperties: { type: string }
+        assignment: { type: string, enum: [MANUAL, AUTOMATIC] }
+        registeredAt: { type: string, format: date-time }
+    SystemIdAssignment:
+      type: object
+      required: [outcome, registration]
+      properties:
+        outcome: { type: string, enum: [ASSIGNED, SAME_OBJECT] }
+        registration: { $ref: '#/components/schemas/SystemIdRegistration' }
+    Sequence:
+      type: object
+      required: [kind, minimumDigits, nextValue]
+      properties:
+        kind: { type: string, enum: [NUMERIC, ALPHANUMERIC] }
+        prefix:
+          type: [string, 'null']
+          pattern: '^[A-Z]{1,10}$'
+          description: Required for ALPHANUMERIC; must be absent or null for NUMERIC.
+        minimumDigits: { type: integer, minimum: 1, maximum: 18 }
+        nextValue: { type: integer, format: int64, minimum: 1, maximum: 999999999999999999 }
+    ObjectTypeConfigurationRequest:
+      type: object
+      required: [sequence, keyFields]
+      properties:
+        sequence: { $ref: '#/components/schemas/Sequence' }
+        keyFields:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items: { type: string, pattern: '^[A-Za-z][A-Za-z0-9_]{0,59}$' }
+    ObjectTypeConfiguration:
+      type: object
+      required: [objectType, sequence, keyFields]
+      properties:
+        objectType: { $ref: '#/components/schemas/ObjectType' }
+        sequence: { $ref: '#/components/schemas/Sequence' }
+        keyFields:
+          type: array
+          items: { type: string }
+    ObjectTypeConfigurationCollection:
+      type: object
+      description: Project-wide collection envelope (docs/decisions/0001-api-conventions.md).
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ObjectTypeConfiguration' }
+        total: { type: integer, minimum: 0 }
+    Problem:
+      type: object
+      description: RFC 9457 Problem Details, used by every API error (ADR 0001).
+      required: [title, status]
+      properties:
+        type:
+          type: string
+          description: Omitted when it is "about:blank" (RFC 9457 §3.1.1), as for every problem in this API.
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, code, message]
+            properties:
+              field: { type: string }
+              code:
+                type: string
+                enum:
+                  - REQUIRED
+                  - UNKNOWN_OBJECT_TYPE
+                  - INVALID_SYSTEM_ID
+                  - MISSING_KEY_FIELD
+                  - UNKNOWN_KEY_FIELD
+                  - INVALID_KEY_FIELD_VALUE
+                  - INVALID_KEY_FIELD_NAME
+                  - INVALID_SEQUENCE_KIND
+                  - INVALID_PREFIX
+                  - INVALID_MINIMUM_DIGITS
+                  - INVALID_NEXT_VALUE
+                  - MANUAL_ID_NOT_PERMITTED
+                  - SYSTEM_ID_IN_USE
+                  - SEQUENCE_EXHAUSTED
+              message: { type: string }
