@@ -1,15 +1,10 @@
 import { useEffect, useState } from 'react'
+import { buildApiUrl } from '../api/apiConfig'
 import { Card, Notification, PageHeader } from '../components/ui'
 import type { NotificationVariant } from '../components/ui'
 
 // Existing backend endpoint path, unchanged. The base URL is environment configuration (R-15).
 const HELLO_PATH = '/api/v1/hello'
-
-/** Full URL of the connection check, or null when VITE_API_BASE_URL is not configured. */
-function getHelloUrl(): string | null {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/+$/, '')
-  return baseUrl ? `${baseUrl}${HELLO_PATH}` : null
-}
 
 type ConnectionStatus = 'checking' | 'connected' | 'unavailable'
 
@@ -21,7 +16,7 @@ const STATUS_MESSAGES: Record<ConnectionStatus, { variant: NotificationVariant; 
 }
 
 export function HomePage() {
-  const helloUrl = getHelloUrl()
+  const helloUrl = buildApiUrl(HELLO_PATH)
   // Without a configured backend URL there is nothing to check: report it as unavailable.
   const [status, setStatus] = useState<ConnectionStatus>(helloUrl ? 'checking' : 'unavailable')
 

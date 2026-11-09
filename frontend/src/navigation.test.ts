@@ -18,6 +18,10 @@ describe('getPathFromHash', () => {
   it('returns the components path for "#/componentes"', () => {
     expect(getPathFromHash('#/componentes')).toBe('/componentes')
   })
+
+  it('returns the product search path for "#/buscar-producto"', () => {
+    expect(getPathFromHash('#/buscar-producto')).toBe('/buscar-producto')
+  })
 })
 
 describe('useCurrentPath', () => {

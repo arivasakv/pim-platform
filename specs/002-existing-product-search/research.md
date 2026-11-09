@@ -145,7 +145,7 @@ approval** change project-wide conventions or tooling. They are listed together 
 - **Decision**: All API errors use RFC 9457 Problem Details (the successor of RFC 7807, which
   constitution VII recommends), produced by one `@RestControllerAdvice` using Spring's built-in
   `ProblemDetail`.
-  - Fields: `type`, `title`, `status`, `detail`, `instance`, plus an `errors` array of
+  - Fields: `type` (omitted when it is `about:blank`, RFC 9457 §3.1.1), `title`, `status`, `detail`, `instance`, plus an `errors` array of
     `{ field, code, message }`.
   - `spring.mvc.problemdetails.enabled: true` covers framework errors (for example, an unknown
     route) in the same format.
@@ -161,8 +161,11 @@ approval** change project-wide conventions or tooling. They are listed together 
 - **Decision**: A global CORS configuration for `/api/**`. It allows `GET` from origins listed in
   the property `pim.cors.allowed-origins`, bound to the environment variable
   `PIM_CORS_ALLOWED_ORIGINS`, defaulting in `application.yaml` to `http://localhost:5173`.
-  `HelloController`'s existing `@CrossOrigin` is left untouched (constitution X: no unrelated
-  changes; the global configuration also covers it).
+  `HelloController`'s hard-coded `@CrossOrigin("http://localhost:5173")` is **removed**: it is
+  environment-specific configuration in source code (constitution VIII), and the global
+  configuration already covers `/api/v1/hello`. An integration test proves the hello endpoint still
+  allows the configured origin. *Revised after analysis finding C1; the original plan had left the
+  annotation untouched.*
 - **Rationale**: The browser at `localhost:5173` calls the backend at `localhost:8080`, so CORS is
   needed. Constitution VIII: environment-specific configuration outside source code.
 - **Alternatives**: `@CrossOrigin` on the new controller (hard-codes the origin again); a Vite dev

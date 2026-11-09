@@ -3,11 +3,14 @@ import { AppShell } from './components/layout/AppShell'
 import { NAVIGATION_ENTRIES, useCurrentPath } from './navigation'
 import { ComponentGalleryPage } from './pages/ComponentGalleryPage'
 import { HomePage } from './pages/HomePage'
+import { ProductSearchPage } from './pages/ProductSearchPage'
 
 function renderPage(path: string) {
   switch (path) {
     case '/componentes':
       return <ComponentGalleryPage />
+    case '/buscar-producto':
+      return <ProductSearchPage />
     case '/':
     default:
       return <HomePage />

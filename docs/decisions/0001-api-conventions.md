@@ -30,7 +30,7 @@ RFC 9457 is the current version of RFC 7807 and is compatible with it.
 
   | Field | Meaning |
   |---|---|
-  | `type` | URI identifying the problem type; `about:blank` when no specific type is defined |
+  | `type` | URI identifying the problem type. Omitted when it is `about:blank`, the default (RFC 9457 §3.1.1); clients treat a missing `type` as `about:blank` |
   | `title` | Short, human-readable summary, in Spanish (for example "EAN no válido") |
   | `status` | HTTP status code |
   | `detail` | Human-readable explanation of this occurrence, in Spanish |
@@ -48,7 +48,6 @@ Example:
 
 ```json
 {
-  "type": "about:blank",
   "title": "EAN no válido",
   "status": 400,
   "detail": "La solicitud tiene datos no válidos.",

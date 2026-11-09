@@ -33,8 +33,9 @@ and frontend work for US1 are separate sub-sections, so they can proceed in para
   "Storage").
 - **The frontend holds no product data and does no matching.** Its EAN check gives instant
   feedback only; the backend's check is authoritative (research R-01).
-- **Do not modify** `.specify/memory/constitution.md`, or `HelloController`'s behaviour or
-  annotation. It is only reformatted in T003.
+- **Do not modify** `.specify/memory/constitution.md`, or `HelloController`'s behaviour. It is
+  reformatted in T003, and its hard-coded `@CrossOrigin` is removed in T035 (finding C1); its
+  response stays the same.
 - **Java**: Java 21, records for data, constructor injection only, no field injection
   (constitution V). Package by domain: `com.pim.backend.product`, plus `com.pim.backend.web` for
   cross-cutting concerns.
@@ -92,16 +93,16 @@ in place.
 
 **⚠️ CRITICAL**: Complete before starting US1.
 
-- [ ] T005 Update `backend\src\main\resources\application.yaml` (research R-07, R-08). Keep `spring.application.name: backend` and add:
+- [X] T005 Update `backend\src\main\resources\application.yaml` (research R-07, R-08). Keep `spring.application.name: backend` and add:
   - `spring.mvc.problemdetails.enabled: true`;
   - `pim.cors.allowed-origins: ${PIM_CORS_ALLOWED_ORIGINS:http://localhost:5173}`, a comma-separated list.
-- [ ] T006 [P] Create `backend\src\main\java\com\pim\backend\web\CorsConfiguration.java`: a `@Configuration` implementing `WebMvcConfigurer`. It reads `pim.cors.allowed-origins` through constructor injection of `@Value("${pim.cors.allowed-origins}") String`, splits it on commas, and trims each entry. `addCorsMappings` maps `/api/**` with `allowedOrigins(...)`, `allowedMethods("GET")` and `allowedHeaders("*")`. No origin is hard-coded in Java (constitution VIII). `HelloController`'s `@CrossOrigin` stays as is (research R-08)
-- [ ] T007 [P] Write `frontend\src\api\apiConfig.test.ts` first (research R-12):
+- [X] T006 [P] Create `backend\src\main\java\com\pim\backend\web\CorsConfiguration.java`: a `@Configuration` implementing `WebMvcConfigurer`. It reads `pim.cors.allowed-origins` through constructor injection of `@Value("${pim.cors.allowed-origins}") String`, splits it on commas, and trims each entry. `addCorsMappings` maps `/api/**` with `allowedOrigins(...)`, `allowedMethods("GET")` and `allowedHeaders("*")`. No origin is hard-coded in Java (constitution VIII). `HelloController`'s `@CrossOrigin` stays as is (research R-08)
+- [X] T007 [P] Write `frontend\src\api\apiConfig.test.ts` first (research R-12):
   - with `vi.stubEnv('VITE_API_BASE_URL', 'http://servidor.ejemplo:9090')`, `buildApiUrl('/api/v1/hello')` returns `'http://servidor.ejemplo:9090/api/v1/hello'`;
   - a trailing slash in the base URL is removed;
   - with `''` or only spaces, it returns `null`;
   - reset with `vi.unstubAllEnvs()`.
-- [ ] T008 Create `frontend\src\api\apiConfig.ts` exporting `buildApiUrl(path: string): string | null`. Read `import.meta.env.VITE_API_BASE_URL`, `trim()` it, remove trailing slashes, and return `null` when empty, otherwise `base + path`. Then refactor `frontend\src\pages\HomePage.tsx` to use `buildApiUrl('/api/v1/hello')` and remove its local `getHelloUrl`. Behaviour, messages and the `console.error` hint stay identical (plan D-5). Run `npm test` and confirm that `apiConfig.test.ts` and the unchanged `HomePage.test.tsx` all pass
+- [X] T008 Create `frontend\src\api\apiConfig.ts` exporting `buildApiUrl(path: string): string | null`. Read `import.meta.env.VITE_API_BASE_URL`, `trim()` it, remove trailing slashes, and return `null` when empty, otherwise `base + path`. Then refactor `frontend\src\pages\HomePage.tsx` to use `buildApiUrl('/api/v1/hello')` and remove its local `getHelloUrl`. Behaviour, messages and the `console.error` hint stay identical (plan D-5). Run `npm test` and confirm that `apiConfig.test.ts` and the unchanged `HomePage.test.tsx` all pass
 
 **Checkpoint**: CORS and Problem Details are configured. The frontend has one URL helper, and
 feature 001's tests are still green.
@@ -119,7 +120,7 @@ end-to-end scenarios 1–8 pass ([quickstart.md](./quickstart.md)).
 
 ### Backend tests for US1 (write first, confirm they fail)
 
-- [ ] T009 [P] [US1] Write `backend\src\test\java\com\pim\backend\product\EanTest.java` (data-model §Ean, research R-06), a plain JUnit 5 test:
+- [X] T009 [P] [US1] Write `backend\src\test\java\com\pim\backend\product\EanTest.java` (data-model §Ean, research R-06), a plain JUnit 5 test:
   - **accepted**: `7501234567890` (value `7501234567890`), `750 1234-567890` (normalized to `7501234567890`), `12345670` (8 digits), `123456789012` (12), `17501234567893` (14);
   - **rejected**, as `InvalidEanException` with `code()`:
     - `null`, `""` and `"   "` → `REQUIRED`;
@@ -128,7 +129,7 @@ end-to-end scenarios 1–8 pass ([quickstart.md](./quickstart.md)).
     - `750123456` (9 digits) and `7501234567890123` (16 digits) → `INVALID_LENGTH`.
   
   The check digit is not validated (spec A-004), so `7501234567891` is accepted.
-- [ ] T010 [P] [US1] Write `backend\src\test\java\com\pim\backend\product\SampleProductCatalogTest.java` (data-model §Sample catalog):
+- [X] T010 [P] [US1] Write `backend\src\test\java\com\pim\backend\product\SampleProductCatalogTest.java` (data-model §Sample catalog):
   - `SampleProductCatalog.create()` returns at least 500 products, exactly 531;
   - the six scenario products exist with the exact SKU, EAN, title, brand and business in the data-model table;
   - no product has EAN `7509999999999`;
@@ -136,14 +137,14 @@ end-to-end scenarios 1–8 pass ([quickstart.md](./quickstart.md)).
   - "The same EAN may appear in different businesses but must not repeat within one business";
   - every SKU is unique and matches `^[0-9]{7}$`;
   - titles are 1–120 characters and brands 1–60 characters.
-- [ ] T011 [P] [US1] Write `backend\src\test\java\com\pim\backend\product\ProductSearchServiceTest.java`, with a small fixture list passed to `new InMemoryProductRepository(List.of(...))`, not the sample catalog:
+- [X] T011 [P] [US1] Write `backend\src\test\java\com\pim\backend\product\ProductSearchServiceTest.java`, with a small fixture list passed to `new InMemoryProductRepository(List.of(...))`, not the sample catalog:
   - an exact match returns only that product (a product whose EAN merely starts with the same digits is not returned);
   - the same EAN in `SUBURBIA` (SKU 2000002) and `LIVERPOOL` (SKU 2000001) returns both, Liverpool first;
   - two Liverpool products with the same EAN make the repository constructor throw `IllegalStateException` (uniqueness per business);
   - an EAN held only by `MARKETPLACE` returns an empty list;
   - an absent EAN returns an empty list;
   - the repository content is unchanged after searching (FR-012).
-- [ ] T012 [P] [US1] Write `backend\src\test\java\com\pim\backend\product\ProductControllerIntegrationTest.java`: `@SpringBootTest` with MockMvc (`@AutoConfigureMockMvc` from Spring Boot 4's `spring-boot-webmvc-test` module), using the real sample catalog. Assert against the contract `contracts\product-search.openapi.yaml`:
+- [X] T012 [P] [US1] Write `backend\src\test\java\com\pim\backend\product\ProductControllerIntegrationTest.java`: `@SpringBootTest` with MockMvc (`@AutoConfigureMockMvc` from Spring Boot 4's `spring-boot-webmvc-test` module), using the real sample catalog. Assert against the contract `contracts\product-search.openapi.yaml`:
   - **200** responses:
     - `ean=7501234567890` → `total` 1, `items[0]` = `{sku:"1000001", ean:"7501234567890", title:"Licuadora 10 velocidades 600 W", brand:"MARCA DEMO", business:"LIVERPOOL"}`;
     - `ean=7502000000017` → `total` 2, `items[0].business` `LIVERPOOL`, `items[1].business` `SUBURBIA`;
@@ -163,10 +164,10 @@ end-to-end scenarios 1–8 pass ([quickstart.md](./quickstart.md)).
 
 ### Backend implementation for US1
 
-- [ ] T013 [P] [US1] Create the domain types in `backend\src\main\java\com\pim\backend\product\`:
+- [X] T013 [P] [US1] Create the domain types in `backend\src\main\java\com\pim\backend\product\`:
   - `Business.java`: enum `LIVERPOOL`, `SUBURBIA`, `MARKETPLACE`;
   - `Product.java`: `record Product(String sku, String ean, String title, String brand, Business business)`. Its compact constructor rejects null or blank fields, titles over 120 characters and brands over 60 characters with `IllegalArgumentException`.
-- [ ] T014 [P] [US1] Create the EAN rule in `backend\src\main\java\com\pim\backend\product\`:
+- [X] T014 [P] [US1] Create the EAN rule in `backend\src\main\java\com\pim\backend\product\`:
   - `EanErrorCode.java`: enum `REQUIRED`, `TOO_LONG`, `INVALID_CHARACTERS`, `INVALID_LENGTH`, each with its Spanish message from the ground-rules table;
   - `InvalidEanException.java`: an unchecked exception carrying an `EanErrorCode code()`;
   - `Ean.java`: `record Ean(String value)` with `static Ean parse(String raw)`. It applies the data-model rules in order:
@@ -177,36 +178,36 @@ end-to-end scenarios 1–8 pass ([quickstart.md](./quickstart.md)).
     5. length not in {8, 12, 13, 14} → `INVALID_LENGTH`.
     
     No check-digit validation. The canonical constructor only accepts already-normalized digits of a valid length. T009 must pass.
-- [ ] T015 [US1] Create the persistence layer in `backend\src\main\java\com\pim\backend\product\`:
+- [X] T015 [US1] Create the persistence layer in `backend\src\main\java\com\pim\backend\product\`:
   - `ProductRepository.java`: interface with `List<Product> findByEan(Ean ean)`;
   - `InMemoryProductRepository.java`: implements it with constructor `InMemoryProductRepository(List<Product> products)`. It builds an unmodifiable `Map<String, List<Product>>` keyed by EAN, and throws `IllegalStateException` naming the EAN and business when an EAN repeats within the same business. `findByEan` returns an unmodifiable list, empty when there is no match. No write methods (FR-012).
   
   Depends on T013, T014.
-- [ ] T016 [US1] Create `backend\src\main\java\com\pim\backend\product\SampleProductCatalog.java`: a final class with `static List<Product> create()`, deterministic with no randomness (data-model §Sample catalog).
+- [X] T016 [US1] Create `backend\src\main\java\com\pim\backend\product\SampleProductCatalog.java`: a final class with `static List<Product> create()`, deterministic with no randomness (data-model §Sample catalog).
   - **Scenario products**: the six rows exactly as in the data-model table.
   - **Generated Liverpool and Suburbia products (500)**: SKUs `1100001`–`1100500`; EAN `"7503" + String.format("%09d", n)`; businesses alternating `LIVERPOOL` (odd n) and `SUBURBIA` (even n); title from neutral Spanish product words plus a size or capacity (for example "Sartén antiadherente 24 cm"), with no prices or shopping terms; brand from a fixed list of "… DEMO" names.
   - **Generated Marketplace products (25)**: SKUs `1200001`–`1200025`; EAN `"7504" + String.format("%09d", n)`; business `MARKETPLACE`.
   
   T010 must pass.
-- [ ] T017 [US1] Create `backend\src\main\java\com\pim\backend\product\ProductCatalogConfiguration.java`: a `@Configuration` with a `@Bean ProductRepository productRepository()` returning `new InMemoryProductRepository(SampleProductCatalog.create())`. The catalog is built once when the application context starts (research R-03)
-- [ ] T018 [US1] Create `backend\src\main\java\com\pim\backend\product\ProductSearchService.java`: a `@Service` with constructor injection of `ProductRepository`. The method `List<Product> findExistingMercaderiasProducts(Ean ean)` keeps only `business` in `{LIVERPOOL, SUBURBIA}` (FR-014) and orders by business (Liverpool, then Suburbia), then by `sku` (gap G-1). No HTTP types. T011 must pass
-- [ ] T019 [US1] Create the API in `backend\src\main\java\com\pim\backend\product\`:
+- [X] T017 [US1] Create `backend\src\main\java\com\pim\backend\product\ProductCatalogConfiguration.java`: a `@Configuration` with a `@Bean ProductRepository productRepository()` returning `new InMemoryProductRepository(SampleProductCatalog.create())`. The catalog is built once when the application context starts (research R-03)
+- [X] T018 [US1] Create `backend\src\main\java\com\pim\backend\product\ProductSearchService.java`: a `@Service` with constructor injection of `ProductRepository`. The method `List<Product> findExistingMercaderiasProducts(Ean ean)` keeps only `business` in `{LIVERPOOL, SUBURBIA}` (FR-014) and orders by business (Liverpool, then Suburbia), then by `sku` (gap G-1). No HTTP types. T011 must pass
+- [X] T019 [US1] Create the API in `backend\src\main\java\com\pim\backend\product\`:
   - `ProductSummaryResponse.java`: record `sku, ean, title, brand, business`, with `business` serialized as the enum name;
   - `ProductCollectionResponse.java`: record `List<ProductSummaryResponse> items, int total`;
   - `ProductController.java`: `@RestController` with `@RequestMapping("/api/v1/products")` and a `@GetMapping` method taking `@RequestParam(name = "ean", required = false) @NotBlank(message = "REQUIRED") @Size(max = 20, message = "TOO_LONG") @Pattern(regexp = "^[0-9 -]*$", message = "INVALID_CHARACTERS") String ean`. It calls `Ean.parse(ean)`, then `ProductSearchService`, maps to DTOs, and returns 200. HTTP mapping only, no business rules (constitution III).
   
   Bean Validation messages carry the error code; the Spanish text comes from `EanErrorCode` in T020.
-- [ ] T020 [US1] Create `backend\src\main\java\com\pim\backend\web\ApiExceptionHandler.java`: a `@RestControllerAdvice` that builds Spring `ProblemDetail` responses (status 400, `title` "EAN no válido", `detail` "La solicitud tiene datos no válidos.", `instance` = request path). It sets the property `errors` to a list of `{field, code, message}` for:
+- [X] T020 [US1] Create `backend\src\main\java\com\pim\backend\web\ApiExceptionHandler.java`: a `@RestControllerAdvice` that builds Spring `ProblemDetail` responses (status 400, `title` "EAN no válido", `detail` "La solicitud tiene datos no válidos.", `instance` = request path). It sets the property `errors` to a list of `{field, code, message}` for:
   - `InvalidEanException` → one error from its code;
   - `HandlerMethodValidationException` and `ConstraintViolationException` (Bean Validation on the parameter) → one error per violation, with the code from the constraint message and the Spanish text from `EanErrorCode`;
   - `MissingServletRequestParameterException` for `ean` → `REQUIRED`.
   
   The content type is `application/problem+json`. T012 must pass.
-- [ ] T021 [US1] In `backend\`, run `.\gradlew.bat build` (spotlessCheck, `-Werror` compile and all tests). It must report BUILD SUCCESSFUL, with T009–T012 and `contextLoads` passing
+- [X] T021 [US1] In `backend\`, run `.\gradlew.bat build` (spotlessCheck, `-Werror` compile and all tests). It must report BUILD SUCCESSFUL, with T009–T012 and `contextLoads` passing
 
 ### Frontend tests for US1 (write first, confirm they fail)
 
-- [ ] T022 [P] [US1] Write `frontend\src\products\ean.test.ts` for `validateEan(raw)` from `frontend\src\products\ean.ts`. It mirrors the backend rule (data-model §Ean):
+- [X] T022 [P] [US1] Write `frontend\src\products\ean.test.ts` for `validateEan(raw)` from `frontend\src\products\ean.ts`. It mirrors the backend rule (data-model §Ean):
   - `'7501234567890'` → `{ ok: true, ean: '7501234567890' }`;
   - `'750 1234-567890'` → `{ ok: true, ean: '7501234567890' }`;
   - `'12345670'` and `'17501234567893'` → ok;
@@ -215,13 +216,13 @@ end-to-end scenarios 1–8 pass ([quickstart.md](./quickstart.md)).
   - `'licuadora'` → `INVALID_CHARACTERS`;
   - `'750123456'` → `INVALID_LENGTH`;
   - `EAN_MESSAGES[code]` equals the Spanish texts in the ground rules.
-- [ ] T023 [P] [US1] Write `frontend\src\api\productsApi.test.ts` for `searchProductsByEan(ean, signal?)`, stubbing `fetch` with `vi.stubGlobal` and setting `vi.stubEnv('VITE_API_BASE_URL', 'http://servidor.ejemplo:9090')`:
+- [X] T023 [P] [US1] Write `frontend\src\api\productsApi.test.ts` for `searchProductsByEan(ean, signal?)`, stubbing `fetch` with `vi.stubGlobal` and setting `vi.stubEnv('VITE_API_BASE_URL', 'http://servidor.ejemplo:9090')`:
   - calls `http://servidor.ejemplo:9090/api/v1/products?ean=7501234567890` with the signal;
   - a 200 body `{items:[…], total:1}` is returned typed as `ProductCollection`;
   - a 400 Problem body with `errors[{code:'INVALID_LENGTH'}]` throws `ProductSearchError` with `kind: 'validation'` and `codes: ['INVALID_LENGTH']`;
   - a rejected `fetch`, a 500, and a missing base URL (no fetch call) each throw `ProductSearchError` with `kind: 'unavailable'`;
   - an `AbortError` is rethrown unchanged.
-- [ ] T024 [P] [US1] Write `frontend\src\pages\ProductSearchPage.test.tsx`, stubbing `fetch` and `VITE_API_BASE_URL`:
+- [X] T024 [P] [US1] Write `frontend\src\pages\ProductSearchPage.test.tsx`, stubbing `fetch` and `VITE_API_BASE_URL`:
   - **Layout**: heading level 1 "Buscar producto"; field labelled "EAN"; "Buscar" button.
   - **Found, one business**: typing `7501234567890` and clicking "Buscar" calls fetch once and shows the found warning, a card with "Licuadora 10 velocidades 600 W", "1000001", "MARCA DEMO" and the badge "Liverpool".
   - **Found, two businesses**: two cards in order Liverpool, Suburbia.
@@ -235,21 +236,21 @@ end-to-end scenarios 1–8 pass ([quickstart.md](./quickstart.md)).
 
 ### Frontend implementation for US1
 
-- [ ] T025 [P] [US1] Create `frontend\src\products\ean.ts`, exporting:
+- [X] T025 [P] [US1] Create `frontend\src\products\ean.ts`, exporting:
   - `type EanErrorCode = 'REQUIRED' | 'TOO_LONG' | 'INVALID_CHARACTERS' | 'INVALID_LENGTH'`;
   - `EAN_MESSAGES: Record<EanErrorCode, string>`, with the Spanish texts;
   - `validateEan(raw: string): { ok: true; ean: string } | { ok: false; code: EanErrorCode }`, applying the same five ordered rules as the backend (data-model §Ean).
   
   T022 must pass.
-- [ ] T026 [P] [US1] Create `frontend\src\api\productsApi.ts`, exporting:
+- [X] T026 [P] [US1] Create `frontend\src\api\productsApi.ts`, exporting:
   - types `Business = 'LIVERPOOL' | 'SUBURBIA'`, `ProductSummary` and `ProductCollection` (contract schemas);
   - `class ProductSearchError extends Error`, with `kind: 'validation' | 'unavailable'` and `codes: EanErrorCode[]`;
   - `searchProductsByEan(ean: string, signal?: AbortSignal): Promise<ProductCollection>`. It uses `buildApiUrl(`/api/v1/products?ean=${encodeURIComponent(ean)}`)`. With no URL configured, it throws `unavailable` without calling fetch. A 400 with a Problem body maps `errors[].code` to `validation`; any other non-OK status, or a network failure, is `unavailable`; an `AbortError` is rethrown.
   
   T023 must pass.
-- [ ] T027 [US1] Create `frontend\src\pages\ProductSearchPage.tsx` and `ProductSearchPage.module.css` (research R-13, R-14; data-model §Frontend view state):
+- [X] T027 [US1] Create `frontend\src\pages\ProductSearchPage.tsx` and `ProductSearchPage.module.css` (research R-13, R-14; data-model §Frontend view state):
   - **Header**: `PageHeader` with title "Buscar producto" and description "Revisa si el producto ya existe antes de proponerlo. Busca por EAN.".
-  - **Form**: a `<form noValidate onSubmit>` containing `TextField` (`id="ean"`, `label="EAN"`, `type="search"`, `inputMode="numeric"`, `maxLength={20}`, hint "8, 12, 13 o 14 dígitos", `error` from `EAN_MESSAGES`) and `Button type="submit"` "Buscar", disabled while searching.
+  - **Form**: a `<form noValidate onSubmit>` containing `TextField` (`id="ean"`, `label="EAN"`, `type="search"`, `inputMode="numeric"`, `maxLength={20}`, hint "8, 12, 13 o 14 dígitos", `error` from `EAN_MESSAGES`) and `Button type="submit"` "Buscar". The button stays **enabled** while searching, so a new search can start and replace a running one (spec edge case; corrected after analysis finding I1).
   - **Searching**: on submit, `validateEan`; when invalid, show the field error and do not call the API. When valid, abort any previous request through an `AbortController`, clear previous results, show "Buscando…", and call `searchProductsByEan`. Ignore responses from aborted requests.
   - **Results**:
     - `total > 0`: a `Notification variant="warning"` with the found text, then one `Card` per item (title as card title; SKU, EAN and brand as labelled text; a `StatusBadge variant="neutral"` showing "Liverpool" or "Suburbia").
@@ -259,8 +260,8 @@ end-to-end scenarios 1–8 pass ([quickstart.md](./quickstart.md)).
   - **Styling**: only `var(--…)` tokens in the CSS; no product data in the file.
   
   T024 must pass.
-- [ ] T028 [US1] Add `{ path: '/buscar-producto', label: 'Buscar producto', icon: 'search' }` to `NAVIGATION_ENTRIES` in `frontend\src\navigation.ts` (after "Componentes"). Add `getPathFromHash('#/buscar-producto')` → `'/buscar-producto'` to `frontend\src\navigation.test.ts`. Add `case '/buscar-producto': return <ProductSearchPage />` to the switch in `frontend\src\App.tsx`
-- [ ] T029 [US1] In `frontend\`, run `npm run lint`, `npm run format:check`, `npm test` and `npm run build`. All must pass with 0 errors, including feature 001's tests
+- [X] T028 [US1] Add `{ path: '/buscar-producto', label: 'Buscar producto', icon: 'search' }` to `NAVIGATION_ENTRIES` in `frontend\src\navigation.ts` (after "Componentes"). Add `getPathFromHash('#/buscar-producto')` → `'/buscar-producto'` to `frontend\src\navigation.test.ts`. Add `case '/buscar-producto': return <ProductSearchPage />` to the switch in `frontend\src\App.tsx`
+- [X] T029 [US1] In `frontend\`, run `npm run lint`, `npm run format:check`, `npm test` and `npm run build`. All must pass with 0 errors, including feature 001's tests
 
 **Checkpoint (MVP)**: The backend endpoint and the frontend page work end to end for every US1
 scenario.
@@ -269,15 +270,38 @@ scenario.
 
 ## Phase 4: Polish & Validation
 
-- [ ] T030 Run the quickstart API checks A1–A9 against a running backend (`.\gradlew.bat bootRun` in `backend\`; `Invoke-RestMethod` / `Invoke-WebRequest` as in [quickstart.md](./quickstart.md)). Confirm each response matches `contracts\product-search.openapi.yaml`: fields, status codes, `application/problem+json`, error codes. Fix any mismatch in the code, not in the contract, unless the contract is wrong; in that case update the contract and report it
-- [ ] T031 Run the scope checks from the repository root:
+- [X] T030 Run the quickstart API checks A1–A9 against a running backend (`.\gradlew.bat bootRun` in `backend\`; `Invoke-RestMethod` / `Invoke-WebRequest` as in [quickstart.md](./quickstart.md)). Confirm each response matches `contracts\product-search.openapi.yaml`: fields, status codes, `application/problem+json`, error codes. Fix any mismatch in the code, not in the contract, unless the contract is wrong; in that case update the contract and report it
+- [X] T031 Run the scope checks from the repository root:
   - `git diff --stat (Get-Content "$env:TEMP\pim-002-baseline.txt") -- .specify/memory/constitution.md` prints nothing;
   - `Select-String -Path backend\build.gradle -Pattern 'jpa|hibernate|mongo|flyway|liquibase|postgres|mysql|h2'` prints nothing;
   - `Get-ChildItem frontend\src -Recurse -Include *.ts,*.tsx -Exclude *.test.* | Select-String -Pattern '7501234567890|7502000000017|MARCA DEMO'` prints nothing (no product data in the frontend);
   - in `frontend\`, `npm ls --depth=0` shows no new dependency;
   - `git diff -w (Get-Content "$env:TEMP\pim-002-baseline.txt") -- backend/src/main/java/com/pim/backend/HelloController.java` shows no behaviour change.
-- [ ] T032 Run the quickstart end-to-end browser scenarios 1–11 with backend and frontend running. Scenarios that need a browser are confirmed by the project owner; report them as pending until confirmed
-- [ ] T033 Report the results directly in the implementation summary: pass or fail for each automated check (Gradle build, npm lint, format, test and build), each API check (A1–A9), each scope check and each end-to-end scenario, with error output for any failure
+- [X] T032 Run the quickstart end-to-end browser scenarios 1–11 with backend and frontend running. Scenarios that need a browser are confirmed by the project owner; report them as pending until confirmed
+- [X] T033 Report the results directly in the implementation summary: pass or fail for each automated check (Gradle build, npm lint, format, test and build), each API check (A1–A9), each scope check and each end-to-end scenario, with error output for any failure
+
+---
+
+## Phase 5: Analysis remediation (findings C1, I1, I2)
+
+**Purpose**: Resolve the `/speckit-analyze` findings selected by the user. Order follows the
+constitution: documents, then tests, then code.
+
+- [X] T034 Update the documents (no code):
+  - `research.md` R-08: remove `HelloController`'s hard-coded `@CrossOrigin` (C1);
+  - `plan.md` source tree: `HelloController.java` marked [update] (C1);
+  - `tasks.md` ground rules: point to T035 (C1); T027: the button stays enabled while searching (I1);
+  - `data-model.md` view state `searching`: button stays enabled (I1); Problem fields: `type` omitted when `about:blank` (I2);
+  - `research.md` R-07: the same `type` note (I2).
+- [X] T035 Write `backend\src\test\java\com\pim\backend\HelloControllerIntegrationTest.java` (`@SpringBootTest` + MockMvc). It checks two things:
+  - `GET /api/v1/hello` still returns 200 with "Hello from PIM Backend!";
+  - an `OPTIONS /api/v1/hello` preflight with `Origin: http://localhost:5173` still returns `Access-Control-Allow-Origin: http://localhost:5173`.
+  
+  This test guards behaviour, so it passes before and after the change. Then remove `@CrossOrigin(origins = "http://localhost:5173")` and its import from `backend\src\main\java\com\pim\backend\HelloController.java`, and confirm the test still passes: the origin now comes only from `pim.cors.allowed-origins` (constitution VIII).
+- [X] T036 Verify:
+  - `.\gradlew.bat build` passes (all tests, format check, warnings as errors);
+  - `git grep -n "localhost:5173" -- backend/src/main/java` prints nothing (no origin in Java code);
+  - no frontend file changed.
 
 **After implementation (not a task)**: the SC-006 walkthrough (at least 4 of 5 users tell
 correctly whether the product exists), then `/speckit-analyze`.

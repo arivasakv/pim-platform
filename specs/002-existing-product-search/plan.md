@@ -153,7 +153,7 @@ backend/
     │   ├── resources/application.yaml        [update] + spring.mvc.problemdetails.enabled, pim.cors.allowed-origins
     │   └── java/com/pim/backend/
     │       ├── BackendApplication.java       [keep] (reformatted only, D-2)
-    │       ├── HelloController.java          [keep] (reformatted only, D-2)
+    │       ├── HelloController.java          [update] reformatted (D-2); hard-coded @CrossOrigin removed (R-08, finding C1)
     │       ├── product/                      [new] domain module
     │       │   ├── Business.java             enum LIVERPOOL, SUBURBIA, MARKETPLACE
     │       │   ├── Product.java              record

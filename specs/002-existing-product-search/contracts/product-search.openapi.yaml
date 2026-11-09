@@ -58,7 +58,6 @@ paths:
               examples:
                 invalidLength:
                   value:
-                    type: about:blank
                     title: EAN no válido
                     status: 400
                     detail: La solicitud tiene datos no válidos.
@@ -67,7 +66,6 @@ paths:
                       - { field: ean, code: INVALID_LENGTH, message: 'El EAN debe tener 8, 12, 13 o 14 dígitos.' }
                 invalidCharacters:
                   value:
-                    type: about:blank
                     title: EAN no válido
                     status: 400
                     detail: La solicitud tiene datos no válidos.
@@ -76,7 +74,6 @@ paths:
                       - { field: ean, code: INVALID_CHARACTERS, message: 'El EAN solo puede contener números.' }
                 required:
                   value:
-                    type: about:blank
                     title: EAN no válido
                     status: 400
                     detail: La solicitud tiene datos no válidos.
@@ -110,9 +107,11 @@ components:
     Problem:
       type: object
       description: RFC 9457 Problem Details, used by every API error.
-      required: [type, title, status]
+      required: [title, status]
       properties:
-        type: { type: string }
+        type:
+          type: string
+          description: Problem type URI. Omitted when it is "about:blank" (RFC 9457 §3.1.1), which is the case for every problem in this API today.
         title: { type: string }
         status: { type: integer }
         detail: { type: string }

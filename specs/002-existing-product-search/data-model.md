@@ -63,7 +63,7 @@ Details and examples: [contracts/product-search.openapi.yaml](./contracts/produc
   `"SUBURBIA"`).
 - **ProductCollection**: `items` (ProductSummary[]) and `total` (integer, equals `items.length` in
   this feature). This is the project-wide collection envelope (R-07).
-- **Problem** (RFC 9457): `type`, `title`, `status`, `detail`, `instance`, `errors[]` with
+- **Problem** (RFC 9457): `type` (omitted when it is `about:blank`, RFC 9457 §3.1.1), `title`, `status`, `detail`, `instance`, `errors[]` with
   `{ field, code, message }`; codes as in the Ean rules above.
 
 ## Frontend view state (ProductSearchPage)
@@ -72,7 +72,7 @@ Details and examples: [contracts/product-search.openapi.yaml](./contracts/produc
 |---|---|---|
 | `idle` | Field and button only | Page opened |
 | `invalid` | TextField error message (code → Spanish text) | Frontend check fails; no request sent |
-| `searching` | Button disabled, status "Buscando…" | Valid EAN submitted |
+| `searching` | Status "Buscando…"; the button stays enabled so a new search can replace this one | Valid EAN submitted |
 | `found` | Warning notification (FR-008) and one card per product | 200 with `total > 0` |
 | `notFound` | Success notification "puedes continuar" (FR-007) | 200 with `total = 0` |
 | `error` | Error notification with "Reintentar" (FR-011) | Network failure, non-200 other than 400, or no base URL configured |
