@@ -35,3 +35,13 @@ When analyzing a feature, report for each business rule:
 - differences from the new requirements.
 
 List contradictions and missing information as open questions. Do not resolve them by assumption.
+
+## Backend package conventions
+
+When planning or implementing backend work, follow the constitution (Principle XII) and the
+existing package conventions under `com.pim.backend`: one package per business domain with
+`controller`, `service`, `repository`, `model`, `dto` and optional `config` subpackages;
+cross-cutting code only in `com.pim.backend.config` and `com.pim.backend.common`. Never add
+classes to the root package. Check existing domains before creating a package. If code you need
+to change does not follow the structure yet, plan its move as a separate task instead of
+moving it unasked.

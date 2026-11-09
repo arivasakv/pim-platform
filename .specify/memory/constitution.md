@@ -1,33 +1,46 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.1.0 → 2.0.0
-Bump rationale: MAJOR. Principle IV is redefined (hardcoded domain list replaced by a general
-business-scope rule governed by Principle XI). Also materially expands Principle XI to govern the
-read-only reference repository (p360-discovery-rag).
+Version change: 2.0.0 → 2.1.0
+Bump rationale: MINOR. Adds Principle XII (backend package structure) and materially expands the
+architecture guidance. No principle is removed or redefined: Principle III's domain-first rule is
+kept and XII defines the layers inside each domain. Existing non-conforming code is covered by a
+transition rule, so nothing previously compliant becomes non-compliant in an incompatible way.
+Approved by the project owner on 2026-11-09.
 
 Modified principles:
-  - IV. PIM Business Domains → PIM Business Scope: the hardcoded list of five domains is removed;
-    domains and capabilities are now defined by the authoritative requirements under Principle XI
-  - XI. Source of Truth & Documentation Governance → Source of Truth, Reference Repository &
-    Documentation Governance: adds the reference repository, evidence tiers (source of truth /
-    documented requirements / implementation evidence), a fifth classification category
-    (Observed Existing Behavior), and extends the Inspect, Conflicts, Immutability, Separation and
-    No-retrieval-infrastructure rules to the reference repository (incl. code-copy rule moved
-    from CLAUDE.md)
-Added principles: none
+  - III. Architecture: Separated Apps & Modular Monolith: one bullet added that points to
+    Principle XII for the package layout inside each domain (no rule changed)
+Added principles:
+  - XII. Backend Package Structure: domain-first layout under com.pim.backend; layers
+    controller, service, repository, model, dto and optional config with their responsibilities;
+    dependency direction; only BackendApplication in the root package; cross-cutting packages
+    config and common; tests mirror packages; transition rule for existing code
 Added/changed sections:
-  - Quality Gates & Definition of Done: gate 8 extended (evidence tiers, reference repo untouched)
-  - Governance: documented requirements in the reference repository also define *what*
+  - Quality Gates & Definition of Done: gate 9 added (backend follows Principle XII; touched
+    non-conforming packages moved)
+  - Development Workflow: Constitution Check covers principles I–XII (was I–XI)
 Removed sections: none
 
 Templates requiring updates:
-  - ⚠ .specify/templates/spec-template.md: add a "Sources consulted" section and the
-    5-category classification required by Principle XI (pending, separate change)
+  - ✅ .specify/templates/plan-template.md: no change needed (it does not hard-code the
+    principle list; the Constitution Check reads this file)
+  - ✅ .specify/templates/spec-template.md, tasks-template.md: no change needed
+  - ⚠ .specify/templates/spec-template.md: "Sources consulted" section and 5-category
+    classification of Principle XI still pending (carried over from 2.0.0, separate change)
+Follow-up outside the constitution:
+  - CLAUDE.md: add a short "Backend package conventions" section pointing to Principle XII
+Known non-conforming code (allowed by the XII transition rule until a feature changes it):
+  - com.pim.backend.HelloController (root package)
+  - com.pim.backend.product (flat; no layer subpackages)
+  - com.pim.backend.web (cross-cutting code outside config/common)
 Deferred TODOs: none.
 
-Previous amendment (1.0.0 → 1.1.0): added Principle XI, gate 8, governance precedence rule;
-restored Principle IV; fixed Principles II and VI.
+Previous amendments:
+  - 1.1.0 → 2.0.0: Principle IV redefined (business scope governed by XI); Principle XI expanded
+    to the read-only reference repository; gate 8 extended.
+  - 1.0.0 → 1.1.0: added Principle XI, gate 8, governance precedence rule; restored Principle IV;
+    fixed Principles II and VI.
 -->
 
 # PIM Platform Constitution
@@ -74,6 +87,8 @@ tooling from sprawling.
 - The backend MUST be a single deployable modular monolith. Code MUST be organized by
   business domain (package per domain, e.g. `...template`, `...attribute`, `...lov`), not by
   technical layer at the top level.
+- The package layout inside each domain, and where cross-cutting code lives, is defined in
+  Principle XII.
 - A domain module MUST NOT access another module's internal classes or data stores directly; it
   MUST use that module's public service interface.
 - Controllers MUST only handle HTTP concerns (mapping, request validation, status codes) and
@@ -272,6 +287,62 @@ in which application code and project documentation are created or modified.
 **Rationale**: Specifications are only as trustworthy as their inputs. Traceable, unmodified
 sources with explicit conflicts and gaps keep AI-assisted specs grounded and auditable.
 
+### XII. Backend Package Structure
+
+The backend base package is `com.pim.backend`. Every class belongs to a business-domain package
+(Principle III) or to one of two cross-cutting packages, and inside a domain each class belongs to
+exactly one layer:
+
+```text
+com.pim.backend
+├── BackendApplication            # the only class allowed in the root package
+├── config/                       # cross-cutting Spring configuration (CORS, global beans, properties)
+├── common/                       # cross-cutting non-domain code (global exception handler, shared error DTOs)
+└── <domain>/                     # one package per business domain, named with the spec's terminology
+    ├── controller/
+    ├── service/
+    ├── repository/
+    ├── model/
+    ├── dto/
+    └── config/                   # optional: bean wiring specific to this domain
+```
+
+- **Layer responsibilities**:
+  - `controller`: REST controllers only. They handle HTTP mapping, request validation
+    annotations, status codes, and mapping between `model` and `dto`, and they call their own
+    domain's `service`. They MUST NOT contain business rules or access a `repository` directly
+    (Principle III).
+  - `service`: business rules and use-case orchestration. Services depend on `repository`
+    interfaces and `model` types, and MUST NOT use HTTP or servlet types or `dto` classes. A
+    domain's service is the only entry point for other domains (Principle III).
+  - `repository`: data-access interfaces and their implementations (in memory while Principle IX
+    applies). Repositories return `model` types and MUST NOT contain business rules.
+  - `model`: domain entities, value objects, enums and domain exceptions. Models MUST NOT depend
+    on Spring, HTTP or `dto` types.
+  - `dto`: request and response types of the REST API (Principle VII). DTOs MUST NOT contain
+    business logic or be used outside `controller`; `model` objects are never serialized
+    directly.
+  - `config`: `@Configuration` classes. Cross-cutting configuration goes in
+    `com.pim.backend.config`; wiring specific to one domain goes in `<domain>.config`.
+- **Dependency direction**: `controller → service → repository → model`. `dto` is used only by
+  `controller`, and `model` depends on no other layer. There MUST be no cycles between layers or
+  between domains.
+- **Root package**: only `BackendApplication` may live directly in `com.pim.backend`. New classes
+  MUST NOT be added to the root package or to any package outside this structure.
+- **Cross-cutting packages**: `config` and `common` MUST NOT contain business rules or
+  domain-specific code.
+- **Tests** mirror the package of the class they test.
+- **Existing code**: classes that predate this principle and do not follow it (for example
+  `HelloController` in the root package, the flat `product` package, and the `web` package) may
+  stay where they are until a feature changes them. The first feature that adds code to, or
+  modifies, a non-conforming package MUST first move that package into this structure, in its own
+  task, with existing tests passing unchanged. A plan's Constitution Check records any such
+  package as a known deviation until it is moved.
+
+**Rationale**: A single, predictable layout inside each domain keeps HTTP, business rules and data
+access separate. Reviews and AI-assisted planning then place new code consistently, and storage
+can later be replaced behind repository interfaces without touching business rules.
+
 ## Quality Gates & Definition of Done
 
 A feature MAY be merged only when all of the following are true:
@@ -289,12 +360,15 @@ A feature MAY be merged only when all of the following are true:
    behavior is separated from explicit requirements. No unresolved source conflicts remain. The
    diff makes no unrequested changes to `docs/source-of-truth/` and no changes to the reference
    repository (Principle XI).
+9. Backend code follows the package structure of Principle XII, and any pre-existing
+   non-conforming package that the feature adds to or modifies has been moved into that
+   structure (Principle XII).
 
 ## Development Workflow
 
 - Each feature is developed on its own branch created by `/speckit-specify` and stored under
   `specs/<NNN-feature-name>/`.
-- `plan.md` MUST include a Constitution Check that lists each principle (I–XI) as pass,
+- `plan.md` MUST include a Constitution Check that lists each principle (I–XII) as pass,
   or as a justified deviation.
 - `tasks.md` MUST order tests and contracts so they are defined before or alongside the
   implementation they verify, and MUST map each task to spec requirements.
@@ -329,4 +403,4 @@ A feature MAY be merged only when all of the following are true:
   request review, and every `/speckit-analyze` run. The constitution itself SHOULD be reviewed at
   least once per release milestone for relevance.
 
-**Version**: 2.0.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-06
+**Version**: 2.1.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-09
