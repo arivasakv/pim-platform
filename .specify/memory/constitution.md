@@ -1,42 +1,42 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 2.0.0 → 2.1.0
-Bump rationale: MINOR. Adds Principle XII (backend package structure) and materially expands the
-architecture guidance. No principle is removed or redefined: Principle III's domain-first rule is
-kept and XII defines the layers inside each domain. Existing non-conforming code is covered by a
-transition rule, so nothing previously compliant becomes non-compliant in an incompatible way.
-Approved by the project owner on 2026-11-09.
+Version change: 2.1.0 → 2.2.0
+Bump rationale: MINOR. Lifts a Principle IX restriction (persistence) for one area only: the
+product catalog may be stored in MongoDB through Spring Data MongoDB. The Governance section
+names "lifting a Principle IX restriction such as allowing persistence" as MINOR. Every other
+restriction stays. Approved by the project owner on 2026-11-09.
 
 Modified principles:
-  - III. Architecture: Separated Apps & Modular Monolith: one bullet added that points to
-    Principle XII for the package layout inside each domain (no rule changed)
-Added principles:
-  - XII. Backend Package Structure: domain-first layout under com.pim.backend; layers
-    controller, service, repository, model, dto and optional config with their responsibilities;
-    dependency direction; only BackendApplication in the root package; cross-cutting packages
-    config and common; tests mirror packages; transition rule for existing code
-Added/changed sections:
-  - Quality Gates & Definition of Done: gate 9 added (backend follows Principle XII; touched
-    non-conforming packages moved)
-  - Development Workflow: Constitution Check covers principles I–XII (was I–XI)
+  - IX. Development Scope: the product catalog MAY be stored in MongoDB (Spring Data MongoDB),
+    with sample data loadable for development and testing; externalized connection, credentials
+    out of VCS (VIII). Other data stays in memory. JPA, JDBC, SQL, embedded databases, migration
+    tools and any other database stay forbidden. External integrations and AI features stay
+    forbidden. Each capability still needs its own specification.
+  - XII. Backend Package Structure: repository implementations may be in memory or MongoDB as IX
+    allows; persistence-specific types (Spring Data documents/repositories) stay in `repository`,
+    never in `model`.
+Added sections: none
 Removed sections: none
+Unchanged: Quality Gate 6 (still refers to Principle IX, no wording change needed).
 
 Templates requiring updates:
-  - ✅ .specify/templates/plan-template.md: no change needed (it does not hard-code the
-    principle list; the Constitution Check reads this file)
-  - ✅ .specify/templates/spec-template.md, tasks-template.md: no change needed
+  - ✅ .specify/templates/plan-template.md, spec-template.md, tasks-template.md: no change needed
   - ⚠ .specify/templates/spec-template.md: "Sources consulted" section and 5-category
     classification of Principle XI still pending (carried over from 2.0.0, separate change)
-Follow-up outside the constitution:
-  - CLAUDE.md: add a short "Backend package conventions" section pointing to Principle XII
-Known non-conforming code (allowed by the XII transition rule until a feature changes it):
-  - com.pim.backend.HelloController (root package)
-  - com.pim.backend.product (flat; no layer subpackages)
-  - com.pim.backend.web (cross-cutting code outside config/common)
+Follow-up outside the constitution (to be done through feature 003, MongoDB product catalog):
+  - New specification 003 for MongoDB catalog storage (IX: own specification)
+  - docs/decisions/0002-mongodb-product-catalog.md: new ADR (Principle II)
+  - specs/002-existing-product-search/*: short notes that storage is superseded by feature 003
+  - CLAUDE.md: no change needed
+Known non-conforming code: none. HelloController, the flat `product` package and the `web`
+package were moved into the XII structure by the backend refactor (commit e8fba29). The examples
+in XII's "Existing code" rule are kept as historical illustrations.
 Deferred TODOs: none.
 
 Previous amendments:
+  - 2.0.0 → 2.1.0: added Principle XII (backend package structure), a pointer bullet in III,
+    Quality Gate 9, and Constitution Check I–XII.
   - 1.1.0 → 2.0.0: Principle IV redefined (business scope governed by XI); Principle XI expanded
     to the read-only reference repository; gate 8 extended.
   - 1.0.0 → 1.1.0: added Principle XI, gate 8, governance precedence rule; restored Principle IV;
@@ -179,10 +179,15 @@ while the constitution governs how that scope is implemented.
 
 Until this constitution is amended:
 
-- The backend MUST use in-memory mock data (e.g. seeded repositories behind repository
-  interfaces). Persistence MUST be accessed only through interfaces so it can be replaced later.
-- Database persistence (JPA, JDBC, migrations, embedded or external databases) MUST NOT be
-  introduced.
+- Persistence MUST be accessed only through repository interfaces so it can be replaced later.
+- The **product catalog** MAY be stored in MongoDB, accessed through Spring Data MongoDB. Sample
+  data for development and testing MAY be loaded into it. The connection MUST be configured
+  through externalized properties or environment variables, and credentials MUST stay out of
+  source code and version control (Principle VIII).
+- All other backend data MUST use in-memory mock data (e.g. seeded repositories behind
+  repository interfaces) until a specification and a constitution amendment extend MongoDB to it.
+- JPA, JDBC, SQL databases, embedded databases, schema migration tools, and any database other
+  than MongoDB MUST NOT be introduced.
 - Real external integrations (commerce platforms, ERPs, DAMs, messaging, third-party APIs) MUST
   NOT be implemented; integration points MAY be represented as interfaces only if a spec requires
   them.
@@ -315,8 +320,10 @@ com.pim.backend
   - `service`: business rules and use-case orchestration. Services depend on `repository`
     interfaces and `model` types, and MUST NOT use HTTP or servlet types or `dto` classes. A
     domain's service is the only entry point for other domains (Principle III).
-  - `repository`: data-access interfaces and their implementations (in memory while Principle IX
-    applies). Repositories return `model` types and MUST NOT contain business rules.
+  - `repository`: data-access interfaces and their implementations (in memory, or MongoDB where
+    Principle IX allows it). Repositories return `model` types and MUST NOT contain business
+    rules. Persistence-specific types (e.g. Spring Data documents and repositories) stay in
+    `repository` and MUST NOT appear in `model`.
   - `model`: domain entities, value objects, enums and domain exceptions. Models MUST NOT depend
     on Spring, HTTP or `dto` types.
   - `dto`: request and response types of the REST API (Principle VII). DTOs MUST NOT contain
@@ -403,4 +410,4 @@ A feature MAY be merged only when all of the following are true:
   request review, and every `/speckit-analyze` run. The constitution itself SHOULD be reviewed at
   least once per release milestone for relevance.
 
-**Version**: 2.1.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-09
+**Version**: 2.2.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-09

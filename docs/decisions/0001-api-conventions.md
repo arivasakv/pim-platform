@@ -37,8 +37,11 @@ RFC 9457 is the current version of RFC 7807 and is compatible with it.
   | `instance` | Request path |
   | `errors` | For validation errors: a list of `{ "field", "code", "message" }`. `code` is stable and machine-readable (for example `INVALID_LENGTH`); `message` is Spanish text for the user |
 
-- Errors are produced by **one** `@RestControllerAdvice` (`com.pim.backend.web.ApiExceptionHandler`),
-  using Spring's `ProblemDetail`. Controllers do not build error bodies.
+- Error bodies are built in **one** place, `com.pim.backend.common.ApiProblems` (with
+  `common.ApiFieldError` for `errors[]`), using Spring's `ProblemDetail`. Each domain maps its own
+  exceptions in a `@RestControllerAdvice` scoped to its controllers (for example
+  `com.pim.backend.product.controller.ProductExceptionHandler`), because domain-specific code may
+  not live in `common` (constitution XII). Controllers do not build error bodies.
 - `spring.mvc.problemdetails.enabled: true` makes framework errors (for example, an unknown route or
   an unsupported method) use the same format.
 - Clients rely on `status` and `errors[].code`, never on the wording of `title`, `detail` or
