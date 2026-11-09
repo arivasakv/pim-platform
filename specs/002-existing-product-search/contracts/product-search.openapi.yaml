@@ -1,12 +1,13 @@
 openapi: 3.1.0
 info:
   title: PIM Platform – Existing product search
-  version: 1.0.0
+  version: 1.1.0
   description: >
     Feature 002 (specs/002-existing-product-search). Finds existing Mercaderías products
     (Liverpool and Suburbia) by exact EAN. Marketplace products are never returned (FR-014).
     The search never creates, changes or reserves anything (FR-012).
-    Data comes from an in-memory sample catalog in this phase (constitution IX).
+    Data comes from a sample catalog stored in MongoDB (constitution IX 2.2.0; amendment
+    2026-11-09). Version 1.1.0 adds the 503 response; the 200 and 400 responses are unchanged.
 servers:
   - url: http://localhost:8080
     description: Local development (the frontend reads it from VITE_API_BASE_URL)
@@ -80,6 +81,20 @@ paths:
                     instance: /api/v1/products
                     errors:
                       - { field: ean, code: REQUIRED, message: 'Escribe un EAN.' }
+        '503':
+          description: >
+            The product catalog store cannot be reached (amendment 2026-11-09). No data is
+            returned and nothing falls back to other data; the client may retry (FR-011).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                storeUnavailable:
+                  value:
+                    title: Servicio no disponible
+                    status: 503
+                    detail: No se pudieron consultar los datos en este momento. Inténtalo de nuevo más tarde.
+                    instance: /api/v1/products
 components:
   schemas:
     Business:

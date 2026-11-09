@@ -10,8 +10,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Read-only product catalog held in memory, indexed by EAN (research R-03). It has no write methods, so a
- * search can never change it (spec FR-012).
+ * Test fake: a read-only product catalog held in memory, indexed by EAN, for unit tests that need no
+ * MongoDB (originally the production catalog, research R-03; replaced by {@link MongoProductRepository},
+ * R-17). It is not a Spring bean and lives only in test sources, so it can never serve production
+ * searches.
  */
 public final class InMemoryProductRepository implements ProductRepository {
 

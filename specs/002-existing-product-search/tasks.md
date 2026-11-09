@@ -28,17 +28,21 @@ and frontend work for US1 are separate sub-sections, so they can proceed in para
 
 ## Ground rules for every task
 
-- **No database of any kind**: no JPA, Hibernate, migrations, MongoDB, SQL or embedded database
-  dependency or configuration. No P360, SAP or external catalog (constitution IX, plan
-  "Storage").
+- **MongoDB for the product catalog only** (constitution IX 2.2.0; amended 2026-11-09, Phase 6):
+  accessed through Spring Data MongoDB behind `ProductRepository`. No JPA, Hibernate, migrations,
+  SQL, embedded or other database dependency or configuration. No P360, SAP or external catalog
+  (plan "Storage"). Phases 1–5 were implemented with an in-memory catalog, before this amendment.
 - **The frontend holds no product data and does no matching.** Its EAN check gives instant
   feedback only; the backend's check is authoritative (research R-01).
 - **Do not modify** `.specify/memory/constitution.md`, or `HelloController`'s behaviour. It is
   reformatted in T003, and its hard-coded `@CrossOrigin` is removed in T035 (finding C1); its
   response stays the same.
 - **Java**: Java 21, records for data, constructor injection only, no field injection
-  (constitution V). Package by domain: `com.pim.backend.product`, plus `com.pim.backend.web` for
-  cross-cutting concerns.
+  (constitution V). Packages follow constitution XII: `com.pim.backend.product.{controller,
+  service, repository, model, dto, config}`; cross-cutting code only in `com.pim.backend.config`
+  and `com.pim.backend.common`; nothing new in the root package. Phases 1–5 used the earlier flat
+  `product` and `web` packages (their task paths are kept as history); the backend refactor
+  (commit e8fba29) moved that code into the XII layout.
 - **Frontend**: TypeScript only, feature 001 components and tokens only, Spanish (es-MX) text,
   Prettier style (no semicolons, single quotes).
 - **Spanish texts**, used verbatim by both backend and frontend:
@@ -308,6 +312,28 @@ correctly whether the product exists), then `/speckit-analyze`.
 
 ---
 
+## Phase 6: Amendment 2026-11-09: MongoDB product catalog (decisions D-6 to D-9)
+
+**Purpose**: Store the sample catalog in the local MongoDB instead of backend memory
+(constitution 2.2.0, Principle IX; spec Clarifications 2026-11-09; research R-17 to R-20). Search
+behavior, validation, messages and the 200/400 responses stay the same; a 503 response is added.
+No frontend change. The in-memory repository must not remain a production implementation, and
+nothing may fall back to sample data when MongoDB is unavailable.
+
+- [X] T037 Update the documents first: spec (Clarifications 2026-11-09, TD-001, Out of Scope), plan (Storage, dependencies, Constitution Check II/IX/XII, D-6 to D-9, source tree, Complexity Tracking), research (R-03 superseded; R-16; R-17 to R-20), data-model (stored document and indexes), quickstart (MongoDB prerequisite, A10, A11, scenario 8b), the contract (503 response; description), `docs/decisions/0002-mongodb-product-catalog.md` (new) and `docs/decisions/0001-api-conventions.md` (503).
+- [X] T038 Add `implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'` to `backend\build.gradle` (Boot-managed version). In `backend\src\main\resources\application.yaml` add `spring.mongodb.uri: ${PIM_MONGODB_URI:mongodb://localhost:27017/pim?serverSelectionTimeoutMS=2000}` and `pim.catalog.seed-sample-data: ${PIM_CATALOG_SEED_SAMPLE_DATA:true}`. Create `backend\src\test\resources\config\application.yaml` pointing tests at database `pim-test` (`PIM_TEST_MONGODB_URI` overrides).
+- [X] T039 [P] Write `backend\src\test\java\com\pim\backend\product\repository\MongoProductRepositoryIntegrationTest.java` (`@SpringBootTest`, local MongoDB, database `pim-test`; empties the collection before and after each test): exact EAN only (a similar EAN is not returned); the same EAN in Liverpool and Suburbia returns both; a Marketplace document is returned by the repository (the service filters it); an absent EAN returns an empty list; the unique index rejects the same EAN twice in one business and a repeated SKU (`DuplicateKeyException`); a search does not change the collection.
+- [X] T040 [P] Write `backend\src\test\java\com\pim\backend\product\config\ProductCatalogInitializerIntegrationTest.java`: on an empty collection the initializer creates `ean_business_unique` and `sku_unique` and loads 531 products; running it again inserts nothing; with seeding off it creates the indexes and inserts nothing.
+- [X] T041 [P] Write the unavailable-store tests: `backend\src\test\java\com\pim\backend\product\repository\MongoProductRepositoryUnavailableTest.java` (a repository on an unreachable address throws `DataAccessResourceFailureException` within a few seconds) and `backend\src\test\java\com\pim\backend\product\controller\ProductControllerUnavailableIntegrationTest.java` (`@MockitoBean ProductRepository` throwing that exception; `GET /api/v1/products?ean=7501234567890` returns 503 `application/problem+json`, title "Servicio no disponible", Spanish detail, `instance`, no `errors`).
+- [X] T042 Create in `backend\src\main\java\com\pim\backend\product\repository\`: package-private `ProductDocument` (`@Document("products")`; `id`, `sku`, `ean`, `title`, `brand`, `business`; `from(Product)`, `toProduct()`), package-private `ProductDocumentRepository extends MongoRepository<ProductDocument, String>` with `List<ProductDocument> findByEan(String ean)`, and public `MongoProductRepository implements ProductRepository` (`@Repository`). Update the `ProductRepository` Javadoc.
+- [X] T043 Create `backend\src\main\java\com\pim\backend\product\repository\MongoProductCatalogLoader.java` (`createIndexes()`: unique `ean_business_unique` `{ean:1, business:1}` and unique `sku_unique` `{sku:1}`; `int loadIfEmpty(List<Product>)`) and `backend\src\main\java\com\pim\backend\product\config\ProductCatalogInitializer.java` (`ApplicationRunner`: always creates the indexes; loads `SampleProductCatalog.create()` when `pim.catalog.seed-sample-data` is true). Delete `backend\src\main\java\com\pim\backend\product\config\ProductCatalogConfiguration.java`.
+- [X] T044 Move `InMemoryProductRepository` from main to `backend\src\test\java\com\pim\backend\product\repository\` (test fake for `ProductSearchServiceTest`; that test is unchanged). In `ProductControllerIntegrationTest` load the sample catalog into `pim-test` before each test if it is empty; its assertions stay unchanged.
+- [X] T045 Add `ApiProblems.serviceUnavailable(request)` in `backend\src\main\java\com\pim\backend\common\ApiProblems.java` (503, title "Servicio no disponible", detail "No se pudieron consultar los datos en este momento. Inténtalo de nuevo más tarde.") and `backend\src\main\java\com\pim\backend\common\DataAccessExceptionHandler.java` (`@RestControllerAdvice` for `DataAccessResourceFailureException`; logs a warning).
+- [X] T046 Verify: `.\gradlew.bat test` and `.\gradlew.bat build` pass with the local MongoDB running; quickstart A1–A11 against `bootRun` on the local MongoDB (A10: 503 with MongoDB unreachable); `git status` shows no frontend change.
+- [X] T047 Browser check by the project owner: quickstart end-to-end scenarios 2–5 and 8b on the MongoDB-backed backend.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase dependencies
@@ -319,6 +345,7 @@ correctly whether the product exists), then `/speckit-analyze`.
   - Frontend: T022–T024 (tests) → T025, T026 → T027 → T028 → T029.
   - The backend and frontend tracks are independent until the end-to-end checks.
 - **Polish (4)**: T030 needs T021; T031 and T032 need T021 and T029; T033 is last.
+- **Amendment (6)**: T037 first (documents), then T038; tests T039–T041 [P] before code T042 → T043 → T044 → T045; T046 verifies; T047 is the owner's browser check.
 
 ### Parallel opportunities
 
@@ -360,15 +387,15 @@ the user asks.
   |---|---|
   | FR-001, FR-002 | T024, T027, T028 |
   | FR-003, FR-010 | T009, T012, T014, T019, T020, T022, T024, T025, T027 |
-  | FR-004, FR-014 | T010, T011, T012, T015, T016, T018 |
+  | FR-004, FR-014 | T010, T011, T012, T015, T016, T018, T039, T042, T046, T047 |
   | FR-006 | T012, T019, T024, T027 |
   | FR-007, FR-008 | T024, T027 |
   | FR-009 | T024, T027, T031 |
-  | FR-011 | T023, T024, T026, T027 |
-  | FR-012 | T011, T015 |
+  | FR-011 | T023, T024, T026, T027, T041, T045, T046, T047 |
+  | FR-012 | T011, T015, T039, T042, T043 |
   | FR-013 | T027, T029 |
-  | SC-001, SC-004, SC-006 | T032; after implementation |
-  | SC-002 | T010, T012, T030 |
+  | SC-001, SC-004, SC-006 | T032, T046, T047; after implementation |
+  | SC-002 | T010, T012, T030, T040, T046 |
   | SC-005 | T009, T012, T022, T024 |
   | Constitution V and VII (D-2, D-3, D-4) | T002–T004, T020, T030 |
   | Constitution VIII (R-08) | T005, T006, T012 |

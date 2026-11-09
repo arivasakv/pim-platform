@@ -5,9 +5,19 @@ spring:
     # Framework errors use RFC 9457 Problem Details too (docs/decisions/0001-api-conventions.md).
     problemdetails:
       enabled: true
+  mongodb:
+    # Product catalog store (constitution IX; docs/decisions/0002-mongodb-product-catalog.md).
+    # The default is a local MongoDB without credentials. Set PIM_MONGODB_URI in the environment
+    # for any other address or for credentials; never commit credentials (constitution VIII).
+    # serverSelectionTimeoutMS makes an unreachable store fail in about 2 seconds (503).
+    uri: ${PIM_MONGODB_URI:mongodb://localhost:27017/pim?serverSelectionTimeoutMS=2000}
 
 pim:
   cors:
     # Comma-separated browser origins allowed to call /api/**. Override per environment with the
     # PIM_CORS_ALLOWED_ORIGINS environment variable (constitution VIII).
     allowed-origins: ${PIM_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  catalog:
+    # Load the sample catalog into MongoDB at startup when the products collection is empty.
+    # Restarts never insert duplicates. Override with PIM_CATALOG_SEED_SAMPLE_DATA.
+    seed-sample-data: ${PIM_CATALOG_SEED_SAMPLE_DATA:true}

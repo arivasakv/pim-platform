@@ -44,6 +44,14 @@ approval** change project-wide conventions or tooling. They are listed together 
 
 ## R-02 Backend module and layering
 
+> **Package layout superseded** by constitution Principle XII (2.1.0) and the backend refactor
+> (commit e8fba29): the classes below now live in `product.{controller, service, repository,
+> model, dto, config}`, and the cross-cutting code in `common` (error format and the 503 handler)
+> and `config` (CORS); the EAN error handler is `product.controller.ProductExceptionHandler`.
+> The repository is MongoDB-backed since 2026-11-09 (R-17). See the source tree in plan.md. The
+> layering decision (search rule in the service, HTTP only in the controller) is unchanged. Kept
+> as history.
+
 - **Decision**: A new domain package `com.pim.backend.product` (constitution III: package per
   domain), with:
   - `Product` (record) and `Business` (enum `LIVERPOOL`, `SUBURBIA`, `MARKETPLACE`): domain model;
@@ -65,6 +73,9 @@ approval** change project-wide conventions or tooling. They are listed together 
   now (premature: DUD-32 is open, spec OQ-005).
 
 ## R-03 In-memory catalog and startup initialization
+
+> **Superseded on 2026-11-09 by R-17 to R-19** (catalog stored in MongoDB). Kept as history.
+> `InMemoryProductRepository` now lives in test sources as a fake for `ProductSearchServiceTest`.
 
 - **Decision**:
   - `InMemoryProductRepository` receives the product list in its constructor and builds an
@@ -282,6 +293,85 @@ approval** change project-wide conventions or tooling. They are listed together 
 ## R-16 Unchanged on purpose
 
 - No database, JPA, Hibernate, migrations or MongoDB; no P360, SAP or external catalog
-  (constitution IX, user instruction).
+  (constitution IX, user instruction). *Amended 2026-11-09*: MongoDB now stores the sample catalog
+  (R-17); JPA, Hibernate, migrations, SQL and external catalogs remain excluded.
 - No authentication; the page is open in this phase (spec A-001).
 - The constitution, the hello endpoint's behaviour and feature 001's components stay as they are.
+
+## Amendment 2026-11-09: MongoDB product catalog
+
+Constitution 2.2.0 (Principle IX) allows MongoDB for the product catalog. The project owner
+approved storing feature 002's sample catalog there, with tests against the local MongoDB.
+Inspected 2026-11-09: Spring Boot 4.1.2 manages Spring Data MongoDB 5.1.2 and the Java driver
+5.8.1; the local development server is mongod 9.0.2 on `127.0.0.1:27017`; Docker Desktop is
+installed but its engine is not running.
+
+## R-17 Catalog store and repository (D-6)
+
+- **Decision**:
+  - Add `spring-boot-starter-data-mongodb` (Boot-managed version).
+  - `ProductRepository` (read-only interface) is unchanged. `MongoProductRepository` implements
+    it by delegating to a package-private Spring Data interface
+    `ProductDocumentRepository extends MongoRepository<ProductDocument, String>` with
+    `findByEan(String)`, and maps each `ProductDocument` to the `Product` model.
+  - `ProductDocument` and `ProductDocumentRepository` stay package-private in
+    `product.repository` (constitution XII: no Spring types in `model`).
+  - The repository returns every business for an EAN; `ProductSearchService` still removes
+    Marketplace and orders the results (business rules stay in the service, XII).
+  - `InMemoryProductRepository` moves to test sources; it is no longer a Spring bean and cannot
+    serve production searches. There is no fallback to sample data when MongoDB is down.
+- **Rationale**: the service, controller, DTOs and model stay unchanged, so the API cannot drift.
+  Spring Data derives the query, translates driver errors into Spring's `DataAccessException`
+  hierarchy and is Boot-managed.
+- **Alternatives**: `MongoTemplate` queries only (more code for one equality query); filtering
+  Marketplace in the query (a business rule in the repository, forbidden by XII).
+
+## R-18 Document and indexes (D-7)
+
+- **Decision**: database `pim`, collection `products`, one document per product and business:
+  `{ _id: ObjectId, sku, ean, title, brand, business }`. `ean` holds the normalized digits as a
+  string (keeps leading zeros); `business` holds the enum name (`LIVERPOOL`, `SUBURBIA`,
+  `MARKETPLACE`). Indexes, created by the application at startup:
+  - `ean_business_unique`: `{ ean: 1, business: 1 }`, unique. Serves the EAN lookup and keeps
+    "an EAN at most once per business" (the rule the in-memory index enforced), while the same
+    EAN may exist in Liverpool and Suburbia. There is no global unique index on `ean`.
+  - `sku_unique`: `{ sku: 1 }`, unique (data-model: SKU unique across the catalog).
+- **Rationale**: an equality match on `ean` keeps matching exact (no regex, no prefix). Explicit
+  index creation is visible and testable; `auto-index-creation` is off by default in Spring Data.
+- **Alternatives**: `sku` as `_id` (ties identity to a sample-data rule); a single-field `ean`
+  index (the compound index already serves it and also enforces the per-business rule).
+
+## R-19 Sample data loading (D-8)
+
+- **Decision**: `ProductCatalogInitializer` (`product.config`, an `ApplicationRunner`) calls
+  `MongoProductCatalogLoader` (`product.repository`) at startup: it creates the indexes and, when
+  `pim.catalog.seed-sample-data` is true (default; `PIM_CATALOG_SEED_SAMPLE_DATA`), inserts
+  `SampleProductCatalog` (531 products) **only if the collection is empty**. Restarts therefore
+  never insert duplicates, and the unique indexes reject any that slip through. To reload, drop the
+  `products` collection and restart. If MongoDB is unreachable, startup fails with the driver's
+  error; the application never starts on fallback data.
+- **Rationale**: reuses the existing sample catalog that covers every spec scenario; needs no
+  extra tool (`mongosh`/`mongoimport` are not installed). Writing lives in a separate loader so
+  `ProductRepository` stays read-only (FR-012).
+- **Alternatives**: a JSON file imported with `mongoimport` (extra tool, manual step); upserting on
+  every start (more writes, same result).
+
+## R-20 Configuration, unavailable store and tests (D-9)
+
+- **Decision**:
+  - `spring.mongodb.uri: ${PIM_MONGODB_URI:mongodb://localhost:27017/pim?serverSelectionTimeoutMS=2000}`
+    (`spring.data.mongodb.uri` is the deprecated Boot 4 name). The default has no credentials; a URI
+    with credentials is set only in the environment (constitution VIII).
+  - A short server selection timeout makes an unreachable store fail in about 2 seconds. Spring
+    translates the driver error to `DataAccessResourceFailureException`;
+    `common.DataAccessExceptionHandler` answers **503** Problem Details (title "Servicio no
+    disponible"). The frontend already shows its connection error for any status other than 200
+    and 400 and lets the user retry (FR-011), so no frontend change is needed.
+  - Tests: `src/test/resources/config/application.yaml` points every Spring test at database
+    `pim-test` (`PIM_TEST_MONGODB_URI` overrides it); tests empty and reload it, and never use
+    `pim`. Repository and loader tests use the real local server; the unavailable-store tests use
+    an unreachable address and a mocked repository.
+- **Rationale**: the project owner chose the local MongoDB over Testcontainers because Docker is not
+  running in development (plan, Complexity Tracking).
+- **Alternatives**: Testcontainers (needs Docker); embedded MongoDB (forbidden by IX); a fake
+  repository for API tests (would not test the query or indexes).

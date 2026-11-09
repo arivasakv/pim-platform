@@ -11,6 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.pim.backend.product.config.ProductCatalogInitializer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -22,8 +24,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 /**
- * API integration tests for {@code GET /api/v1/products?ean=}, run against the real in-memory sample
- * catalog. Expectations follow specs/002-existing-product-search/contracts/product-search.openapi.yaml.
+ * API integration tests for {@code GET /api/v1/products?ean=}, run against the sample catalog stored in the
+ * local MongoDB, database {@code pim-test} (src/test/resources/config/application.yaml). Expectations follow specs/002-existing-product-search/contracts/product-search.openapi.yaml.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -33,8 +35,18 @@ class ProductControllerIntegrationTest {
 
     private final MockMvc mockMvc;
 
-    ProductControllerIntegrationTest(@Autowired MockMvc mockMvc) {
+    private final ProductCatalogInitializer catalogInitializer;
+
+    ProductControllerIntegrationTest(
+            @Autowired MockMvc mockMvc, @Autowired ProductCatalogInitializer catalogInitializer) {
         this.mockMvc = mockMvc;
+        this.catalogInitializer = catalogInitializer;
+    }
+
+    /** Other test classes empty the shared test database; reload the sample catalog if it is empty. */
+    @BeforeEach
+    void loadTheSampleCatalog() {
+        catalogInitializer.initialize();
     }
 
     @Test

@@ -1,0 +1,6 @@
+# Overrides src/main/resources/application.yaml for every Spring test (config/ has higher
+# precedence). Tests use their own database, pim-test, which they empty and reload; they never
+# touch the development database pim (docs/decisions/0002-mongodb-product-catalog.md).
+spring:
+  mongodb:
+    uri: ${PIM_TEST_MONGODB_URI:mongodb://localhost:27017/pim-test?serverSelectionTimeoutMS=2000}

@@ -77,7 +77,11 @@ The codes follow constitution VII:
 - 400 for invalid input (including missing or malformed parameters);
 - 404 for a missing resource;
 - 409 for conflicts;
-- 422 for business-rule violations where applicable.
+- 422 for business-rule violations where applicable;
+- 503 when a data store the request needs cannot be reached (added 2026-11-09 with
+  [ADR 0002](0002-mongodb-product-catalog.md)). The body is a Problem with title "Servicio no
+  disponible" and no `errors`, built by `common.ApiProblems` and returned by
+  `common.DataAccessExceptionHandler` for every endpoint.
 
 ## Consequences
 

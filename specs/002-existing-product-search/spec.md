@@ -9,7 +9,9 @@
 **Approved**: 2026-11-08, by the project owner
 
 **Amended**: 2026-11-08, scope reduced to EAN search only; amendment approved by the project
-owner (see Clarifications)
+owner (see Clarifications); 2026-11-09, sample catalog stored in MongoDB instead of backend
+memory (constitution 2.2.0, Principle IX), with no change to search behavior; approved by the
+project owner (see Clarifications)
 
 **Input**: User description: "Add a search for existing products at the start of a manual
 Mercaderías proposal: a text field where the user can search by EAN, title, or image, and a
@@ -41,6 +43,17 @@ scope was reduced to EAN search only (see Clarifications).
   date. Removed: User Story 2 (title search), FR-005, SC-003 and A-005; FR-003, FR-010, SC-005,
   the edge cases and Key Entities were updated. Requested and approved by the project owner on
   2026-11-08 (constitution Principle X: explicit, explained and re-approved spec change).
+
+### Session 2026-11-09
+
+- **Amendment (after approval)**: Q: Where does the backend keep the product catalog? → A: **In
+  MongoDB** (a local instance in development), instead of backend memory. Constitution 2.2.0
+  (Principle IX) allows MongoDB for the product catalog. Search rules, validation, messages and
+  the successful and validation responses are unchanged. One error response is added: when the
+  catalog store cannot be reached, the backend answers 503 and the page shows the FR-011 message.
+  TD-001 and Out of Scope were updated. This amendment is the specification Principle IX requires
+  for the capability (recorded in plan.md, Complexity Tracking). Requested and approved by the
+  project owner on 2026-11-09.
 
 ## Context
 
@@ -180,9 +193,11 @@ From tier 3 evidence; not requirements, for context only.
 
 ### Technical Decisions
 
-- **TD-001**: The products searched are sample products held by the backend in memory, as
-  constitution Principle IX requires for this phase. The sample set covers every scenario in this
-  spec, including the same EAN in Liverpool and Suburbia, and Marketplace products that must be
+- **TD-001**: The products searched are sample products stored in MongoDB and read by the backend
+  (amended 2026-11-09; constitution Principle IX 2.2.0). They are loaded once, when the catalog is
+  empty; the search never writes to it (FR-012). If the store cannot be reached, the search fails
+  with an error (FR-011) and never falls back to other data. The sample set covers every scenario
+  in this spec, including the same EAN in Liverpool and Suburbia, and Marketplace products that must be
   excluded from results (FR-014).
 - **TD-002**: The search is answered by the backend, so the same rules can later serve the
   proposal flow and bulk upload (the sources propose one shared matching service:
@@ -236,7 +251,10 @@ From tier 3 evidence; not requirements, for context only.
 - Image search of any kind (upload, image link, visual similarity) and any AI capability.
 - Brand blacklist.
 - Bulk upload and per-row duplicate search.
-- Real catalog, database or P360/SAP integration (constitution IX).
+- Real catalog data or P360/SAP integration (constitution IX). The MongoDB store holds sample
+  products only.
+- Any database other than MongoDB, and writing to the catalog from the search (constitution IX,
+  FR-012).
 
 ## Future Enhancements
 
