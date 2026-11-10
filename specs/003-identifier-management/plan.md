@@ -24,7 +24,7 @@ repository interfaces (constitution IX); nothing in feature 002 changes.
 **Primary Dependencies**: Spring Boot 4.1.2 (`spring-boot-starter-webmvc`,
 `spring-boot-starter-validation`), already in `backend/build.gradle`. **No new dependency.**
 
-**Storage**: in memory (research R-02): `SystemIdRegistry` and `ObjectTypeConfigurationRepository`
+**Storage**: *Amended 2026-11-09: MongoDB, see ADR 0003 and decision D-1.* Originally in memory (research R-02): `SystemIdRegistry` and `ObjectTypeConfigurationRepository`
 interfaces with in-memory implementations; configurations seeded at startup. Data is lost on
 restart. MongoDB is not used by this feature (constitution IX allows it for the product catalog
 only).
@@ -62,7 +62,7 @@ to `common.ApiProblems`; 6 REST operations on 4 paths (contract v1.0.0).
 | VI | Testing | PASS | Unit, integration, validation (every 400 code), 403/404/405/409 paths, concurrency and volume (R-12) |
 | VII | API design | PASS | `/api/v1`, plural nouns, DTOs, collection envelope, RFC 9457 via `common.ApiProblems`, Bean Validation plus domain rules, 201/200/400/403/404/405/409; OpenAPI in `contracts/` |
 | VIII | Security | PASS (risk recorded) | No secrets. Permissions read from a development header by one class (R-08), never from path or body, so authentication can replace it without contract changes to bodies or paths. Risk: anyone can send the header (see Provisional Decisions) |
-| IX | Development scope | PASS | In-memory data only; no MongoDB for identifiers, no external integration, no AI. Import/export not built (only the rule FR-010 applied by the API) |
+| IX | Development scope | PASS | Amended 2026-11-09: identifier data in MongoDB, allowed by constitution 2.3.0 for attribute administration data (ADR 0003); no external integration, no AI. Import/export not built (only the rule FR-010 applied by the API) |
 | X | AI governance | PASS | Spec changes only through approved clarifications; decisions recorded here |
 | XI | Sources | PASS (merge condition) | Requirements cite §3.1 only. **Quality Gate 8** requires no unresolved source conflicts at merge: CF-001 to CF-003 (OQ-011) and CF-004 (OQ-010) must be resolved or explicitly accepted by the owner before merge |
 | XII | Package structure | PASS | `identifier.{controller, service, repository, model, dto, config}`; `common` gains only a generic Problem builder; nothing in the root package; no non-conforming package touched |
@@ -82,7 +82,7 @@ except D-4 (would add a permission check); any change goes through a spec or pla
 
 | ID | Question | Decision | Research |
 |---|---|---|---|
-| D-1 | Storage | In memory; IDs are lost on restart. Durable storage needs a constitution amendment (IX) and a later feature | R-02 |
+| D-1 | Storage | ~~In memory; IDs are lost on restart.~~ **Superseded 2026-11-09**: MongoDB collections `system_ids` and `object_type_configurations` (constitution 2.3.0, ADR 0003); defaults inserted only for types without a configuration | R-02 |
 | D-2 | Sequence format (OQ-002) | `ALPHANUMERIC` = prefix (1–10 letters) + zero-padded number; `NUMERIC` = zero-padded number; settings `minimumDigits` (1–18) and `nextValue` | R-05 |
 | D-3 | Defaults (OQ-002) | All six `ALPHANUMERIC`, 6 digits, start 1, prefixes PRD, ATR, LOV, PLT, CLS, INT | R-05 |
 | D-4 | Who changes configuration (OQ-002) | Anyone, in this feature (no permission is specified; user/role administration is out of scope) | R-05 |
@@ -177,5 +177,5 @@ No deviation from a MUST rule. Items the reviewer should approve explicitly (not
 | Item | Why | Simpler alternative rejected because |
 |---|---|---|
 | Development permission header (D-7) | FR-003 needs a permission check and the platform has no authentication | Spring Security stub: new dependency and configuration for a placeholder; body field: breaks VIII |
-| Identifier data lost on restart (D-1) | Constitution IX allows MongoDB only for the product catalog | MongoDB registry: needs a constitution amendment first |
+| ~~Identifier data lost on restart (D-1)~~ Resolved 2026-11-09 | Moved to MongoDB (constitution 2.3.0, ADR 0003) | — |
 | Single global lock (D-9) | Global uniqueness spans all types; one backend instance | Per-type atomics cannot check uniqueness across types |

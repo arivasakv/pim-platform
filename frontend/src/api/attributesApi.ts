@@ -87,9 +87,10 @@ export class AttributeApiError extends Error {
 
 /**
  * Development stand-ins for the user's permissions until authentication exists (feature 004,
- * research R-07). Each header is sent only when its setting is not empty.
+ * research R-07). Each header is sent only when its setting is not empty. Also used by the
+ * attribute groups client (feature 005).
  */
-function permissionHeaders(): Record<string, string> {
+export function permissionHeaders(): Record<string, string> {
   const headers: Record<string, string> = {}
   const permissions = import.meta.env.VITE_DEV_PERMISSIONS?.trim()
   const manualIdPermissions = import.meta.env.VITE_DEV_MANUAL_ID_PERMISSIONS?.trim()
@@ -98,7 +99,8 @@ function permissionHeaders(): Record<string, string> {
   return headers
 }
 
-async function readProblem(
+/** The Spanish `detail` and field `errors` of an RFC 9457 problem body; empty when unreadable. */
+export async function readProblem(
   response: Response,
 ): Promise<{ detail?: string; errors: ApiFieldError[] }> {
   try {
@@ -127,6 +129,17 @@ export async function fetchAttributeTypes(): Promise<AttributeType[]> {
   })
   if (!response.ok) throw new AttributeApiError('unavailable')
   const body = (await response.json()) as { items: AttributeType[] }
+  return body.items
+}
+
+/**
+ * Every attribute, sorted by display name (`GET /api/v1/attributes`, contract v1.1.0). Used by
+ * the attribute groups page to offer attributes to add (feature 005, plan decision D-3).
+ */
+export async function listAttributes(): Promise<Attribute[]> {
+  const response = await send('/api/v1/attributes', { headers: { Accept: 'application/json' } })
+  if (!response.ok) throw new AttributeApiError('unavailable')
+  const body = (await response.json()) as { items: Attribute[] }
   return body.items
 }
 

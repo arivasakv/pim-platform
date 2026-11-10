@@ -9,13 +9,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.pim.backend.attribute.repository.ListOfValuesCatalog;
+import com.pim.backend.common.AttributeAdministrationTestData;
+import com.pim.backend.identifier.config.DefaultObjectTypeConfigurations;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -26,8 +28,19 @@ import org.springframework.test.web.servlet.ResultActions;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class AttributeListOfValuesIntegrationTest {
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
+    @Autowired
+    private DefaultObjectTypeConfigurations defaultConfigurations;
+
+    /** Data is stored in MongoDB and outlives the Spring context, so each test starts from a fresh install. */
+    @BeforeEach
+    void startFromAFreshInstall() {
+        AttributeAdministrationTestData.reset(mongoTemplate, defaultConfigurations);
+    }
 
     private final MockMvc mockMvc;
 

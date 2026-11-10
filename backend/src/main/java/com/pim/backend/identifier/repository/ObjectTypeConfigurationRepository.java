@@ -17,6 +17,9 @@ public interface ObjectTypeConfigurationRepository {
      */
     ObjectTypeConfiguration find(ObjectType objectType);
 
+    /** Whether the type has a stored configuration (defaults are only seeded for types without one). */
+    boolean contains(ObjectType objectType);
+
     /** Saves a configuration, replacing the type's previous one. */
     void save(ObjectTypeConfiguration configuration);
 }

@@ -9,6 +9,10 @@
 **Approved**: 2026-11-09, by the project owner, together with the plan's decisions D-1 to D-12
 (plan.md); FR-006 amended the same day (decision D-4, option A; see Clarifications)
 
+**Amended**: 2026-11-09, storage moved from memory to MongoDB (constitution 2.3.0, Principle IX;
+ADR 0003), requested and approved by the project owner while planning feature 005; attribute definitions are persisted; no
+change to behaviour, rules, API or messages (see Clarifications)
+
 **Input**: User request of 2026-11-09 (referred to below as *the feature request*): create a new,
 independent feature that lets an authorized user create product attribute definitions: define an
 attribute, select its data type, configure its applicable properties and save it. Requirements
@@ -43,6 +47,13 @@ identifier mechanism.
 ## Clarifications
 
 ### Session 2026-11-09
+
+- **Amendment (after approval)**: Q: Where are attribute definitions kept? → A: **In MongoDB**
+  (collection `attributes`, unique index on the display name ignoring case), instead of memory, so they
+  survive restarts together with their system IDs (feature 003) and attribute groups (feature 005).
+  Constitution 2.3.0 allows it; ADR 0003 records the design. Decision D-1 is superseded and DEP-07 is
+  resolved; every rule, response and message stays the same. Requested and approved by the project
+  owner on 2026-11-09 (constitution X).
 
 - Q: Which fields must a user fill in to create an attribute, besides the system ID that feature 003
   assigns? → A: **Display name and data type are required; a description is optional** (OQ-001,
@@ -405,7 +416,7 @@ Reported per constitution XI; not used as requirements and not resolved by assum
 | DEP-04 | **Attribute group administration** (future feature) | Not available | Not needed by this feature: group links are deferred to it (FR-017); it must cover linking attributes created here |
 | DEP-05 | **Template administration** and template hierarchy (future features) | Not available | Not needed by this feature: local scope and inheritance are deferred to them (FR-018, FR-020) |
 | DEP-06 | **Target objects for references** (products exist in feature 002; others do not) | Partial | A reference attribute only names its target object type (D-11); the referenced objects are needed later, when values are captured |
-| DEP-07 | **Storage of attribute definitions** | Constitution IX allows MongoDB for the product catalog only | Attribute definitions are not product-catalog data: the plan must use in-memory storage or first propose a constitution amendment |
+| DEP-07 | **Storage of attribute definitions** | Resolved 2026-11-09 | MongoDB, allowed by constitution 2.3.0 for attribute administration data (ADR 0003) |
 | DEP-08 | **Attribute editing** (future feature) | Not available | Needed for type changes (CF-002); the point at which the attribute key field may be declared in feature 003 (FR-006) |
 
 ### Key Entities

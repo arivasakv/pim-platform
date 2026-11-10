@@ -19,6 +19,7 @@ import com.pim.backend.identifier.model.ManualIdPermissions;
 import com.pim.backend.identifier.model.ObjectType;
 import com.pim.backend.identifier.service.IdentifierService;
 import java.time.Clock;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
@@ -103,6 +104,13 @@ public class AttributeService {
     public Attribute find(String systemId) {
         synchronized (lock) {
             return attributes.findBySystemId(systemId).orElseThrow(() -> new AttributeNotFoundException(systemId));
+        }
+    }
+
+    /** Every attribute, sorted by display name ignoring letter case (feature 005 plan decision D-3). */
+    public List<Attribute> findAll() {
+        synchronized (lock) {
+            return attributes.findAll();
         }
     }
 

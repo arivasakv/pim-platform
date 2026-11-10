@@ -1,13 +1,14 @@
 openapi: 3.1.0
 info:
   title: PIM Platform – Attribute creation
-  version: 1.0.0
+  version: 1.1.0
   description: >
     Feature 004 (specs/004-attribute-creation). Creates attribute definitions, one at a time, with a
     data type and type-specific properties (ERF 1.1 §3.2, §3.2.1). Every attribute is global and has
     no groups in this feature (FR-017, FR-018). System IDs come from feature 003 (FR-004); its error
-    codes and Spanish messages are passed through unchanged (FR-005). Data is held in memory and is
-    lost on restart (research R-02). Unknown fields in request bodies are ignored, as in the rest of
+    codes and Spanish messages are passed through unchanged (FR-005). Data is stored in MongoDB and
+    survives restarts (ADR 0003, amendment of 2026-11-09). v1.1.0 adds the attribute list
+    (GET /api/v1/attributes, feature 005 plan decision D-3). Unknown fields in request bodies are ignored, as in the rest of
     the API. Messages are in Spanish.
 servers:
   - url: http://localhost:8080
@@ -17,6 +18,17 @@ tags:
   - name: attribute-types
 paths:
   /api/v1/attributes:
+    get:
+      operationId: listAttributes
+      summary: Every attribute, sorted by display name ignoring letter case (v1.1.0)
+      description: Added for the attribute groups page (feature 005, plan decision D-3). Needs no permission.
+      tags: [attributes]
+      responses:
+        '200':
+          description: The attributes; an empty list when none exist.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttributeCollection' }
     post:
       operationId: createAttribute
       summary: Create one attribute definition
@@ -269,6 +281,15 @@ components:
           additionalProperties:
             type: array
             items: { $ref: '#/components/schemas/Option' }
+    AttributeCollection:
+      type: object
+      description: Project-wide collection envelope (docs/decisions/0001-api-conventions.md).
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Attribute' }
+        total: { type: integer }
     AttributeTypeCollection:
       type: object
       description: Project-wide collection envelope (docs/decisions/0001-api-conventions.md).

@@ -30,6 +30,12 @@ describe('getPathFromHash for the attribute creation page (feature 004)', () => 
   })
 })
 
+describe('getPathFromHash for the attribute groups page (feature 005)', () => {
+  it('returns the attribute groups path for "#/grupos-de-atributos"', () => {
+    expect(getPathFromHash('#/grupos-de-atributos')).toBe('/grupos-de-atributos')
+  })
+})
+
 describe('useCurrentPath', () => {
   afterEach(() => {
     window.location.hash = ''

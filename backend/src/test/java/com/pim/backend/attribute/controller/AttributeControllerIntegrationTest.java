@@ -9,29 +9,43 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.pim.backend.common.AttributeAdministrationTestData;
+import com.pim.backend.identifier.config.DefaultObjectTypeConfigurations;
 import com.pim.backend.identifier.model.ObjectType;
 import com.pim.backend.identifier.model.ObjectTypeConfiguration;
 import com.pim.backend.identifier.model.SequenceConfiguration;
 import com.pim.backend.identifier.service.IdentifierService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.ResultMatcher;
 
 /**
  * API integration tests for {@code /api/v1/attributes}, following
- * specs/004-attribute-creation/contracts/attributes.openapi.yaml. Attributes and system IDs are in memory, so each
- * test starts a fresh context.
+ * specs/004-attribute-creation/contracts/attributes.openapi.yaml. Attributes and system IDs are in MongoDB (ADR 0003);
+ * each test starts from emptied collections.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class AttributeControllerIntegrationTest {
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
+    @Autowired
+    private DefaultObjectTypeConfigurations defaultConfigurations;
+
+    /** Data is stored in MongoDB and outlives the Spring context, so each test starts from a fresh install. */
+    @BeforeEach
+    void startFromAFreshInstall() {
+        AttributeAdministrationTestData.reset(mongoTemplate, defaultConfigurations);
+    }
 
     static final String ATTRIBUTES = "/api/v1/attributes";
     static final String CAN_CREATE = "ATTRIBUTE_CREATE";

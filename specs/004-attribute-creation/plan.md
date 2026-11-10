@@ -24,7 +24,7 @@ reads the data types and options from `GET /api/v1/attribute-types` and posts to
 **Primary Dependencies**: existing only — Spring Boot 4.1.2 web MVC and validation; React, Vitest,
 Testing Library. **No new dependency** in `backend/build.gradle` or `frontend/package.json`.
 
-**Storage**: in memory (research R-02) behind `AttributeRepository`; feature 003's registry (also in
+**Storage**: *Amended 2026-11-09: MongoDB, see ADR 0003 and decision D-1.* Originally in memory (research R-02) behind `AttributeRepository`; feature 003's registry (also in
 memory) holds the system IDs. Lost on restart.
 
 **Testing**: JUnit 5 + AssertJ + MockMvc (backend); Vitest + Testing Library with mocked `fetch`
@@ -60,7 +60,7 @@ with one shared stylesheet, 1 navigation entry; 3 REST operations (contract v1.0
 | VI | Testing | PASS | Unit, integration (every endpoint and error status), every validation rule tested with status and body; frontend success, validation, 403/409/422 and connection-error tests |
 | VII | API design | PASS | `/api/v1`, plural nouns, DTOs, collection envelope, RFC 9457 via `common.ApiProblems`, 201/200/400/403/404/409/422; OpenAPI in `contracts/` |
 | VIII | Security | PASS (risk recorded) | No secrets. Permissions from development headers (D-2, D-3), read in one class per side, never in paths or bodies; anyone can send them (same risk as feature 003 D-7) |
-| IX | Development scope | PASS | In memory only; no MongoDB for attributes; no integration; no AI |
+| IX | Development scope | PASS | Amended 2026-11-09: attributes in MongoDB, allowed by constitution 2.3.0 (ADR 0003); no integration; no AI |
 | X | AI governance | PASS | Spec changes only through approved clarifications; decisions recorded here |
 | XI | Sources | PASS (merge condition) | Requirements cite §3.2 and §3.2.1. CF-001 to CF-003 must be resolved or accepted before merge (Quality Gate 8). D-6 settles CF-003 provisionally |
 | XII | Package structure | PASS | `attribute.{controller, service, repository, model, dto, config}`; `config.CorsConfiguration` gains `POST` (cross-cutting, no business rule); nothing in the root package |
@@ -77,7 +77,7 @@ Approved by the project owner on 2026-11-09. Any change goes through a spec or p
 
 | ID | Question | Decision | Research |
 |---|---|---|---|
-| D-1 | Storage | In memory; lost on restart (constitution IX). MongoDB needs an amendment covering attributes and feature 003's registry together | R-02 |
+| D-1 | Storage | ~~In memory; lost on restart.~~ **Superseded 2026-11-09**: MongoDB collection `attributes` with a unique display-name index (constitution 2.3.0, ADR 0003) | R-02 |
 | D-2 | Permissions (OQ-004a) | One code `ATTRIBUTE_CREATE` covers FR-002 and FR-019 while all attributes are global; header `X-Pim-Permissions`; manual IDs keep feature 003's header and code `ATTRIBUTE` | R-06 |
 | D-3 | Frontend permissions | `VITE_DEV_PERMISSIONS` / `VITE_DEV_MANUAL_ID_PERMISSIONS` in `frontend/.env` (documented in `.env.example`), sent as headers | R-07 |
 | D-4 | FR-006 key field vs. feature 003 tests | **Option A**: FR-006 amended; no key field declared in feature 003 now; the display name is sent as a key-field value only if feature 003 declares it (today it does not, so none is sent); behaviour unchanged thanks to D-5 | R-04 |
@@ -177,5 +177,5 @@ No deviation from a MUST rule. Items for explicit reviewer approval:
 | Item | Why | Simpler alternative rejected because |
 |---|---|---|
 | Development permission headers, set from Vite env (D-2, D-3) | FR-002/FR-019 need permissions; no authentication exists | Backend "dev user" with all permissions: 403 path untestable from the UI, silently grants everything |
-| Attributes lost on restart (D-1) | Constitution IX | MongoDB needs an amendment, and feature 003's registry would have to follow |
+| ~~Attributes lost on restart (D-1)~~ Resolved 2026-11-09 | Moved to MongoDB with feature 003's registry (constitution 2.3.0, ADR 0003) | — |
 | Three new design-system components | The form needs select, checkbox and text area inputs | Native unstyled inputs would break the look and feel of feature 001 |

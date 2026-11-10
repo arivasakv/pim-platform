@@ -1,41 +1,47 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 2.1.0 → 2.2.0
-Bump rationale: MINOR. Lifts a Principle IX restriction (persistence) for one area only: the
-product catalog may be stored in MongoDB through Spring Data MongoDB. The Governance section
-names "lifting a Principle IX restriction such as allowing persistence" as MINOR. Every other
-restriction stays. Approved by the project owner on 2026-11-09.
+Version change: 2.2.0 → 2.3.0
+Bump rationale: MINOR. Extends the Principle IX persistence permission to one more area: attribute
+administration data (attribute definitions, attribute groups and their memberships, and the system
+identifier registry with its per-object-type sequence configuration) MAY be stored in MongoDB
+through Spring Data MongoDB. The Governance section names "lifting a Principle IX restriction such
+as allowing persistence" as MINOR. Every other restriction stays. Approved by the project owner on
+2026-11-09.
+Reason: attribute groups (feature 005) must survive restarts, and they hold attribute system IDs.
+Groups, attributes (feature 004) and the identifier registry (feature 003) must therefore be stored
+together, or a restart would reuse IDs and attach new attributes to old groups.
 
 Modified principles:
-  - IX. Development Scope: the product catalog MAY be stored in MongoDB (Spring Data MongoDB),
-    with sample data loadable for development and testing; externalized connection, credentials
-    out of VCS (VIII). Other data stays in memory. JPA, JDBC, SQL, embedded databases, migration
-    tools and any other database stay forbidden. External integrations and AI features stay
-    forbidden. Each capability still needs its own specification.
-  - XII. Backend Package Structure: repository implementations may be in memory or MongoDB as IX
-    allows; persistence-specific types (Spring Data documents/repositories) stay in `repository`,
-    never in `model`.
+  - IX. Development Scope: new bullet allowing MongoDB for attribute administration data, with the
+    same conditions as the product catalog (Spring Data MongoDB, repository interfaces, externalized
+    connection, credentials out of VCS per VIII). Other data stays in memory. JPA, JDBC, SQL,
+    embedded databases, migration tools, any other database, external integrations and AI features
+    stay forbidden. Each capability still needs its own specification.
+Unchanged: XII (already allows MongoDB repositories where IX allows them; persistence types stay in
+`repository`), Quality Gate 6 (refers to IX), all other principles and sections.
 Added sections: none
 Removed sections: none
-Unchanged: Quality Gate 6 (still refers to Principle IX, no wording change needed).
 
 Templates requiring updates:
   - ✅ .specify/templates/plan-template.md, spec-template.md, tasks-template.md: no change needed
   - ⚠ .specify/templates/spec-template.md: "Sources consulted" section and 5-category
     classification of Principle XI still pending (carried over from 2.0.0, separate change)
-Follow-up outside the constitution (done 2026-11-09 as an amendment of feature 002, not a new
-feature; the IX "own specification" point is recorded in its plan's Complexity Tracking):
-  - ✅ specs/002-existing-product-search/*: spec, plan, research, data model, quickstart, tasks
-    (Phase 6) and contract (v1.1.0) updated for MongoDB catalog storage
-  - ✅ docs/decisions/0002-mongodb-product-catalog.md: new ADR (Principle II)
+Follow-up outside the constitution (to be done as amendments within feature 005's workflow; the IX
+"own specification" point is covered by feature 005's specification and amendments of 003 and 004):
+  - ⚠ specs/003-identifier-management/*: spec and plan amendment (storage of the registry and
+    sequence configuration moves from memory to MongoDB; decision D-1 superseded; behaviour
+    unchanged)
+  - ⚠ specs/004-attribute-creation/*: spec and plan amendment (attribute storage moves from memory
+    to MongoDB; decision D-1 superseded; behaviour unchanged)
+  - ⚠ specs/005-attribute-groups/plan.md: decision D-1 becomes MongoDB
+  - ⚠ docs/decisions/0003-mongodb-attribute-administration.md: new ADR (Principle II)
   - ✅ CLAUDE.md: no change needed
-Known non-conforming code: none. HelloController, the flat `product` package and the `web`
-package were moved into the XII structure by the backend refactor (commit e8fba29). The examples
-in XII's "Existing code" rule are kept as historical illustrations.
 Deferred TODOs: none.
 
 Previous amendments:
+  - 2.1.0 → 2.2.0: Principle IX allowed MongoDB for the product catalog (feature 002 amendment,
+    ADR 0002); Principle XII repository wording for MongoDB.
   - 2.0.0 → 2.1.0: added Principle XII (backend package structure), a pointer bullet in III,
     Quality Gate 9, and Constitution Check I–XII.
   - 1.1.0 → 2.0.0: Principle IV redefined (business scope governed by XI); Principle XI expanded
@@ -185,6 +191,10 @@ Until this constitution is amended:
   data for development and testing MAY be loaded into it. The connection MUST be configured
   through externalized properties or environment variables, and credentials MUST stay out of
   source code and version control (Principle VIII).
+- **Attribute administration data** MAY also be stored in MongoDB, under the same conditions:
+  attribute definitions, attribute groups and their memberships, and the system identifier
+  registry with its per-object-type sequence configuration. These are stored together because
+  groups reference attribute system IDs.
 - All other backend data MUST use in-memory mock data (e.g. seeded repositories behind
   repository interfaces) until a specification and a constitution amendment extend MongoDB to it.
 - JPA, JDBC, SQL databases, embedded databases, schema migration tools, and any database other
@@ -411,4 +421,4 @@ A feature MAY be merged only when all of the following are true:
   request review, and every `/speckit-analyze` run. The constitution itself SHOULD be reviewed at
   least once per release milestone for relevance.
 
-**Version**: 2.2.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-09
+**Version**: 2.3.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-09

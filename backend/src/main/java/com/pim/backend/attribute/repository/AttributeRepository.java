@@ -2,6 +2,7 @@ package com.pim.backend.attribute.repository;
 
 import com.pim.backend.attribute.model.Attribute;
 import com.pim.backend.attribute.model.DisplayName;
+import java.util.List;
 import java.util.Optional;
 
 /** Stores attribute definitions. Holds no business rules (constitution XII); the service checks before saving. */
@@ -19,6 +20,9 @@ public interface AttributeRepository {
      * @throws IllegalStateException if its system ID or display name is already stored
      */
     void save(Attribute attribute);
+
+    /** Every attribute, sorted by display name ignoring letter case (feature 005 plan decision D-3). */
+    List<Attribute> findAll();
 
     int count();
 }

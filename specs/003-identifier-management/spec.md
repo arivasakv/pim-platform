@@ -9,6 +9,11 @@
 **Approved**: 2026-11-09, by the project owner, together with the plan's provisional decisions
 D-1 to D-10 (plan.md)
 
+**Amended**: 2026-11-09, storage moved from memory to MongoDB (constitution 2.3.0, Principle IX;
+ADR 0003), requested and approved by the project owner while planning feature 005; registered system IDs and object-type configurations
+are persisted; no
+change to behaviour, rules, API or messages (see Clarifications)
+
 **Input**: User request of 2026-11-09 (referred to below as *the feature request*): create a
 feature for system identifier management, using only section **3.1 Administración de
 Identificadores** of `ERF 1.1 Plantillas.docx` as the business-requirements source. Scope: unique
@@ -43,6 +48,13 @@ features will apply these rules when they create objects.
 ## Clarifications
 
 ### Session 2026-11-09
+
+- **Amendment (after approval)**: Q: Where are registered system IDs and object-type configurations
+  kept? → A: **In MongoDB** (collections `system_ids` and `object_type_configurations`), instead of
+  memory, so they survive restarts together with attributes (feature 004) and attribute groups
+  (feature 005). Constitution 2.3.0 allows it; ADR 0003 records the design. Decision D-1 is superseded;
+  every rule, response and message stays the same. A changed configuration and an advanced sequence
+  are kept across restarts. Requested and approved by the project owner on 2026-11-09 (constitution X).
 
 - Q: Must a system ID be unique across all six object types together, or only within each object
   type? → A: **Globally, across all six object types together** (OQ-001, Option A). A product and

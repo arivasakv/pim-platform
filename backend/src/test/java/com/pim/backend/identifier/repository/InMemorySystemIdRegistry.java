@@ -5,13 +5,12 @@ import com.pim.backend.identifier.model.SystemIdRegistration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import org.springframework.stereotype.Repository;
 
 /**
- * In-memory {@link SystemIdRegistry} (constitution IX; plan decision D-1): registrations are lost when the backend
- * stops. Not thread-safe by itself: {@code IdentifierService} calls it under one lock (research R-10).
+ * Test fake of {@link SystemIdRegistry}, kept in memory for unit tests. Production code stores registrations in
+ * MongoDB ({@link MongoSystemIdRegistry}, ADR 0003). Not thread-safe by itself: {@code IdentifierService} calls it
+ * under one lock (research R-10).
  */
-@Repository
 public class InMemorySystemIdRegistry implements SystemIdRegistry {
 
     private final Map<SystemId, SystemIdRegistration> registrations = new HashMap<>();

@@ -1,5 +1,6 @@
 package com.pim.backend.attribute.controller;
 
+import com.pim.backend.attribute.dto.AttributeCollectionResponse;
 import com.pim.backend.attribute.dto.AttributeCreationRequest;
 import com.pim.backend.attribute.dto.AttributeResponse;
 import com.pim.backend.attribute.model.Attribute;
@@ -55,6 +56,13 @@ public class AttributeController {
                 permissionsReader.manualIdPermissions(httpRequest));
         return ResponseEntity.created(URI.create(BASE_PATH + "/" + attribute.systemId()))
                 .body(AttributeResponse.from(attribute));
+    }
+
+    /** Every attribute, sorted by display name ignoring letter case (feature 005 plan decision D-3). */
+    @GetMapping
+    AttributeCollectionResponse findAll() {
+        return AttributeCollectionResponse.of(
+                attributeService.findAll().stream().map(AttributeResponse::from).toList());
     }
 
     @GetMapping("/{systemId}")

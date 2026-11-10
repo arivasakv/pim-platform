@@ -13,6 +13,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.pim.backend.common.AttributeAdministrationTestData;
+import com.pim.backend.identifier.config.DefaultObjectTypeConfigurations;
 import com.pim.backend.identifier.model.KeyFieldDeclaration;
 import com.pim.backend.identifier.model.ObjectType;
 import com.pim.backend.identifier.model.ObjectTypeConfiguration;
@@ -21,24 +23,36 @@ import com.pim.backend.identifier.repository.ObjectTypeConfigurationRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 /**
  * API integration tests for {@code /api/v1/system-ids}, following
- * specs/003-identifier-management/contracts/identifiers.openapi.yaml. Identifier data is in memory, so each test
- * starts a fresh context with the default configurations.
+ * specs/003-identifier-management/contracts/identifiers.openapi.yaml. Identifier data is in MongoDB (ADR 0003); each
+ * test starts from emptied collections with the default configurations.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class SystemIdControllerIntegrationTest {
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
+    @Autowired
+    private DefaultObjectTypeConfigurations defaultConfigurations;
+
+    /** Data is stored in MongoDB and outlives the Spring context, so each test starts from a fresh install. */
+    @BeforeEach
+    void startFromAFreshInstall() {
+        AttributeAdministrationTestData.reset(mongoTemplate, defaultConfigurations);
+    }
 
     static final String SYSTEM_IDS = "/api/v1/system-ids";
     static final String PERMISSIONS_HEADER = "X-Pim-Manual-Id-Permissions";

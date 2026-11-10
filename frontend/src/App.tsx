@@ -2,6 +2,7 @@ import './App.css'
 import { AppShell } from './components/layout/AppShell'
 import { NAVIGATION_ENTRIES, useCurrentPath } from './navigation'
 import { AttributeCreationPage } from './pages/AttributeCreationPage'
+import { AttributeGroupsPage } from './pages/AttributeGroupsPage'
 import { ComponentGalleryPage } from './pages/ComponentGalleryPage'
 import { HomePage } from './pages/HomePage'
 import { ProductSearchPage } from './pages/ProductSearchPage'
@@ -14,6 +15,8 @@ function renderPage(path: string) {
       return <ProductSearchPage />
     case '/crear-atributo':
       return <AttributeCreationPage />
+    case '/grupos-de-atributos':
+      return <AttributeGroupsPage />
     case '/':
     default:
       return <HomePage />

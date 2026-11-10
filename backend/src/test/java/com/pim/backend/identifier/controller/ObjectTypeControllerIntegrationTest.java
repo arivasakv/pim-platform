@@ -12,16 +12,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.pim.backend.common.AttributeAdministrationTestData;
+import com.pim.backend.identifier.config.DefaultObjectTypeConfigurations;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.ResultMatcher;
@@ -32,8 +35,19 @@ import org.springframework.test.web.servlet.ResultMatcher;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ObjectTypeControllerIntegrationTest {
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
+    @Autowired
+    private DefaultObjectTypeConfigurations defaultConfigurations;
+
+    /** Data is stored in MongoDB and outlives the Spring context, so each test starts from a fresh install. */
+    @BeforeEach
+    void startFromAFreshInstall() {
+        AttributeAdministrationTestData.reset(mongoTemplate, defaultConfigurations);
+    }
 
     private static final String OBJECT_TYPES = "/api/v1/object-types";
     private static final String PRODUCT_NUMERIC =

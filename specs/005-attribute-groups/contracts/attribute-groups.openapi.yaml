@@ -1,0 +1,316 @@
+openapi: 3.1.0
+info:
+  title: PIM Platform – Attribute groups
+  version: 1.0.0
+  description: >
+    Feature 005 (specs/005-attribute-groups). Flat groups of attributes (ERF 1.1 §3.2 ¶3, §3.2.2):
+    create, rename, delete when empty, add and remove attributes. Attributes come from feature 004 and
+    are never changed by group operations. Changes need the ATTRIBUTE_CREATE permission (development
+    header X-Pim-Permissions, as in feature 004); reading needs none. Data is stored in MongoDB
+    (ADR 0003). Unknown fields in request bodies are ignored, as in the rest of the API. Messages are in
+    Spanish.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: attribute-groups
+paths:
+  /api/v1/attribute-groups:
+    get:
+      operationId: listAttributeGroups
+      summary: The groups, sorted by name; optionally only those containing one attribute
+      tags: [attribute-groups]
+      parameters:
+        - name: attributeId
+          in: query
+          required: false
+          description: Only groups containing this attribute (compared ignoring case). Unknown attribute → empty list.
+          schema: { type: string, maxLength: 40 }
+      responses:
+        '200':
+          description: The groups.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttributeGroupCollection' }
+    post:
+      operationId: createAttributeGroup
+      summary: Create a group (FR-001)
+      tags: [attribute-groups]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AttributeGroupRequest' }
+            example: { name: Logísticos, description: Dimensiones, peso y volumen }
+      responses:
+        '201':
+          description: Created, with no attributes.
+          headers:
+            Location:
+              description: /api/v1/attribute-groups/{groupId}
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttributeGroup' }
+        '400': { $ref: '#/components/responses/InvalidRequest' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/attribute-groups/{groupId}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      operationId: getAttributeGroup
+      summary: One group with its attributes (FR-012)
+      tags: [attribute-groups]
+      responses:
+        '200':
+          description: The group.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttributeGroup' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: updateAttributeGroup
+      summary: Rename the group and replace its description (FR-005); memberships are kept
+      tags: [attribute-groups]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AttributeGroupRequest' }
+      responses:
+        '200':
+          description: The updated group.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttributeGroup' }
+        '400': { $ref: '#/components/responses/InvalidRequest' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      operationId: deleteAttributeGroup
+      summary: Delete an empty group (FR-005)
+      tags: [attribute-groups]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      responses:
+        '204': { description: Deleted. }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/attribute-groups/{groupId}/attributes:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    post:
+      operationId: addAttributesToGroup
+      summary: Add existing attributes to the group (FR-006, FR-008)
+      description: >
+        All or nothing: if any ID is unknown, 422 and nothing is added. IDs already in the group are
+        reported in alreadyInGroup and not added twice.
+      tags: [attribute-groups]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddAttributesRequest' }
+            example: { attributeIds: [ATR000001, ATR000002] }
+      responses:
+        '200':
+          description: The group after the change, with what was added and what was already there.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AddAttributesResult' }
+        '400': { $ref: '#/components/responses/InvalidRequest' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: An attribute does not exist. Nothing was added.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                title: Atributo no encontrado
+                status: 422
+                detail: No existe un atributo con el ID ATR999.
+                instance: /api/v1/attribute-groups/3f1c…/attributes
+                errors:
+                  - { field: attributeIds, code: ATTRIBUTE_NOT_FOUND, message: No existe un atributo con el ID ATR999. }
+  /api/v1/attribute-groups/{groupId}/attributes/{attributeId}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - name: attributeId
+        in: path
+        required: true
+        schema: { type: string, maxLength: 40 }
+    delete:
+      operationId: removeAttributeFromGroup
+      summary: Remove an attribute from the group; the attribute stays in the system (FR-009)
+      tags: [attribute-groups]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      responses:
+        '204': { description: Removed from the group. }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404':
+          description: The group does not exist, or the attribute is not in it (ATTRIBUTE_NOT_IN_GROUP).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+components:
+  parameters:
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      schema: { type: string }
+    Permissions:
+      name: X-Pim-Permissions
+      in: header
+      required: false
+      description: Development stand-in for the user's permissions (feature 004, research R-06). ATTRIBUTE_CREATE allows changes.
+      schema: { type: string, example: ATTRIBUTE_CREATE }
+  responses:
+    InvalidRequest:
+      description: Invalid request. Nothing changed.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            title: Solicitud no válida
+            status: 400
+            detail: La solicitud tiene datos no válidos.
+            errors:
+              - { field: name, code: INVALID_GROUP_NAME, message: El nombre del grupo debe tener de 1 a 80 caracteres. }
+    NotPermitted:
+      description: No ATTRIBUTE_CREATE permission. Nothing changed.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            title: Sin permiso para administrar grupos
+            status: 403
+            detail: No tienes permiso para administrar grupos de atributos.
+            errors:
+              - { field: permissions, code: ATTRIBUTE_CREATE_NOT_PERMITTED, message: No tienes permiso para administrar grupos de atributos. }
+    NotFound:
+      description: The group does not exist (GROUP_NOT_FOUND).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: Name already used (GROUP_NAME_IN_USE) or group not empty (GROUP_NOT_EMPTY). Nothing changed.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          examples:
+            nameInUse:
+              value:
+                title: Nombre en uso
+                status: 409
+                detail: Ya existe un grupo con el nombre "Logísticos". Usa otro nombre.
+                errors:
+                  - { field: name, code: GROUP_NAME_IN_USE, message: Ya existe un grupo con el nombre "Logísticos". Usa otro nombre. }
+            notEmpty:
+              value:
+                title: Grupo con atributos
+                status: 409
+                detail: El grupo "Logísticos" tiene 2 atributos. Quítalos antes de eliminarlo.
+                errors:
+                  - { field: groupId, code: GROUP_NOT_EMPTY, message: El grupo "Logísticos" tiene 2 atributos. Quítalos antes de eliminarlo. }
+  schemas:
+    AttributeGroupRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 200, description: 'Trimmed; 1–80 characters; unique ignoring letter case' }
+        description: { type: [string, 'null'], maxLength: 1000, description: 'Trimmed; up to 500 characters' }
+    AddAttributesRequest:
+      type: object
+      required: [attributeIds]
+      properties:
+        attributeIds:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: { type: string, maxLength: 40 }
+    GroupMember:
+      type: object
+      required: [systemId, displayName, dataType]
+      properties:
+        systemId: { type: string }
+        displayName: { type: string }
+        dataType: { type: string }
+    AttributeGroup:
+      type: object
+      required: [id, name, attributeCount, attributes, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: [string, 'null'] }
+        attributeCount: { type: integer, minimum: 0 }
+        attributes:
+          type: array
+          description: Members in the order they were added.
+          items: { $ref: '#/components/schemas/GroupMember' }
+        createdAt: { type: string, format: date-time }
+    AttributeGroupSummary:
+      type: object
+      required: [id, name, attributeCount]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: [string, 'null'] }
+        attributeCount: { type: integer, minimum: 0 }
+    AttributeGroupCollection:
+      type: object
+      description: Project-wide collection envelope (docs/decisions/0001-api-conventions.md).
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AttributeGroupSummary' }
+        total: { type: integer }
+    AddAttributesResult:
+      type: object
+      required: [group, added, alreadyInGroup]
+      properties:
+        group: { $ref: '#/components/schemas/AttributeGroup' }
+        added: { type: array, items: { type: string } }
+        alreadyInGroup: { type: array, items: { type: string } }
+    Problem:
+      type: object
+      description: RFC 9457 Problem Details, used by every API error (ADR 0001).
+      required: [title, status]
+      properties:
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, code, message]
+            properties:
+              field: { type: string }
+              code:
+                type: string
+                enum:
+                  - REQUIRED
+                  - INVALID_GROUP_NAME
+                  - INVALID_GROUP_DESCRIPTION
+                  - INVALID_ATTRIBUTE_IDS
+                  - ATTRIBUTE_CREATE_NOT_PERMITTED
+                  - GROUP_NOT_FOUND
+                  - ATTRIBUTE_NOT_IN_GROUP
+                  - GROUP_NAME_IN_USE
+                  - GROUP_NOT_EMPTY
+                  - ATTRIBUTE_NOT_FOUND
+              message: { type: string }

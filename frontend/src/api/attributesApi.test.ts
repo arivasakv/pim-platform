@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AttributeApiError, createAttribute, fetchAttributeTypes } from './attributesApi'
+import {
+  AttributeApiError,
+  createAttribute,
+  fetchAttributeTypes,
+  listAttributes,
+} from './attributesApi'
 
 const BASE_URL = 'http://servidor.ejemplo:9090'
 
@@ -93,5 +98,16 @@ describe('attributesApi', () => {
 
     vi.stubEnv('VITE_API_BASE_URL', '')
     await expect(createAttribute(BOOLEAN_REQUEST)).rejects.toMatchObject({ kind: 'unavailable' })
+  })
+
+  it('lists every attribute for the groups page (feature 005)', async () => {
+    const items = [{ systemId: 'ATR000001', displayName: 'Peso', dataType: 'BOOLEAN' }]
+    const fetchMock = stubFetch(() => Promise.resolve(response(200, { items, total: 1 })))
+
+    await expect(listAttributes()).resolves.toEqual(items)
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE_URL}/api/v1/attributes`)
+
+    stubFetch(() => Promise.resolve(response(503, {})))
+    await expect(listAttributes()).rejects.toMatchObject({ kind: 'unavailable' })
   })
 })
