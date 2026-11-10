@@ -9,7 +9,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /**
  * Allows the browser frontend to call the REST API. Origins come from the {@code
  * pim.cors.allowed-origins} property (environment variable {@code PIM_CORS_ALLOWED_ORIGINS}), so no
- * origin is written in code (constitution VIII).
+ * origin is written in code (constitution VIII). {@code GET} serves the searches and lookups; {@code POST}
+ * lets the attribute creation form save (feature 004, research R-17).
  */
 @Configuration
 public class CorsConfiguration implements WebMvcConfigurer {
@@ -27,7 +28,7 @@ public class CorsConfiguration implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
                 .allowedOrigins(allowedOrigins)
-                .allowedMethods("GET")
+                .allowedMethods("GET", "POST")
                 .allowedHeaders("*");
     }
 }

@@ -1,0 +1,42 @@
+package com.pim.backend.attribute.model;
+
+/**
+ * Error codes of the attribute API with their Spanish messages (specs/004-attribute-creation/contracts). Feature
+ * 003's errors keep feature 003's own codes and messages (FR-005).
+ */
+public enum AttributeErrorCode {
+    REQUIRED("Este dato es obligatorio."),
+    INVALID_DISPLAY_NAME("El nombre debe tener de 1 a 120 caracteres."),
+    INVALID_DESCRIPTION("La descripción puede tener hasta 1000 caracteres."),
+    UNKNOWN_DATA_TYPE("El tipo de dato %s no existe."),
+    INVALID_LENGTH("La longitud debe ser un número entero entre %s y 100000."),
+    INVALID_LENGTH_RANGE("La longitud mínima no puede ser mayor que la longitud máxima."),
+    UNKNOWN_CASE_FORMAT("El formato de mayúsculas %s no existe."),
+    INVALID_CAPTURE_MASK("La máscara de captura debe ser una expresión regular válida de hasta 500 caracteres."),
+    UNKNOWN_NUMBER_FORMAT("El formato numérico %s no existe."),
+    INVALID_PRECISION("Los decimales van de 1 a 10 y solo aplican a números decimales."),
+    INVALID_NUMBER("El valor no es válido para este formato numérico."),
+    INVALID_VALUE_RANGE("El valor mínimo no puede ser mayor que el valor máximo."),
+    UNKNOWN_SELECTION_MODE("El tipo de selección %s no existe."),
+    UNKNOWN_DATE_FORMAT("El formato de fecha %s no existe."),
+    UNKNOWN_CURRENCY("La moneda %s no es un código ISO 4217 válido."),
+    INVALID_DECIMALS("Los decimales de una moneda van de 0 a 4."),
+    UNKNOWN_TARGET_OBJECT_TYPE("El tipo de objeto %s no existe."),
+    UNKNOWN_CARDINALITY("La cantidad %s no existe."),
+    ATTRIBUTE_CREATE_NOT_PERMITTED("No tienes permiso para crear atributos."),
+    DISPLAY_NAME_IN_USE("Ya existe un atributo con el nombre \"%s\". Usa otro nombre."),
+    LIST_OF_VALUES_NOT_AVAILABLE(
+            "Aún no existen listas de valores. Un atributo de tipo lista de valores necesita una lista existente."),
+    LIST_OF_VALUES_NOT_FOUND("No existe la lista de valores %s.");
+
+    private final String template;
+
+    AttributeErrorCode(String template) {
+        this.template = template;
+    }
+
+    /** The Spanish message, with the arguments placed where the template names a value. */
+    public String message(Object... arguments) {
+        return String.format(template, arguments);
+    }
+}

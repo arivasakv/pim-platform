@@ -1,5 +1,15 @@
 import { useState } from 'react'
-import { Button, Card, Notification, PageHeader, StatusBadge, TextField } from '../components/ui'
+import {
+  Button,
+  Card,
+  CheckboxField,
+  Notification,
+  PageHeader,
+  SelectField,
+  StatusBadge,
+  TextAreaField,
+  TextField,
+} from '../components/ui'
 import styles from './ComponentGalleryPage.module.css'
 
 // A long string without spaces, to show that content wraps instead of overflowing (US4-AS3).
@@ -8,6 +18,8 @@ const LONG_UNBROKEN_TEXT = 'REFERENCIAINTERNASINESPACIOS'.repeat(6)
 /** Visual reference of the reusable components and their states (FR-012). */
 export function ComponentGalleryPage() {
   const [isNotificationVisible, setIsNotificationVisible] = useState(true)
+  const [exampleOption, setExampleOption] = useState('')
+  const [exampleChecked, setExampleChecked] = useState(false)
 
   return (
     <>
@@ -50,6 +62,35 @@ export function ComponentGalleryPage() {
               type="search"
               hideLabel
               placeholder="Buscar"
+            />
+          </div>
+        </Card>
+
+        <Card title="Listas, casillas y textos largos">
+          <div className={styles.stack}>
+            <SelectField
+              id="ejemplo-lista"
+              label="Lista de opciones"
+              placeholder="Elige una opción"
+              options={[
+                { code: 'A', label: 'Opción A' },
+                { code: 'B', label: 'Opción B' },
+              ]}
+              value={exampleOption}
+              onChange={setExampleOption}
+              hint="Las opciones vienen del servidor cuando son datos del negocio."
+            />
+            <CheckboxField
+              id="ejemplo-casilla"
+              label="Casilla de verificación"
+              checked={exampleChecked}
+              onChange={setExampleChecked}
+            />
+            <TextAreaField
+              id="ejemplo-texto-largo"
+              label="Texto largo"
+              placeholder="Escribe una descripción"
+              maxLength={1000}
             />
           </div>
         </Card>

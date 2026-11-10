@@ -24,6 +24,12 @@ describe('getPathFromHash', () => {
   })
 })
 
+describe('getPathFromHash for the attribute creation page (feature 004)', () => {
+  it('returns the attribute creation path for "#/crear-atributo"', () => {
+    expect(getPathFromHash('#/crear-atributo')).toBe('/crear-atributo')
+  })
+})
+
 describe('useCurrentPath', () => {
   afterEach(() => {
     window.location.hash = ''
