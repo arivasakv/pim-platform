@@ -132,6 +132,16 @@ export function AttributeCreationPage() {
       {typesState.status === 'ready' && (
         <Card>
           <form className={styles.form} noValidate onSubmit={handleSubmit}>
+            {/* The ID comes first: it is captured before every other field. */}
+            <TextField
+              id="systemId"
+              label="ID (opcional)"
+              maxLength={40}
+              hint="Déjalo vacío para que el sistema genere uno."
+              value={form.systemId}
+              onChange={(event) => update({ systemId: event.target.value })}
+              error={errors.systemId}
+            />
             <TextField
               id="displayName"
               label="Nombre"
@@ -148,15 +158,6 @@ export function AttributeCreationPage() {
               value={form.description}
               onChange={(event) => update({ description: event.target.value })}
               error={errors.description}
-            />
-            <TextField
-              id="systemId"
-              label="ID (opcional)"
-              maxLength={40}
-              hint="Déjalo vacío para que el sistema genere uno."
-              value={form.systemId}
-              onChange={(event) => update({ systemId: event.target.value })}
-              error={errors.systemId}
             />
             <SelectField
               id="dataType"

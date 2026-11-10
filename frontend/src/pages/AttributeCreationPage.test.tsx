@@ -131,6 +131,18 @@ describe('AttributeCreationPage', () => {
     expect(screen.getByLabelText('ID (opcional)')).toBeTruthy()
   })
 
+  it('asks for the ID before every other field', async () => {
+    stubBackend()
+    render(<AttributeCreationPage />)
+
+    await screen.findByLabelText('Tipo de dato')
+    const form = screen.getByLabelText('ID (opcional)').closest('form')
+    const fieldIds = Array.from(form?.querySelectorAll('input, textarea, select') ?? []).map(
+      (field) => field.id,
+    )
+    expect(fieldIds.slice(0, 4)).toEqual(['systemId', 'displayName', 'description', 'dataType'])
+  })
+
   it('offers a retry when the data types cannot be loaded', async () => {
     const fetchMock = vi
       .fn()
