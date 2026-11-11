@@ -143,7 +143,7 @@ both attributes, each with its name, system ID and selection mode.
 
 **Acceptance Scenarios**:
 
-1. **Given** several lists, **When** the user opens "Listas de valores", **Then** every list is shown
+1. **Given** several lists, **When** the user opens "Lista de Valores", **Then** every list is shown
    with its name, system ID, number of values and number of linked attributes.
 2. **Given** a list, **When** the user opens it, **Then** its values (ID, label, and equivalence when
    the column is on) and its linked attributes (name, system ID, selection mode) are shown.

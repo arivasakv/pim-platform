@@ -141,7 +141,7 @@ export function AttributeCreationPage() {
   return (
     <>
       <PageHeader
-        title="Crear atributo"
+        title="Crear Atributos"
         description="Define un atributo nuevo, su tipo de dato y sus propiedades. Los atributos se crean globales (aplican a todo el sistema) y sin grupos."
       />
 

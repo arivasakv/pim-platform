@@ -144,7 +144,7 @@ describe('AttributeGroupsPage', () => {
     fakeBackend([PESO])
     render(<AttributeGroupsPage />)
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Grupos de atributos' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, name: 'Grupo de Atributos' })).toBeTruthy()
     expect(screen.getByText('Cargando grupos…')).toBeTruthy()
     expect(await screen.findByText('Todavía no hay grupos de atributos.')).toBeTruthy()
     expect(screen.getByLabelText('Nombre')).toBeTruthy()

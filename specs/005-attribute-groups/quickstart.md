@@ -44,7 +44,7 @@ Use `X-Pim-Permissions: ATTRIBUTE_CREATE` for changes unless stated.
 
 | # | Steps | Expected |
 |---|---|---|
-| U1 | Open "Grupos de atributos" | Empty state with a create form |
+| U1 | Open "Grupo de Atributos" | Empty state with a create form |
 | U2 | Create "Logísticos" | It appears in the list with 0 attributes |
 | U3 | Open it, add "Peso" and "Volumen" from the picker | Both listed; count 2; picker no longer offers them |
 | U4 | Remove "Peso" | Gone from the group; "Peso" still exists (visible in the picker again) |

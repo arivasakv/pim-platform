@@ -170,6 +170,7 @@ describe('ListsOfValuesPage', () => {
     fakeBackend()
     render(<ListsOfValuesPage />)
 
+    expect(screen.getByRole('heading', { level: 1, name: 'Lista de Valores' })).toBeTruthy()
     expect(screen.getByText('Cargando listas…')).toBeTruthy()
     expect(await screen.findByText('Todavía no hay listas de valores.')).toBeTruthy()
     const panel = await createListNamed('Color')

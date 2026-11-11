@@ -132,6 +132,7 @@ describe('AttributeCreationPage', () => {
     stubBackend()
     render(<AttributeCreationPage />)
 
+    expect(screen.getByRole('heading', { level: 1, name: 'Crear Atributos' })).toBeTruthy()
     expect(screen.getByText('Cargando tipos de dato…')).toBeTruthy()
     const typeSelect = await screen.findByLabelText<HTMLSelectElement>('Tipo de dato')
     expect(Array.from(typeSelect.options).map((option) => option.textContent)).toEqual([

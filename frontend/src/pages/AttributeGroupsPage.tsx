@@ -248,7 +248,7 @@ export function AttributeGroupsPage() {
   return (
     <>
       <PageHeader
-        title="Grupos de atributos"
+        title="Grupo de Atributos"
         description="Organiza los atributos en grupos. Un atributo puede estar en varios grupos o en ninguno."
       />
 
