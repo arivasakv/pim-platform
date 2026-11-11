@@ -1,9 +1,12 @@
 package com.pim.backend.attribute.controller;
 
+import com.pim.backend.attribute.model.AttributeChangeNotPermittedException;
 import com.pim.backend.attribute.model.AttributeCreateNotPermittedException;
 import com.pim.backend.attribute.model.AttributeErrorCode;
+import com.pim.backend.attribute.model.AttributeInGroupsException;
 import com.pim.backend.attribute.model.AttributeNotFoundException;
 import com.pim.backend.attribute.model.DisplayNameInUseException;
+import com.pim.backend.attribute.model.ImmutableFieldException;
 import com.pim.backend.attribute.model.InvalidAttributeException;
 import com.pim.backend.attribute.model.ListOfValuesUnavailableException;
 import com.pim.backend.common.ApiFieldError;
@@ -15,6 +18,7 @@ import com.pim.backend.identifier.model.SequenceExhaustedException;
 import com.pim.backend.identifier.model.SystemIdInUseException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -69,6 +73,45 @@ public class AttributeExceptionHandler {
                 exception.getMessage(),
                 List.of(error(
                         "permissions", AttributeErrorCode.ATTRIBUTE_CREATE_NOT_PERMITTED, exception.getMessage())));
+    }
+
+    @ExceptionHandler(AttributeChangeNotPermittedException.class)
+    ProblemDetail handleChangeNotPermitted(AttributeChangeNotPermittedException exception, HttpServletRequest request) {
+        return ApiProblems.problem(
+                request,
+                HttpStatus.FORBIDDEN,
+                "Sin permiso para modificar atributos",
+                exception.getMessage(),
+                List.of(error(
+                        "permissions", AttributeErrorCode.ATTRIBUTE_CHANGE_NOT_PERMITTED, exception.getMessage())));
+    }
+
+    /** Feature 007 FR-010: the system ID and the data type never change. */
+    @ExceptionHandler(ImmutableFieldException.class)
+    ProblemDetail handleImmutableField(ImmutableFieldException exception, HttpServletRequest request) {
+        return ApiProblems.problem(
+                request,
+                HttpStatus.UNPROCESSABLE_CONTENT,
+                "Cambio no permitido",
+                exception.getMessage(),
+                List.of(error(exception.field(), exception.code(), exception.getMessage())));
+    }
+
+    /** Feature 007 FR-014: the groups are also returned as the extension property {@code groups}. */
+    @ExceptionHandler(AttributeInGroupsException.class)
+    ProblemDetail handleInGroups(AttributeInGroupsException exception, HttpServletRequest request) {
+        ProblemDetail problem = ApiProblems.problem(
+                request,
+                HttpStatus.CONFLICT,
+                "Atributo en grupos",
+                exception.getMessage(),
+                List.of(error("groups", AttributeErrorCode.ATTRIBUTE_IN_GROUPS, exception.getMessage())));
+        problem.setProperty(
+                "groups",
+                exception.groups().stream()
+                        .map(group -> Map.of("id", group.id(), "name", group.name()))
+                        .toList());
+        return problem;
     }
 
     @ExceptionHandler(AttributeNotFoundException.class)

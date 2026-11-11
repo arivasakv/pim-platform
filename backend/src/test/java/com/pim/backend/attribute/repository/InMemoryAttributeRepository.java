@@ -30,6 +30,34 @@ public class InMemoryAttributeRepository implements AttributeRepository {
     }
 
     @Override
+    public boolean existsWithDisplayName(DisplayName displayName, String exceptSystemId) {
+        Attribute holder = byDisplayName.get(displayName);
+        return holder != null && !key(holder.systemId()).equals(key(exceptSystemId));
+    }
+
+    @Override
+    public void update(Attribute attribute) {
+        String idKey = key(attribute.systemId());
+        Attribute holder = byDisplayName.get(attribute.displayName());
+        if (holder != null && !key(holder.systemId()).equals(idKey)) {
+            throw new IllegalStateException("Display name already stored: " + attribute.displayName());
+        }
+        Attribute previous = bySystemId.put(idKey, attribute);
+        if (previous != null) {
+            byDisplayName.remove(previous.displayName());
+        }
+        byDisplayName.put(attribute.displayName(), attribute);
+    }
+
+    @Override
+    public void delete(String systemId) {
+        Attribute removed = bySystemId.remove(key(systemId));
+        if (removed != null) {
+            byDisplayName.remove(removed.displayName());
+        }
+    }
+
+    @Override
     public void save(Attribute attribute) {
         String idKey = key(attribute.systemId());
         if (bySystemId.containsKey(idKey) || byDisplayName.containsKey(attribute.displayName())) {

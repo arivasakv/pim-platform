@@ -1,4 +1,4 @@
-import type { AttributeCreationRequest, DataType } from '../api/attributesApi'
+import type { Attribute, AttributeCreationRequest, DataType } from '../api/attributesApi'
 
 /** What the user has typed, kept as text until the request is built. */
 export type AttributeForm = {
@@ -36,6 +36,59 @@ export function emptyForm(): AttributeForm {
     dateTime: { dateFormat: '' },
     currency: { currencyCode: '', decimals: '' },
     reference: { targetObjectType: '', cardinality: '' },
+  }
+}
+
+function asText(value: number | string | undefined | null): string {
+  return value === undefined || value === null ? '' : String(value)
+}
+
+/**
+ * The form filled with a saved attribute, for editing it (feature 007 FR-007). Properties of other
+ * data types stay empty, as in a new form.
+ */
+export function fromAttribute(attribute: Attribute): AttributeForm {
+  const form = emptyForm()
+  const text = attribute.textProperties
+  const numeric = attribute.numericProperties
+  const list = attribute.listOfValuesProperties
+  const currency = attribute.currencyProperties
+  const reference = attribute.referenceProperties
+  return {
+    ...form,
+    systemId: attribute.systemId,
+    displayName: attribute.displayName,
+    description: attribute.description ?? '',
+    dataType: attribute.dataType,
+    text: text
+      ? {
+          minLength: asText(text.minLength),
+          maxLength: asText(text.maxLength),
+          caseFormat: text.caseFormat ?? '',
+          captureMask: text.captureMask ?? '',
+          richText: text.richText ?? false,
+        }
+      : form.text,
+    numeric: numeric
+      ? {
+          numberFormat: numeric.numberFormat,
+          precision: asText(numeric.precision),
+          minimum: asText(numeric.minimum),
+          maximum: asText(numeric.maximum),
+        }
+      : form.numeric,
+    listOfValues: list
+      ? { selectionMode: list.selectionMode ?? '', listOfValuesId: list.listOfValuesId ?? '' }
+      : form.listOfValues,
+    dateTime: attribute.dateTimeProperties
+      ? { dateFormat: attribute.dateTimeProperties.dateFormat }
+      : form.dateTime,
+    currency: currency
+      ? { currencyCode: currency.currencyCode, decimals: asText(currency.decimals) }
+      : form.currency,
+    reference: reference
+      ? { targetObjectType: reference.targetObjectType, cardinality: reference.cardinality ?? '' }
+      : form.reference,
   }
 }
 

@@ -49,14 +49,14 @@ Use `X-Pim-Permissions: ATTRIBUTE_CREATE` for changes unless stated.
 
 | # | Steps | Expected |
 |---|---|---|
-| U1 | Open the side navigation | Order: Inicio, Buscar Producto, Lista de Valores, Crear Atributos, Grupo de Atributos |
+| U1 | Open the side navigation | Order: Inicio, Buscar Producto, Lista de Valores, Atributos, Grupo de Atributos |
 | U2 | Open it with no lists | Empty state with a create form |
 | U3 | Create "Color", add `0001` "Azul" and a value without ID | Both listed; the second has ID `0001`+1 |
 | U4 | Edit "Azul" → "AZUL" | Label changes; the ID field isn't editable |
 | U5 | Delete a value | Confirmation dialog; cancelling keeps it; confirming removes it |
 | U6 | Download the template, upload a file with errors | Report per row and column; no value added |
 | U7 | Turn on equivalences, enter one, turn off | Column shown, then hidden; turning on shows it again |
-| U8 | Feature 004 "Crear Atributos", type "Lista de valores" | A "Lista de valores" select offers "Color"; the attribute saves; "Color" then shows it among its attributes |
+| U8 | "Atributos" → "Nuevo atributo" (feature 004 form), type "Lista de valores" | A "Lista de valores" select offers "Color"; the attribute saves; "Color" then shows it among its attributes |
 | U9 | Try to delete "Color" | Spanish message: used by attributes |
 | U10 | Without `ATTRIBUTE_CREATE` | Lists and values visible; no create, edit, delete or upload controls |
 

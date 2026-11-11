@@ -434,12 +434,17 @@ class AttributeGroupControllerIntegrationTest {
         }
     }
 
+    /**
+     * The attribute's own data as JSON. Since feature 007 the response also lists the attribute's groups, which
+     * membership changes are meant to change, so that field is left out (FR-010 is about the attribute's own data).
+     */
     private String attributeJson(String systemId) throws Exception {
         return mockMvc.perform(get(ATTRIBUTES + "/" + systemId))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
-                .getContentAsString();
+                .getContentAsString()
+                .replaceAll(",?\"groups\":\\[[^\\]]*\\]", "");
     }
 
     private ResultActions addAttributes(String groupId, String body) throws Exception {

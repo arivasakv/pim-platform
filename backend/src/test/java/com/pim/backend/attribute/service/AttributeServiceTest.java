@@ -16,6 +16,7 @@ import com.pim.backend.attribute.model.InvalidAttributeException;
 import com.pim.backend.attribute.model.ListOfValuesProperties;
 import com.pim.backend.attribute.model.ListOfValuesUnavailableException;
 import com.pim.backend.attribute.model.SelectionMode;
+import com.pim.backend.attribute.repository.FakeAttributeGroups;
 import com.pim.backend.attribute.repository.InMemoryAttributeRepository;
 import com.pim.backend.attribute.repository.ListOfValuesCatalog;
 import com.pim.backend.identifier.config.DefaultObjectTypeConfigurations;
@@ -31,7 +32,9 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -53,8 +56,9 @@ class AttributeServiceTest {
     private final IdentifierService identifierService = newIdentifierService();
     private final InMemoryAttributeRepository attributes = new InMemoryAttributeRepository();
     private final TestCatalog catalog = new TestCatalog();
+    private final FakeAttributeGroups groups = new FakeAttributeGroups();
     private final AttributeService service =
-            new AttributeService(attributes, catalog, identifierService, Clock.fixed(NOW, ZoneOffset.UTC));
+            new AttributeService(attributes, catalog, groups, identifierService, Clock.fixed(NOW, ZoneOffset.UTC));
 
     private IdentifierService newIdentifierService() {
         new DefaultObjectTypeConfigurations(objectTypes).afterPropertiesSet();
@@ -272,6 +276,14 @@ class AttributeServiceTest {
         @Override
         public boolean exists(String listOfValuesId) {
             return lists.contains(listOfValuesId);
+        }
+
+        /** Each list is named after its ID in lower case, e.g. "lov000001". */
+        @Override
+        public Map<String, String> namesById() {
+            Map<String, String> names = new HashMap<>();
+            lists.forEach(id -> names.put(id.toUpperCase(Locale.ROOT), id.toLowerCase(Locale.ROOT)));
+            return names;
         }
     }
 }

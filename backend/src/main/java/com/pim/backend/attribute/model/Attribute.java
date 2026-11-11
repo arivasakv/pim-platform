@@ -5,8 +5,9 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * An attribute definition (FR-003, FR-007, FR-018). Created once and never changed in this feature; always global
- * and without groups (FR-017, FR-018).
+ * An attribute definition (FR-003, FR-007, FR-018). Always global (FR-018). Feature 007 lets its display name,
+ * description and properties change ({@link #updated}); its system ID, data type, scope and creation date never do
+ * (feature 007 FR-010). Group links live in the attribute groups (feature 005).
  *
  * @param systemId system ID given by feature 003 (FR-004)
  * @param displayName unique display name (FR-023)
@@ -15,6 +16,7 @@ import java.util.Optional;
  * @param scope always {@link AttributeScope#GLOBAL}
  * @param properties the properties of {@code dataType}; {@code null} for {@code BOOLEAN}
  * @param createdAt when the attribute was created
+ * @param updatedAt when it was last changed; empty until the first edit (feature 007 research R-08)
  */
 public record Attribute(
         String systemId,
@@ -23,7 +25,8 @@ public record Attribute(
         AttributeDataType dataType,
         AttributeScope scope,
         AttributeProperties properties,
-        Instant createdAt) {
+        Instant createdAt,
+        Optional<Instant> updatedAt) {
 
     /** Longest accepted description. */
     public static final int MAX_DESCRIPTION_LENGTH = 1000;
@@ -35,6 +38,7 @@ public record Attribute(
         Objects.requireNonNull(dataType, "dataType");
         Objects.requireNonNull(scope, "scope");
         Objects.requireNonNull(createdAt, "createdAt");
+        Objects.requireNonNull(updatedAt, "updatedAt");
         boolean valid = dataType == AttributeDataType.BOOLEAN
                 ? properties == null
                 : properties != null && properties.dataType() == dataType;
@@ -62,7 +66,28 @@ public record Attribute(
                 dataType,
                 AttributeScope.GLOBAL,
                 properties,
-                createdAt);
+                createdAt,
+                Optional.empty());
+    }
+
+    /**
+     * This attribute with a new display name, description and properties, changed at {@code at}; the system ID, data
+     * type, scope and creation date stay (feature 007 FR-008, FR-010).
+     *
+     * @throws InvalidAttributeException {@code INVALID_DESCRIPTION} for a description longer than 1,000 characters
+     * @throws IllegalArgumentException if the properties do not match the data type
+     */
+    public Attribute updated(
+            DisplayName newDisplayName, String newDescription, AttributeProperties newProperties, Instant at) {
+        return new Attribute(
+                systemId,
+                newDisplayName,
+                normalizedDescription(newDescription),
+                dataType,
+                scope,
+                newProperties,
+                createdAt,
+                Optional.of(at));
     }
 
     /**

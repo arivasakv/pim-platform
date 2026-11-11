@@ -1,5 +1,7 @@
 package com.pim.backend.attribute.repository;
 
+import java.util.Map;
+
 /**
  * Test fake: a {@link ListOfValuesCatalog} with no lists, for unit tests that build {@code AttributeService} by hand.
  * Production uses the list-of-values feature's catalog (feature 006 plan decision D-3); this class was the
@@ -15,5 +17,10 @@ public class EmptyListOfValuesCatalog implements ListOfValuesCatalog {
     @Override
     public boolean exists(String listOfValuesId) {
         return false;
+    }
+
+    @Override
+    public Map<String, String> namesById() {
+        return Map.of();
     }
 }

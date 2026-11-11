@@ -30,7 +30,14 @@
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.intro {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-secondary);
 }
 
 .loading {

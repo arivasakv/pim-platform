@@ -1,6 +1,6 @@
 import { buildApiUrl } from './apiConfig'
 
-// Shapes from specs/004-attribute-creation/contracts/attributes.openapi.yaml.
+// Shapes from specs/004-attribute-creation/contracts/attributes.openapi.yaml (v1.2.0, feature 007).
 export type DataType =
   'TEXT' | 'NUMERIC' | 'BOOLEAN' | 'LIST_OF_VALUES' | 'DATE_TIME' | 'CURRENCY' | 'REFERENCE'
 
@@ -26,7 +26,12 @@ export type NumericProperties = {
   minimum?: number
   maximum?: number
 }
-export type ListOfValuesProperties = { selectionMode?: string; listOfValuesId?: string }
+export type ListOfValuesProperties = {
+  selectionMode?: string
+  listOfValuesId?: string
+  /** Read only, in responses: the linked list's name (feature 007). */
+  listOfValuesName?: string
+}
 export type DateTimeProperties = { dateFormat: string }
 export type CurrencyProperties = {
   currencyCode: string
@@ -48,24 +53,35 @@ export type AttributeCreationRequest = {
   referenceProperties?: ReferenceProperties
 }
 
+/** A group that contains an attribute (feature 007). */
+export type GroupReference = { id: string; name: string }
+
 export type Attribute = AttributeCreationRequest & {
   systemId: string
   scope: 'GLOBAL'
   createdAt?: string
+  /** Absent until the attribute is first edited (feature 007). */
+  updatedAt?: string
+  /** The groups containing the attribute, sorted by name (feature 007). */
+  groups?: GroupReference[]
 }
 
 /** One problem in a request, as listed in the RFC 9457 `errors` property (ADR 0001). */
 export type ApiFieldError = { field: string; code: string; message: string }
 
 export type AttributeApiErrorKind =
-  'validation' | 'forbidden' | 'conflict' | 'unprocessable' | 'unavailable'
+  'validation' | 'forbidden' | 'notFound' | 'conflict' | 'unprocessable' | 'unavailable'
 
 const KIND_BY_STATUS: Record<number, AttributeApiErrorKind> = {
   400: 'validation',
   403: 'forbidden',
+  404: 'notFound',
   409: 'conflict',
   422: 'unprocessable',
 }
+
+/** Permission code that allows creating, editing and deleting attributes (feature 007 FR-018). */
+const CHANGE_PERMISSION = 'ATTRIBUTE_CREATE'
 
 /**
  * Why a request failed: the backend refused it (with its Spanish `detail` and field `errors`) or
@@ -75,14 +91,31 @@ export class AttributeApiError extends Error {
   readonly kind: AttributeApiErrorKind
   readonly detail: string | undefined
   readonly errors: ApiFieldError[]
+  /** For a refused deletion: the groups that still contain the attribute (feature 007 FR-014). */
+  readonly groups: GroupReference[]
 
-  constructor(kind: AttributeApiErrorKind, detail?: string, errors: ApiFieldError[] = []) {
+  constructor(
+    kind: AttributeApiErrorKind,
+    detail?: string,
+    errors: ApiFieldError[] = [],
+    groups: GroupReference[] = [],
+  ) {
     super(detail ?? 'No se pudo conectar con el servidor.')
     this.name = 'AttributeApiError'
     this.kind = kind
     this.detail = detail
     this.errors = errors
+    this.groups = groups
   }
+}
+
+/**
+ * Whether the development permissions allow creating, editing and deleting attributes, so the
+ * page can hide those controls (feature 007 FR-018). The backend checks again.
+ */
+export function canChangeAttributes(): boolean {
+  const codes = import.meta.env.VITE_DEV_PERMISSIONS ?? ''
+  return codes.split(',').some((code: string) => code.trim().toUpperCase() === CHANGE_PERMISSION)
 }
 
 /**
@@ -155,8 +188,65 @@ export async function createAttribute(request: AttributeCreationRequest): Promis
     body: JSON.stringify(request),
   })
   if (response.ok) return (await response.json()) as Attribute
+  throw await refusal(response)
+}
+
+/** One attribute with its groups and list name (`GET /api/v1/attributes/{id}`, feature 007). */
+export async function getAttribute(systemId: string): Promise<Attribute> {
+  const response = await send(`/api/v1/attributes/${encodeURIComponent(systemId)}`, {
+    headers: { Accept: 'application/json' },
+  })
+  if (response.ok) return (await response.json()) as Attribute
+  throw await refusal(response)
+}
+
+/**
+ * Edits an attribute (`PUT /api/v1/attributes/{id}`, feature 007 FR-007). The body has the
+ * creation fields; the system ID and the data type must stay the same.
+ */
+export async function updateAttribute(
+  systemId: string,
+  request: AttributeCreationRequest,
+): Promise<Attribute> {
+  const response = await send(`/api/v1/attributes/${encodeURIComponent(systemId)}`, {
+    method: 'PUT',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...permissionHeaders(),
+    },
+    body: JSON.stringify(request),
+  })
+  if (response.ok) return (await response.json()) as Attribute
+  throw await refusal(response)
+}
+
+/**
+ * Deletes an attribute that belongs to no group (`DELETE /api/v1/attributes/{id}`, feature 007
+ * FR-012 to FR-016). A refusal because of groups carries them in `groups`.
+ */
+export async function deleteAttribute(systemId: string): Promise<void> {
+  const response = await send(`/api/v1/attributes/${encodeURIComponent(systemId)}`, {
+    method: 'DELETE',
+    headers: { Accept: 'application/problem+json', ...permissionHeaders() },
+  })
+  if (response.ok) return
+  throw await refusal(response)
+}
+
+/** The error for a response the backend refused; unknown statuses count as unavailable. */
+async function refusal(response: Response): Promise<AttributeApiError> {
   const kind = KIND_BY_STATUS[response.status]
-  if (!kind) throw new AttributeApiError('unavailable')
-  const { detail, errors } = await readProblem(response)
-  throw new AttributeApiError(kind, detail, errors)
+  if (!kind) return new AttributeApiError('unavailable')
+  try {
+    const body = (await response.json()) as { detail?: unknown; errors?: unknown; groups?: unknown }
+    return new AttributeApiError(
+      kind,
+      typeof body.detail === 'string' ? body.detail : undefined,
+      Array.isArray(body.errors) ? (body.errors as ApiFieldError[]) : [],
+      Array.isArray(body.groups) ? (body.groups as GroupReference[]) : [],
+    )
+  } catch {
+    return new AttributeApiError(kind)
+  }
 }

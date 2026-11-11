@@ -1,8 +1,8 @@
 import './App.css'
 import { AppShell } from './components/layout/AppShell'
 import { NAVIGATION_ENTRIES, useCurrentPath } from './navigation'
-import { AttributeCreationPage } from './pages/AttributeCreationPage'
 import { AttributeGroupsPage } from './pages/AttributeGroupsPage'
+import { AttributesPage } from './pages/AttributesPage'
 import { HomePage } from './pages/HomePage'
 import { ListsOfValuesPage } from './pages/ListsOfValuesPage'
 import { ProductSearchPage } from './pages/ProductSearchPage'
@@ -11,8 +11,8 @@ function renderPage(path: string) {
   switch (path) {
     case '/buscar-producto':
       return <ProductSearchPage />
-    case '/crear-atributo':
-      return <AttributeCreationPage />
+    case '/atributos':
+      return <AttributesPage />
     case '/grupos-de-atributos':
       return <AttributeGroupsPage />
     case '/listas-de-valores':

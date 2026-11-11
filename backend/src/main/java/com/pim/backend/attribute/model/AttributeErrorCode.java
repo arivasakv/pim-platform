@@ -27,7 +27,11 @@ public enum AttributeErrorCode {
     DISPLAY_NAME_IN_USE("Ya existe un atributo con el nombre \"%s\". Usa otro nombre."),
     LIST_OF_VALUES_NOT_AVAILABLE(
             "Aún no existen listas de valores. Un atributo de tipo lista de valores necesita una lista existente."),
-    LIST_OF_VALUES_NOT_FOUND("No existe la lista de valores %s.");
+    LIST_OF_VALUES_NOT_FOUND("No existe la lista de valores %s."),
+    ATTRIBUTE_CHANGE_NOT_PERMITTED("No tienes permiso para modificar atributos."),
+    SYSTEM_ID_IMMUTABLE("El ID de sistema no se puede cambiar."),
+    DATA_TYPE_IMMUTABLE("El tipo de dato no se puede cambiar."),
+    ATTRIBUTE_IN_GROUPS("El atributo pertenece a %s: %s. Quítalo de esos grupos antes de eliminarlo.");
 
     private final String template;
 

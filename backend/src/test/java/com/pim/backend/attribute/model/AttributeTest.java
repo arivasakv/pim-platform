@@ -95,4 +95,35 @@ class AttributeTest {
     private static Attribute create(String description) {
         return Attribute.create("ATR1", DisplayName.of("X"), description, AttributeDataType.BOOLEAN, null, NOW);
     }
+
+    // --- Feature 007 ---
+
+    @Test
+    void anUpdatedAttributeKeepsItsIdTypeScopeAndCreationDate() {
+        Attribute original = Attribute.create(
+                "ATR1",
+                DisplayName.of("Peso"),
+                null,
+                AttributeDataType.NUMERIC,
+                new NumericProperties(NumberFormat.INTEGER, null, null, null),
+                NOW);
+        Instant later = NOW.plusSeconds(60);
+
+        Attribute updated = original.updated(
+                DisplayName.of("Peso neto"),
+                " Sin empaque ",
+                new NumericProperties(NumberFormat.DECIMAL, 2, null, null),
+                later);
+
+        assertThat(original.updatedAt()).isEmpty();
+        assertThat(updated.systemId()).isEqualTo("ATR1");
+        assertThat(updated.dataType()).isEqualTo(AttributeDataType.NUMERIC);
+        assertThat(updated.scope()).isEqualTo(AttributeScope.GLOBAL);
+        assertThat(updated.createdAt()).isEqualTo(NOW);
+        assertThat(updated.updatedAt()).contains(later);
+        assertThat(updated.displayName().value()).isEqualTo("Peso neto");
+        assertThat(updated.description()).contains("Sin empaque");
+        assertThatThrownBy(() -> original.updated(DisplayName.of("Peso"), null, null, later))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

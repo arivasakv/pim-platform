@@ -2,8 +2,12 @@ package com.pim.backend.lov.repository;
 
 import com.pim.backend.lov.model.ListName;
 import com.pim.backend.lov.model.ListOfValues;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import org.bson.Document;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Sort;
@@ -47,6 +51,17 @@ public class MongoListOfValuesRepository implements ListOfValuesRepository, Init
         return Optional.ofNullable(
                         mongoTemplate.findById(ListOfValuesDocument.idOf(systemId), ListOfValuesDocument.class))
                 .map(ListOfValuesDocument::toList);
+    }
+
+    @Override
+    public Map<String, String> namesById() {
+        Query query = new Query();
+        query.fields().include("systemId", "name");
+        Map<String, String> names = new HashMap<>();
+        for (Document list : mongoTemplate.find(query, Document.class, ListOfValuesDocument.COLLECTION)) {
+            names.put(list.getString("systemId").toUpperCase(Locale.ROOT), list.getString("name"));
+        }
+        return Map.copyOf(names);
     }
 
     @Override

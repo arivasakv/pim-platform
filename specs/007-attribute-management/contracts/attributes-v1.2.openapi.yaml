@@ -1,0 +1,272 @@
+openapi: 3.1.0
+info:
+  title: PIM Platform – Attribute management (changes to the attribute API)
+  version: 1.2.0
+  description: >
+    Feature 007 (specs/007-attribute-management). Changes to the attribute API of feature 004
+    (specs/004-attribute-creation/contracts/attributes.openapi.yaml, v1.1.0). This file lists only what
+    v1.2.0 adds or changes; every other operation, schema, code and message stays as in v1.1.0. During
+    implementation these changes are merged into feature 004's contract, which becomes v1.2.0 (as
+    feature 005 did for v1.1.0). Additions are backward compatible: new response fields and two new
+    operations. Messages are in Spanish. Unknown request fields are ignored.
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: attributes
+paths:
+  /api/v1/attributes:
+    get:
+      operationId: listAttributes
+      summary: Every attribute (v1.1.0), now with groups, list name and last change (research R-07)
+      tags: [attributes]
+      responses:
+        '200':
+          description: Sorted by display name ignoring letter case.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttributeCollection' }
+  /api/v1/attributes/{systemId}:
+    parameters:
+      - $ref: '#/components/parameters/SystemId'
+    get:
+      operationId: getAttribute
+      summary: One attribute (v1.1.0), now with groups, list name and last change
+      tags: [attributes]
+      responses:
+        '200':
+          description: The attribute.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Attribute' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: updateAttribute
+      summary: Edit an attribute (spec FR-007–FR-011; research R-04)
+      description: >
+        Full replace of the editable fields: display name, description and the properties of the
+        attribute's data type. System ID, data type, scope and creation date never change. Checks run in
+        this order: request (400) → permission (403) → attribute exists (404) → system ID and data type
+        unchanged (422) → list-of-values rules of feature 004 FR-012 (400/422) → display name free among
+        the other attributes (409).
+      tags: [attributes]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AttributeUpdateRequest' }
+            example:
+              displayName: Peso neto
+              description: Peso del producto sin empaque
+              dataType: NUMERIC
+              numericProperties: { numberFormat: DECIMAL, precision: 2, minimum: '0' }
+      responses:
+        '200':
+          description: Saved; the attribute as stored, with `updatedAt`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Attribute' }
+        '400':
+          description: >
+            Invalid display name, description or property; the same codes and messages as creation
+            (feature 004 v1.1.0 `Problem.errors[].code`). Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '403':
+          description: Without `ATTRIBUTE_CREATE`. Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                title: Sin permiso para modificar atributos
+                status: 403
+                detail: No tienes permiso para modificar atributos.
+                errors:
+                  - { field: permissions, code: ATTRIBUTE_CHANGE_NOT_PERMITTED, message: No tienes permiso para modificar atributos. }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Another attribute has the display name, ignoring letter case (feature 004 FR-023).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                title: Nombre en uso
+                status: 409
+                detail: Ya existe un atributo con el nombre "Color". Usa otro nombre.
+                errors:
+                  - { field: displayName, code: DISPLAY_NAME_IN_USE, message: 'Ya existe un atributo con el nombre "Color". Usa otro nombre.' }
+        '422':
+          description: >
+            `SYSTEM_ID_IMMUTABLE` (body names another system ID), `DATA_TYPE_IMMUTABLE` (body names
+            another data type), or feature 004's `LIST_OF_VALUES_NOT_AVAILABLE` /
+            `LIST_OF_VALUES_NOT_FOUND`. Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                dataType:
+                  value:
+                    title: Cambio no permitido
+                    status: 422
+                    detail: El tipo de dato no se puede cambiar.
+                    errors:
+                      - { field: dataType, code: DATA_TYPE_IMMUTABLE, message: El tipo de dato no se puede cambiar. }
+                systemId:
+                  value:
+                    title: Cambio no permitido
+                    status: 422
+                    detail: El ID de sistema no se puede cambiar.
+                    errors:
+                      - { field: systemId, code: SYSTEM_ID_IMMUTABLE, message: El ID de sistema no se puede cambiar. }
+        '503': { $ref: '#/components/responses/StorageUnavailable' }
+    delete:
+      operationId: deleteAttribute
+      summary: Delete an attribute that belongs to no group (spec FR-012–FR-016; research R-05)
+      description: >
+        Removes the definition. Lists of values, their values, groups and products are not changed. The
+        system ID stays registered in feature 003 and is never assigned again.
+      tags: [attributes]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      responses:
+        '204': { description: Deleted. }
+        '403':
+          description: Without `ATTRIBUTE_CREATE`. Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The attribute belongs to groups; it must be removed from them first. Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                title: Atributo en grupos
+                status: 409
+                detail: 'El atributo pertenece a 2 grupos: Logísticos, Ventas. Quítalo de esos grupos antes de eliminarlo.'
+                errors:
+                  - { field: groups, code: ATTRIBUTE_IN_GROUPS, message: 'El atributo pertenece a 2 grupos: Logísticos, Ventas. Quítalo de esos grupos antes de eliminarlo.' }
+                groups:
+                  - { id: 6f1c…, name: Logísticos }
+                  - { id: 9a2d…, name: Ventas }
+        '503': { $ref: '#/components/responses/StorageUnavailable' }
+components:
+  parameters:
+    SystemId:
+      name: systemId
+      in: path
+      required: true
+      description: Compared ignoring letter case, as in feature 003.
+      schema: { type: string, maxLength: 40 }
+    Permissions:
+      name: X-Pim-Permissions
+      in: header
+      required: false
+      description: Development stand-in (feature 004 research R-06); `ATTRIBUTE_CREATE` allows changes.
+      schema: { type: string, example: ATTRIBUTE_CREATE }
+  responses:
+    NotFound:
+      description: No attribute has this ID.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            title: No encontrado
+            status: 404
+            detail: No existe un atributo con el ID ATR999.
+    StorageUnavailable:
+      description: The store cannot be reached (common handler, as in features 004–006). Nothing changed.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    AttributeUpdateRequest:
+      description: >
+        Same fields as feature 004's `AttributeCreationRequest`. `systemId` is optional and, if present,
+        must equal the path ID ignoring letter case. `dataType` is required and must equal the stored
+        type. Only the properties object matching `dataType` is read.
+      type: object
+      required: [displayName, dataType]
+      properties:
+        systemId: { type: string, maxLength: 60 }
+        displayName: { type: string, maxLength: 200 }
+        description: { type: string, maxLength: 2000 }
+        dataType: { type: string, description: 'Feature 004 `DataType`' }
+        textProperties: { type: object, description: 'Feature 004 `TextProperties`' }
+        numericProperties: { type: object, description: 'Feature 004 `NumericProperties`' }
+        listOfValuesProperties: { type: object, description: 'Feature 004 `ListOfValuesProperties`' }
+        dateTimeProperties: { type: object, description: 'Feature 004 `DateTimeProperties`' }
+        currencyProperties: { type: object, description: 'Feature 004 `CurrencyProperties`' }
+        referenceProperties: { type: object, description: 'Feature 004 `ReferenceProperties`' }
+    GroupReference:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+    Attribute:
+      description: >
+        Feature 004's `Attribute` (v1.1.0) plus `updatedAt`, `groups` and
+        `listOfValuesProperties.listOfValuesName`. All other fields unchanged.
+      type: object
+      required: [systemId, displayName, dataType, scope, createdAt, groups]
+      properties:
+        systemId: { type: string }
+        displayName: { type: string }
+        description: { type: string }
+        dataType: { type: string }
+        scope: { type: string, enum: [GLOBAL] }
+        listOfValuesProperties:
+          type: object
+          properties:
+            selectionMode: { type: string }
+            listOfValuesId: { type: string }
+            listOfValuesName:
+              type: string
+              readOnly: true
+              description: New in v1.2.0; absent if the list cannot be found.
+        createdAt: { type: string, format: date-time }
+        updatedAt:
+          type: string
+          format: date-time
+          description: New in v1.2.0; absent until the first edit.
+        groups:
+          type: array
+          description: New in v1.2.0; the groups containing the attribute, sorted by name ignoring case.
+          items: { $ref: '#/components/schemas/GroupReference' }
+      additionalProperties: true
+    AttributeCollection:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Attribute' }
+        total: { type: integer }
+    Problem:
+      description: RFC 9457 Problem Details, as feature 004 v1.1.0; `groups` only for `ATTRIBUTE_IN_GROUPS`.
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              code:
+                type: string
+                description: >
+                  Feature 004 v1.1.0 codes plus ATTRIBUTE_CHANGE_NOT_PERMITTED, SYSTEM_ID_IMMUTABLE,
+                  DATA_TYPE_IMMUTABLE and ATTRIBUTE_IN_GROUPS.
+              message: { type: string }
+        groups:
+          type: array
+          items: { $ref: '#/components/schemas/GroupReference' }

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.pim.backend.attribute.model.AttributePermissions;
 import com.pim.backend.attribute.repository.EmptyListOfValuesCatalog;
 import com.pim.backend.attribute.repository.InMemoryAttributeRepository;
+import com.pim.backend.attribute.repository.NoAttributeGroups;
 import com.pim.backend.attribute.service.AttributeService;
 import com.pim.backend.identifier.config.DefaultObjectTypeConfigurations;
 import com.pim.backend.identifier.model.ManualIdPermissions;
@@ -43,7 +44,11 @@ class ListOfValuesServiceConcurrencyTest {
         new DefaultObjectTypeConfigurations(objectTypes).seedMissing();
         IdentifierService identifierService = new IdentifierService(new InMemorySystemIdRegistry(), objectTypes, clock);
         AttributeService attributeService = new AttributeService(
-                new InMemoryAttributeRepository(), new EmptyListOfValuesCatalog(), identifierService, clock);
+                new InMemoryAttributeRepository(),
+                new EmptyListOfValuesCatalog(),
+                new NoAttributeGroups(),
+                identifierService,
+                clock);
         return new ListOfValuesService(
                 lists, identifierService, attributeService, new ChangeRecorder(record -> {}, clock), clock);
     }

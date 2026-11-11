@@ -214,7 +214,8 @@ class AttributeControllerIntegrationTest {
         create("{\"displayName\":\"Apto\",\"dataType\":\"BOOLEAN\",\"scope\":\"LOCAL\",\"groups\":[\"X\"]}")
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.scope").value("GLOBAL"))
-                .andExpect(jsonPath("$.groups").doesNotExist());
+                // Since feature 007 the response lists the attribute's groups: none for a new attribute.
+                .andExpect(jsonPath("$.groups").isEmpty());
     }
 
     // --- User Story 4 ---

@@ -164,4 +164,46 @@ class MongoAttributeRepositoryIntegrationTest {
         return Attribute.create(
                 systemId, DisplayName.of(name), "Descripción de " + name, dataType, properties, CREATED_AT);
     }
+
+    // --- Feature 007 ---
+
+    @Test
+    void updatesDeletesAndChecksNamesOfOtherAttributes() {
+        Attribute peso = attribute("ATR000001", "Peso", AttributeDataType.BOOLEAN, null);
+        repository.save(peso);
+        repository.save(attribute("ATR000002", "Color", AttributeDataType.BOOLEAN, null));
+
+        assertThat(repository.existsWithDisplayName(DisplayName.of("PESO"), "atr000001"))
+                .isFalse();
+        assertThat(repository.existsWithDisplayName(DisplayName.of("color"), "ATR000001"))
+                .isTrue();
+
+        Attribute edited = peso.updated(DisplayName.of("Peso neto"), null, null, CREATED_AT.plusSeconds(5));
+        repository.update(edited);
+        assertThat(repository.findBySystemId("atr000001")).contains(edited);
+        assertThat(repository.existsWithDisplayName(DisplayName.of("Peso"))).isFalse();
+        assertThatThrownBy(() -> repository.update(edited.updated(DisplayName.of("COLOR"), null, null, CREATED_AT)))
+                .isInstanceOf(IllegalStateException.class);
+
+        repository.delete("atr000001");
+        assertThat(repository.findBySystemId("ATR000001")).isEmpty();
+        assertThat(repository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void readsADocumentWrittenBeforeFeature007AsNeverEdited() {
+        mongoTemplate.insert(
+                new org.bson.Document("_id", "ATR000009")
+                        .append("systemId", "ATR000009")
+                        .append("displayName", "Antiguo")
+                        .append("displayNameKey", "antiguo")
+                        .append("dataType", "BOOLEAN")
+                        .append("scope", "GLOBAL")
+                        .append("createdAt", java.util.Date.from(CREATED_AT)),
+                "attributes");
+
+        Attribute old = repository.findBySystemId("ATR000009").orElseThrow();
+        assertThat(old.updatedAt()).isEmpty();
+        assertThat(old.displayName().value()).isEqualTo("Antiguo");
+    }
 }

@@ -1,6 +1,7 @@
 package com.pim.backend.lov.service;
 
 import com.pim.backend.lov.repository.ListOfValuesRepository;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 
 /**
@@ -24,5 +25,10 @@ public class ListOfValuesLookup {
     /** Whether a list has this system ID, compared ignoring letter case. */
     public boolean exists(String listOfValuesId) {
         return listOfValuesId != null && lists.findById(listOfValuesId.strip()).isPresent();
+    }
+
+    /** Every list's name keyed by its system ID upper-cased (feature 007 research R-03). */
+    public Map<String, String> namesById() {
+        return lists.namesById();
     }
 }

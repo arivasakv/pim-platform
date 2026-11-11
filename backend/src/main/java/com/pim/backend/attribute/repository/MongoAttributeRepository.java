@@ -53,6 +53,31 @@ public class MongoAttributeRepository implements AttributeRepository, Initializi
     }
 
     @Override
+    public boolean existsWithDisplayName(DisplayName displayName, String exceptSystemId) {
+        return mongoTemplate.exists(
+                Query.query(Criteria.where(AttributeDocument.DISPLAY_NAME_KEY)
+                        .is(displayName.comparisonKey())
+                        .and("_id")
+                        .ne(AttributeDocument.key(exceptSystemId))),
+                AttributeDocument.class);
+    }
+
+    @Override
+    public void update(Attribute attribute) {
+        try {
+            mongoTemplate.save(AttributeDocument.from(attribute));
+        } catch (DuplicateKeyException exception) {
+            throw new IllegalStateException("Display name already stored: " + attribute.displayName(), exception);
+        }
+    }
+
+    @Override
+    public void delete(String systemId) {
+        mongoTemplate.remove(
+                Query.query(Criteria.where("_id").is(AttributeDocument.key(systemId))), AttributeDocument.class);
+    }
+
+    @Override
     public void save(Attribute attribute) {
         try {
             mongoTemplate.insert(AttributeDocument.from(attribute));

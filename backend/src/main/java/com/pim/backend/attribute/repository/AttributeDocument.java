@@ -31,6 +31,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
  *
  * @param id the system ID upper-cased, so two IDs differing only in letter case collide on {@code _id}
  * @param displayNameKey the display name lower-cased ({@code Locale.ROOT}); unique index {@value #DISPLAY_NAME_INDEX}
+ * @param updatedAt last change (feature 007); {@code null} for attributes never edited, including every document
+ *     written before feature 007
  */
 @Document(AttributeDocument.COLLECTION)
 record AttributeDocument(
@@ -47,7 +49,8 @@ record AttributeDocument(
         DateTime dateTimeProperties,
         Currency currencyProperties,
         Reference referenceProperties,
-        Instant createdAt) {
+        Instant createdAt,
+        Instant updatedAt) {
 
     static final String COLLECTION = "attributes";
     static final String DISPLAY_NAME_KEY = "displayNameKey";
@@ -105,7 +108,8 @@ record AttributeDocument(
                 properties instanceof ReferenceProperties reference
                         ? new Reference(reference.targetObjectType(), reference.cardinality())
                         : null,
-                attribute.createdAt());
+                attribute.createdAt(),
+                attribute.updatedAt().orElse(null));
     }
 
     Attribute toAttribute() {
@@ -116,7 +120,8 @@ record AttributeDocument(
                 dataType,
                 scope,
                 toProperties(),
-                createdAt);
+                createdAt,
+                Optional.ofNullable(updatedAt));
     }
 
     private AttributeProperties toProperties() {

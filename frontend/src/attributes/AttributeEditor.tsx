@@ -3,29 +3,31 @@ import {
   AttributeApiError,
   createAttribute,
   fetchAttributeTypes,
+  updateAttribute,
+  type Attribute,
   type AttributeOption,
   type AttributeType,
   type DataType,
 } from '../api/attributesApi'
 import { listLists, type ListOfValuesSummary } from '../api/listsOfValuesApi'
 import {
-  emptyForm,
-  toRequest,
-  validateForm,
-  type AttributeForm,
-  type FieldErrors,
-} from '../attributes/attributeForm'
-import {
   Button,
   Card,
   CheckboxField,
   Notification,
-  PageHeader,
   SelectField,
   TextAreaField,
   TextField,
 } from '../components/ui'
-import styles from './AttributeCreationPage.module.css'
+import {
+  emptyForm,
+  fromAttribute,
+  toRequest,
+  validateForm,
+  type AttributeForm,
+  type FieldErrors,
+} from './attributeForm'
+import styles from './AttributeEditor.module.css'
 
 const CONNECTION_ERROR = 'No se pudo conectar con el servidor. Inténtalo de nuevo.'
 
@@ -41,13 +43,35 @@ type SaveState =
 /** The lists a list-of-values attribute can use (feature 006 FR-026); `null` until requested. */
 type ListsState = null | { status: 'error' } | { status: 'ready'; lists: ListOfValuesSummary[] }
 
+type AttributeEditorProps = {
+  /** `create` (feature 004) or `edit` an existing attribute (feature 007 FR-007). */
+  mode?: 'create' | 'edit'
+  /** The attribute to edit; required in `edit` mode. */
+  attribute?: Attribute
+  /** Called with the attribute as the backend saved it. */
+  onSaved?: (attribute: Attribute) => void
+  /** Shows a "Cancelar" button that calls it. */
+  onCancel?: () => void
+}
+
 /**
- * Creates one attribute definition at a time (spec 004). The data types and their options come
- * from the backend (FR-022); the backend checks every rule and assigns the system ID.
+ * The attribute form: creates one attribute definition at a time (feature 004) or edits one
+ * (feature 007). The data types and their options come from the backend (FR-022); the backend
+ * checks every rule and assigns the system ID. When editing, the system ID and the data type are
+ * shown but cannot be changed (feature 007 FR-010).
  */
-export function AttributeCreationPage() {
+export function AttributeEditor({
+  mode = 'create',
+  attribute,
+  onSaved,
+  onCancel,
+}: AttributeEditorProps) {
+  const editTarget = mode === 'edit' ? attribute : undefined
+  const editing = editTarget !== undefined
   const [typesState, setTypesState] = useState<TypesState>({ status: 'loading' })
-  const [form, setForm] = useState<AttributeForm>(emptyForm)
+  const [form, setForm] = useState<AttributeForm>(() =>
+    editTarget ? fromAttribute(editTarget) : emptyForm(),
+  )
   const [errors, setErrors] = useState<FieldErrors>({})
   const [saveState, setSaveState] = useState<SaveState>({ status: 'idle' })
 
@@ -107,10 +131,18 @@ export function AttributeCreationPage() {
     }
     setSaveState({ status: 'saving' })
     try {
-      const attribute = await createAttribute(toRequest(form))
+      if (editTarget) {
+        const saved = await updateAttribute(editTarget.systemId, toRequest(form))
+        setErrors({})
+        setSaveState({ status: 'idle' })
+        onSaved?.(saved)
+        return
+      }
+      const created = await createAttribute(toRequest(form))
       setForm(emptyForm())
       setErrors({})
-      setSaveState({ status: 'created', systemId: attribute.systemId })
+      setSaveState({ status: 'created', systemId: created.systemId })
+      onSaved?.(created)
     } catch (error) {
       if (error instanceof AttributeApiError && error.kind !== 'unavailable') {
         const fieldErrors = Object.fromEntries(
@@ -139,11 +171,12 @@ export function AttributeCreationPage() {
   }
 
   return (
-    <>
-      <PageHeader
-        title="Crear Atributos"
-        description="Define un atributo nuevo, su tipo de dato y sus propiedades. Los atributos se crean globales (aplican a todo el sistema) y sin grupos."
-      />
+    <Card title={editing ? 'Editar atributo' : 'Nuevo atributo'}>
+      <p className={styles.intro}>
+        {editing
+          ? 'El ID y el tipo de dato no se pueden cambiar.'
+          : 'Define un atributo nuevo, su tipo de dato y sus propiedades. Los atributos se crean globales (aplican a todo el sistema) y sin grupos.'}
+      </p>
 
       {typesState.status === 'loading' && <p className={styles.loading}>Cargando tipos de dato…</p>}
 
@@ -159,9 +192,11 @@ export function AttributeCreationPage() {
       )}
 
       {typesState.status === 'ready' && (
-        <Card>
-          <form className={styles.form} noValidate onSubmit={handleSubmit}>
-            {/* The ID comes first: it is captured before every other field. */}
+        <form className={styles.form} noValidate onSubmit={handleSubmit}>
+          {/* The ID comes first: it is captured before every other field. */}
+          {editing ? (
+            <TextField id="systemId" label="ID" value={form.systemId} readOnly />
+          ) : (
             <TextField
               id="systemId"
               label="ID (opcional)"
@@ -171,48 +206,58 @@ export function AttributeCreationPage() {
               onChange={(event) => update({ systemId: event.target.value })}
               error={errors.systemId}
             />
-            <TextField
-              id="displayName"
-              label="Nombre"
-              maxLength={120}
-              value={form.displayName}
-              onChange={(event) => update({ displayName: event.target.value })}
-              error={errors.displayName}
-            />
-            <TextAreaField
-              id="description"
-              label="Descripción"
-              maxLength={1000}
-              hint="Opcional."
-              value={form.description}
-              onChange={(event) => update({ description: event.target.value })}
-              error={errors.description}
-            />
-            <SelectField
-              id="dataType"
-              label="Tipo de dato"
-              placeholder="Elige un tipo de dato"
-              options={typesState.types}
-              value={form.dataType}
-              onChange={(code) => update({ dataType: code as DataType | '' })}
-              error={errors.dataType}
-            />
+          )}
+          <TextField
+            id="displayName"
+            label="Nombre"
+            maxLength={120}
+            value={form.displayName}
+            onChange={(event) => update({ displayName: event.target.value })}
+            error={errors.displayName}
+          />
+          <TextAreaField
+            id="description"
+            label="Descripción"
+            maxLength={1000}
+            hint="Opcional."
+            value={form.description}
+            onChange={(event) => update({ description: event.target.value })}
+            error={errors.description}
+          />
+          <SelectField
+            id="dataType"
+            label="Tipo de dato"
+            placeholder="Elige un tipo de dato"
+            options={typesState.types}
+            value={form.dataType}
+            onChange={(code) => update({ dataType: code as DataType | '' })}
+            error={errors.dataType}
+            disabled={editing}
+          />
 
-            <TypeFields
-              form={form}
-              errors={errors}
-              options={optionsOf(typesState.types, form.dataType)}
-              listsState={listsState}
-              onChange={update}
-            />
+          <TypeFields
+            form={form}
+            errors={errors}
+            options={optionsOf(typesState.types, form.dataType)}
+            listsState={listsState}
+            onChange={update}
+          />
 
-            <div className={styles.actions}>
-              <Button type="submit" disabled={saveState.status === 'saving'}>
-                Crear atributo
+          <div className={styles.actions}>
+            {onCancel && (
+              <Button
+                variant="secondary"
+                disabled={saveState.status === 'saving'}
+                onClick={onCancel}
+              >
+                Cancelar
               </Button>
-            </div>
-          </form>
-        </Card>
+            )}
+            <Button type="submit" disabled={saveState.status === 'saving'}>
+              {editing ? 'Guardar cambios' : 'Crear atributo'}
+            </Button>
+          </div>
+        </form>
       )}
 
       <div className={styles.messages} aria-live="polite">
@@ -225,7 +270,7 @@ export function AttributeCreationPage() {
           <Notification variant="error">{saveState.message}</Notification>
         )}
       </div>
-    </>
+    </Card>
   )
 }
 

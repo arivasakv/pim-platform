@@ -15,11 +15,27 @@ public interface AttributeRepository {
     boolean existsWithDisplayName(DisplayName displayName);
 
     /**
+     * Whether an attribute other than {@code exceptSystemId} has this display name, both compared ignoring letter case
+     * (feature 007 FR-008).
+     */
+    boolean existsWithDisplayName(DisplayName displayName, String exceptSystemId);
+
+    /**
      * Saves a new attribute.
      *
      * @throws IllegalStateException if its system ID or display name is already stored
      */
     void save(Attribute attribute);
+
+    /**
+     * Replaces the stored attribute with the same system ID (feature 007).
+     *
+     * @throws IllegalStateException if another attribute already has its display name
+     */
+    void update(Attribute attribute);
+
+    /** Deletes the attribute with this system ID, compared ignoring letter case; nothing happens if none has it. */
+    void delete(String systemId);
 
     /** Every attribute, sorted by display name ignoring letter case (feature 005 plan decision D-3). */
     List<Attribute> findAll();

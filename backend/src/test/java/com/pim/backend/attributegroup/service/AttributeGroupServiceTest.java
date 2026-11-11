@@ -9,6 +9,7 @@ import com.pim.backend.attribute.model.AttributeDraft;
 import com.pim.backend.attribute.model.AttributePermissions;
 import com.pim.backend.attribute.repository.EmptyListOfValuesCatalog;
 import com.pim.backend.attribute.repository.InMemoryAttributeRepository;
+import com.pim.backend.attribute.repository.NoAttributeGroups;
 import com.pim.backend.attribute.service.AttributeService;
 import com.pim.backend.attributegroup.model.AddAttributesOutcome;
 import com.pim.backend.attributegroup.model.AttributeGroup;
@@ -54,7 +55,11 @@ class AttributeGroupServiceTest {
         new DefaultObjectTypeConfigurations(objectTypes).seedMissing();
         IdentifierService identifierService = new IdentifierService(new InMemorySystemIdRegistry(), objectTypes, clock);
         return new AttributeService(
-                new InMemoryAttributeRepository(), new EmptyListOfValuesCatalog(), identifierService, clock);
+                new InMemoryAttributeRepository(),
+                new EmptyListOfValuesCatalog(),
+                new NoAttributeGroups(),
+                identifierService,
+                clock);
     }
 
     // --- User Story 1: create ---

@@ -114,4 +114,13 @@ class MongoListOfValuesRepositoryIntegrationTest {
         assertThatThrownBy(() -> repository.insert(ListOfValues.create("LOV000002", ListName.of("COLOR"), NOW)))
                 .isInstanceOf(IllegalStateException.class);
     }
+
+    @Test
+    void namesEveryListByItsIdWithoutTheValues() {
+        repository.insert(ListOfValues.create("LOV000001", ListName.of("Color"), NOW));
+        repository.insert(ListOfValues.create("lov-talla", ListName.of("Talla"), NOW));
+
+        assertThat(repository.namesById())
+                .containsOnly(java.util.Map.entry("LOV000001", "Color"), java.util.Map.entry("LOV-TALLA", "Talla"));
+    }
 }

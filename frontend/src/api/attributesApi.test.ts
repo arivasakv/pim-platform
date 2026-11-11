@@ -1,9 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   AttributeApiError,
+  canChangeAttributes,
   createAttribute,
+  deleteAttribute,
   fetchAttributeTypes,
+  getAttribute,
   listAttributes,
+  updateAttribute,
 } from './attributesApi'
 
 const BASE_URL = 'http://servidor.ejemplo:9090'
@@ -109,5 +113,101 @@ describe('attributesApi', () => {
 
     stubFetch(() => Promise.resolve(response(503, {})))
     await expect(listAttributes()).rejects.toMatchObject({ kind: 'unavailable' })
+  })
+
+  // --- Feature 007 ---
+
+  it('reads one attribute with its groups and list name', async () => {
+    const attribute = {
+      systemId: 'ATR000001',
+      displayName: 'Color',
+      dataType: 'LIST_OF_VALUES',
+      scope: 'GLOBAL',
+      listOfValuesProperties: {
+        selectionMode: 'SINGLE',
+        listOfValuesId: 'LOV000001',
+        listOfValuesName: 'Color',
+      },
+      groups: [{ id: 'g1', name: 'Logísticos' }],
+    }
+    const fetchMock = stubFetch(() => Promise.resolve(response(200, attribute)))
+
+    await expect(getAttribute('ATR 1')).resolves.toEqual(attribute)
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE_URL}/api/v1/attributes/ATR%201`)
+  })
+
+  it('reports an unknown attribute as not found', async () => {
+    stubFetch(() =>
+      Promise.resolve(response(404, { status: 404, detail: 'No existe un atributo con el ID X.' })),
+    )
+
+    await expect(getAttribute('X')).rejects.toMatchObject({
+      kind: 'notFound',
+      detail: 'No existe un atributo con el ID X.',
+    })
+  })
+
+  it('puts an edit with the permission headers', async () => {
+    vi.stubEnv('VITE_DEV_PERMISSIONS', 'ATTRIBUTE_CREATE')
+    const saved = { systemId: 'ATR000001', ...BOOLEAN_REQUEST, scope: 'GLOBAL' }
+    const fetchMock = stubFetch(() => Promise.resolve(response(200, saved)))
+
+    await expect(updateAttribute('ATR000001', BOOLEAN_REQUEST)).resolves.toEqual(saved)
+
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe(`${BASE_URL}/api/v1/attributes/ATR000001`)
+    expect(init.method).toBe('PUT')
+    expect(JSON.parse(init.body)).toEqual(BOOLEAN_REQUEST)
+    expect(init.headers['X-Pim-Permissions']).toBe('ATTRIBUTE_CREATE')
+  })
+
+  it('passes on the refusals of an edit', async () => {
+    const message = 'Ya existe un atributo con el nombre "Color". Usa otro nombre.'
+    stubFetch(() =>
+      Promise.resolve(
+        response(409, {
+          status: 409,
+          detail: message,
+          errors: [{ field: 'displayName', code: 'DISPLAY_NAME_IN_USE', message }],
+        }),
+      ),
+    )
+
+    const error = await updateAttribute('ATR000001', BOOLEAN_REQUEST).catch((caught) => caught)
+    expect(error).toBeInstanceOf(AttributeApiError)
+    expect(error.kind).toBe('conflict')
+    expect(error.errors[0].code).toBe('DISPLAY_NAME_IN_USE')
+  })
+
+  it('deletes an attribute and exposes the groups of a refusal', async () => {
+    vi.stubEnv('VITE_DEV_PERMISSIONS', 'ATTRIBUTE_CREATE')
+    const fetchMock = stubFetch(() => Promise.resolve(response(204, null)))
+
+    await expect(deleteAttribute('ATR000001')).resolves.toBeUndefined()
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe(`${BASE_URL}/api/v1/attributes/ATR000001`)
+    expect(init.method).toBe('DELETE')
+    expect(init.headers['X-Pim-Permissions']).toBe('ATTRIBUTE_CREATE')
+
+    stubFetch(() =>
+      Promise.resolve(
+        response(409, {
+          status: 409,
+          detail: 'El atributo pertenece a 1 grupo: Ventas.',
+          groups: [{ id: 'g2', name: 'Ventas' }],
+        }),
+      ),
+    )
+    await expect(deleteAttribute('ATR000001')).rejects.toMatchObject({
+      kind: 'conflict',
+      groups: [{ id: 'g2', name: 'Ventas' }],
+    })
+  })
+
+  it('knows whether the development permissions allow changes', () => {
+    vi.stubEnv('VITE_DEV_PERMISSIONS', '')
+    expect(canChangeAttributes()).toBe(false)
+    vi.stubEnv('VITE_DEV_PERMISSIONS', 'OTHER, attribute_create')
+    expect(canChangeAttributes()).toBe(true)
   })
 })

@@ -1,6 +1,7 @@
 package com.pim.backend.lov.service;
 
 import com.pim.backend.attribute.repository.ListOfValuesCatalog;
+import java.util.Map;
 import org.springframework.stereotype.Component;
 
 /**
@@ -25,5 +26,10 @@ public class ListOfValuesCatalogAdapter implements ListOfValuesCatalog {
     @Override
     public boolean exists(String listOfValuesId) {
         return lookup.exists(listOfValuesId);
+    }
+
+    @Override
+    public Map<String, String> namesById() {
+        return lookup.namesById();
     }
 }

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AttributeCreationPage } from './AttributeCreationPage'
+import { AttributeEditor } from './AttributeEditor'
 
 const BASE_URL = 'http://servidor.ejemplo:9090'
 const CONNECTION_ERROR = 'No se pudo conectar con el servidor. Inténtalo de nuevo.'
@@ -98,7 +98,7 @@ function problem(status: number, detail: string, field: string, code: string, me
 }
 
 async function renderReadyPage() {
-  render(<AttributeCreationPage />)
+  render(<AttributeEditor />)
   await screen.findByLabelText('Tipo de dato')
 }
 
@@ -115,7 +115,7 @@ function lastRequestBody(fetchMock: ReturnType<typeof vi.fn>) {
   return JSON.parse(calls[calls.length - 1][1].body)
 }
 
-describe('AttributeCreationPage', () => {
+describe('AttributeEditor (create mode, feature 004)', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_API_BASE_URL', BASE_URL)
     vi.stubEnv('VITE_DEV_PERMISSIONS', 'ATTRIBUTE_CREATE')
@@ -130,9 +130,9 @@ describe('AttributeCreationPage', () => {
 
   it('loads the data types from the backend and shows the common fields', async () => {
     stubBackend()
-    render(<AttributeCreationPage />)
+    render(<AttributeEditor />)
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Crear Atributos' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 2, name: 'Nuevo atributo' })).toBeTruthy()
     expect(screen.getByText('Cargando tipos de dato…')).toBeTruthy()
     const typeSelect = await screen.findByLabelText<HTMLSelectElement>('Tipo de dato')
     expect(Array.from(typeSelect.options).map((option) => option.textContent)).toEqual([
@@ -152,7 +152,7 @@ describe('AttributeCreationPage', () => {
 
   it('asks for the ID before every other field', async () => {
     stubBackend()
-    render(<AttributeCreationPage />)
+    render(<AttributeEditor />)
 
     await screen.findByLabelText('Tipo de dato')
     const form = screen.getByLabelText('ID (opcional)').closest('form')
@@ -168,7 +168,7 @@ describe('AttributeCreationPage', () => {
       .mockImplementationOnce(() => Promise.reject(new TypeError('Failed to fetch')))
       .mockImplementationOnce(() => Promise.resolve(response(200, TYPES)))
     vi.stubGlobal('fetch', fetchMock)
-    render(<AttributeCreationPage />)
+    render(<AttributeEditor />)
 
     expect(await screen.findByText(CONNECTION_ERROR)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
@@ -451,5 +451,90 @@ describe('AttributeCreationPage', () => {
     expect(screen.queryByLabelText(/alcance/i)).toBeNull()
     expect(screen.queryByLabelText(/grupo/i)).toBeNull()
     await waitFor(() => expect(screen.getByText(/global/i)).toBeTruthy())
+  })
+})
+
+describe('AttributeEditor (edit mode, feature 007)', () => {
+  const PESO = {
+    systemId: 'ATR000001',
+    displayName: 'Peso',
+    description: 'Peso bruto',
+    dataType: 'NUMERIC' as const,
+    scope: 'GLOBAL' as const,
+    numericProperties: { numberFormat: 'DECIMAL', precision: 2, minimum: 0 },
+    groups: [],
+  }
+
+  beforeEach(() => {
+    vi.stubEnv('VITE_API_BASE_URL', BASE_URL)
+    vi.stubEnv('VITE_DEV_PERMISSIONS', 'ATTRIBUTE_CREATE')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('fills the form, shows the ID read-only and does not let the type change', async () => {
+    stubBackend()
+    render(<AttributeEditor mode="edit" attribute={PESO} />)
+    await screen.findByLabelText('Tipo de dato')
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Editar atributo' })).toBeTruthy()
+    const id = screen.getByLabelText<HTMLInputElement>('ID')
+    expect(id.value).toBe('ATR000001')
+    expect(id.readOnly).toBe(true)
+    expect(screen.getByLabelText<HTMLSelectElement>('Tipo de dato').disabled).toBe(true)
+    expect(screen.getByLabelText<HTMLInputElement>('Nombre').value).toBe('Peso')
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Descripción').value).toBe('Peso bruto')
+    expect(screen.getByLabelText<HTMLInputElement>('Decimales').value).toBe('2')
+  })
+
+  it('saves with PUT and reports the saved attribute', async () => {
+    const saved = { ...PESO, displayName: 'Peso neto', updatedAt: '2026-11-11T18:00:00Z' }
+    const fetchMock = stubBackend(() => Promise.resolve(response(200, saved)))
+    const onSaved = vi.fn()
+    render(<AttributeEditor mode="edit" attribute={PESO} onSaved={onSaved} />)
+    await screen.findByLabelText('Tipo de dato')
+
+    type('Nombre', 'Peso neto')
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(saved))
+    const [url, init] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]
+    expect(url).toBe(`${BASE_URL}/api/v1/attributes/ATR000001`)
+    expect(init?.method).toBe('PUT')
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      systemId: 'ATR000001',
+      displayName: 'Peso neto',
+      dataType: 'NUMERIC',
+      numericProperties: { numberFormat: 'DECIMAL', precision: 2, minimum: 0 },
+    })
+  })
+
+  it('shows a duplicate name next to the name field', async () => {
+    const message = 'Ya existe un atributo con el nombre "Color". Usa otro nombre.'
+    stubBackend(problem(409, message, 'displayName', 'DISPLAY_NAME_IN_USE', message))
+    const onSaved = vi.fn()
+    render(<AttributeEditor mode="edit" attribute={PESO} onSaved={onSaved} />)
+    await screen.findByLabelText('Tipo de dato')
+
+    type('Nombre', 'Color')
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(await screen.findByText(message)).toBeTruthy()
+    expect(onSaved).not.toHaveBeenCalled()
+  })
+
+  it('cancels without sending anything', async () => {
+    const fetchMock = stubBackend()
+    const onCancel = vi.fn()
+    render(<AttributeEditor mode="edit" attribute={PESO} onCancel={onCancel} />)
+    await screen.findByLabelText('Tipo de dato')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+
+    expect(onCancel).toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })

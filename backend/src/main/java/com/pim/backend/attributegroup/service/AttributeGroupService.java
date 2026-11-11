@@ -79,6 +79,25 @@ public class AttributeGroupService {
     }
 
     /**
+     * Runs {@code action} only if no group contains the attribute (compared ignoring letter case), while holding the
+     * group lock, so no membership can be added in between (feature 007 FR-014, FR-017; research R-05). The action may
+     * take the attribute lock: the order group → attribute is the one {@link #addAttributes} already uses.
+     *
+     * @return the groups containing the attribute, sorted by name ignoring letter case; empty if the action ran
+     */
+    public List<AttributeGroup> runIfInNoGroup(String attributeId, Runnable action) {
+        synchronized (lock) {
+            List<AttributeGroup> containing = groups.findAll().stream()
+                    .filter(group -> group.contains(attributeId))
+                    .toList();
+            if (containing.isEmpty()) {
+                action.run();
+            }
+            return containing;
+        }
+    }
+
+    /**
      * One group with its members' details (FR-012).
      *
      * @throws GroupNotFoundException if no group has the identifier

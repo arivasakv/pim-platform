@@ -24,9 +24,13 @@ describe('getPathFromHash', () => {
   })
 })
 
-describe('getPathFromHash for the attribute creation page (feature 004)', () => {
-  it('returns the attribute creation path for "#/crear-atributo"', () => {
-    expect(getPathFromHash('#/crear-atributo')).toBe('/crear-atributo')
+describe('getPathFromHash for the attributes page (feature 007)', () => {
+  it('returns the attributes path for "#/atributos"', () => {
+    expect(getPathFromHash('#/atributos')).toBe('/atributos')
+  })
+
+  it('returns the home path for the replaced creation page "#/crear-atributo"', () => {
+    expect(getPathFromHash('#/crear-atributo')).toBe('/')
   })
 })
 
@@ -46,7 +50,7 @@ describe('navigation for the lists of values page (feature 006)', () => {
       'Inicio',
       'Buscar Producto',
       'Lista de Valores',
-      'Crear Atributos',
+      'Atributos',
       'Grupo de Atributos',
     ])
   })

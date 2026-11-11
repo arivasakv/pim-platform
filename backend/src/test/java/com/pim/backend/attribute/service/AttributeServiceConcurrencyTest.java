@@ -8,6 +8,7 @@ import com.pim.backend.attribute.model.AttributePermissions;
 import com.pim.backend.attribute.model.DisplayNameInUseException;
 import com.pim.backend.attribute.repository.EmptyListOfValuesCatalog;
 import com.pim.backend.attribute.repository.InMemoryAttributeRepository;
+import com.pim.backend.attribute.repository.NoAttributeGroups;
 import com.pim.backend.identifier.config.DefaultObjectTypeConfigurations;
 import com.pim.backend.identifier.model.ManualIdPermissions;
 import com.pim.backend.identifier.repository.InMemoryObjectTypeConfigurationRepository;
@@ -40,7 +41,12 @@ class AttributeServiceConcurrencyTest {
     private AttributeService newService() {
         new DefaultObjectTypeConfigurations(objectTypes).afterPropertiesSet();
         IdentifierService identifierService = new IdentifierService(systemIds, objectTypes, Clock.systemUTC());
-        return new AttributeService(attributes, new EmptyListOfValuesCatalog(), identifierService, Clock.systemUTC());
+        return new AttributeService(
+                attributes,
+                new EmptyListOfValuesCatalog(),
+                new NoAttributeGroups(),
+                identifierService,
+                Clock.systemUTC());
     }
 
     @AfterEach

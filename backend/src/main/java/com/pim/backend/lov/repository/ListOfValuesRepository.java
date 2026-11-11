@@ -3,6 +3,7 @@ package com.pim.backend.lov.repository;
 import com.pim.backend.lov.model.ListName;
 import com.pim.backend.lov.model.ListOfValues;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /** Where lists of values are kept (constitution IX: behind an interface; data-model "Collections"). */
@@ -13,6 +14,9 @@ public interface ListOfValuesRepository {
 
     /** Every list, sorted by name ignoring letter case. */
     List<ListOfValues> findAll();
+
+    /** Every list's name keyed by its system ID upper-cased, without loading the values (feature 007 research R-03). */
+    Map<String, String> namesById();
 
     /** Whether a list other than {@code excludedId} (may be {@code null}) has the name, ignoring letter case. */
     boolean existsWithName(ListName name, String excludedId);

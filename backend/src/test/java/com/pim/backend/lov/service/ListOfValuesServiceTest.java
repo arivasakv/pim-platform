@@ -9,6 +9,7 @@ import com.pim.backend.attribute.model.AttributePermissions;
 import com.pim.backend.attribute.model.ListOfValuesProperties;
 import com.pim.backend.attribute.model.SelectionMode;
 import com.pim.backend.attribute.repository.InMemoryAttributeRepository;
+import com.pim.backend.attribute.repository.NoAttributeGroups;
 import com.pim.backend.attribute.service.AttributeService;
 import com.pim.backend.identifier.config.DefaultObjectTypeConfigurations;
 import com.pim.backend.identifier.model.ManualIdNotPermittedException;
@@ -59,6 +60,7 @@ class ListOfValuesServiceTest {
     private final AttributeService attributeService = new AttributeService(
             new InMemoryAttributeRepository(),
             new ListOfValuesCatalogAdapter(new ListOfValuesLookup(lists)),
+            new NoAttributeGroups(),
             identifierService,
             clock);
     private final ChangeRecordRepository recordRepository = records::add;

@@ -15,6 +15,13 @@ public class InMemoryListOfValuesRepository implements ListOfValuesRepository {
     private final Map<String, ListOfValues> byId = new ConcurrentHashMap<>();
 
     @Override
+    public Map<String, String> namesById() {
+        Map<String, String> names = new java.util.HashMap<>();
+        byId.forEach((key, list) -> names.put(key, list.name().value()));
+        return Map.copyOf(names);
+    }
+
+    @Override
     public Optional<ListOfValues> findById(String systemId) {
         return systemId == null ? Optional.empty() : Optional.ofNullable(byId.get(key(systemId)));
     }
