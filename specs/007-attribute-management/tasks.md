@@ -318,7 +318,7 @@ shown.
 - [X] T056 Scope check per quickstart "Scope checks": `git diff --stat` shows no change to features
   001–003, no new dependency, no permission code added; features 005 and 006 changes limited to the
   listed methods.
-- [ ] T057 Owner check: quickstart UI scenarios U1–U11 in the browser (left to the project owner).
+- [X] T057 Owner check: quickstart UI scenarios U1–U11 in the browser (left to the project owner).
 
 ---
 
@@ -354,7 +354,7 @@ shown.
     attributes without `updatedAt` read normally). The temporary processes were stopped.
   - T056: no change to features 001–003, `build.gradle`, `package.json`, the constitution or
     CLAUDE.md; no permission code added.
-  - T057 (browser check of U1–U11) is left to the project owner.
+  - T057 (browser check of U1–U11): marked done by the project owner on 2026-11-11.
 - **Where the implementation differs from the task text** (same behavior):
   - T005: `namesById` is tested in `MongoListOfValuesRepositoryIntegrationTest` (the repository gained
     a projection, research R-03 note) and through the attribute integration tests.
