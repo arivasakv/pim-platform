@@ -49,7 +49,7 @@ Use `X-Pim-Permissions: ATTRIBUTE_CREATE` for changes unless stated.
 
 | # | Steps | Expected |
 |---|---|---|
-| U1 | Open the side navigation | Order: Inicio, Componentes, Buscar producto, Listas de valores, Crear atributo, Grupos de atributos |
+| U1 | Open the side navigation | Order: Inicio, Componentes, Buscar producto, Lista de Valores, Crear Atributos, Grupo de Atributos |
 | U2 | Open it with no lists | Empty state with a create form |
 | U3 | Create "Color", add `0001` "Azul" and a value without ID | Both listed; the second has ID `0001`+1 |
 | U4 | Edit "Azul" → "AZUL" | Label changes; the ID field isn't editable |

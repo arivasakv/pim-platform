@@ -320,7 +320,7 @@ together.
 - [X] T030 [US1] Implement `FE/pages/ListsOfValuesPage.tsx` and `.module.css`:
   - master–detail like `AttributeGroupsPage`, design-system components only;
   - change controls only with the `ATTRIBUTE_CREATE` development permission;
-  - add `{ path: '/listas-de-valores', label: 'Listas de valores', icon: 'components' }` to
+  - add `{ path: '/listas-de-valores', label: 'Lista de Valores', icon: 'components' }` to
     `FE/navigation.ts` right after "Buscar producto" (originally after "Grupos de atributos";
     reordered on 2026-11-11);
   - add the route in `FE/App.tsx` and one case in `FE/navigation.test.ts` (entry order).

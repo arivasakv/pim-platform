@@ -375,8 +375,9 @@ Requirement IDs are kept stable; requirements moved to follow-up features are ma
 **Navigation and interface**
 
 - **FR-025 – Own menu entry**: The feature MUST have its own entry in the side navigation, separate
-  from the attribute pages, labelled **"Listas de valores"**, placed right after "Buscar producto" and
-  before "Crear atributo" and "Grupos de atributos" (order changed by the project owner on 2026-11-11).
+  from the attribute pages, labelled **"Lista de Valores"**, placed right after "Buscar producto" and
+  before "Crear Atributos" and "Grupo de Atributos" (order and labels changed by the project owner on
+  2026-11-11).
   The interface MUST be in Spanish and use the existing design system components; lists and values
   MUST come from the backend, never be written into the frontend.
 - **FR-026 – Feature 004 integration**: Once lists exist, feature 004's LOV attribute creation MUST
@@ -465,7 +466,7 @@ Reported per constitution XI; not used as requirements.
   that does not exist.
 - **SC-006**: Once a list exists, an LOV attribute can be created in feature 004 linked to it in under
   1 minute.
-- **SC-007**: Users find "Listas de valores" in the side navigation without searching (it is a
+- **SC-007**: Users find "Lista de Valores" in the side navigation without searching (it is a
   top-level entry).
 
 ## Assumptions
