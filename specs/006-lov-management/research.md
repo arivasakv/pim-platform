@@ -212,8 +212,8 @@ plan.md decisions D-1 to D-12, including the feature 004 changes of R-03 and R-0
 
 - **Decision**:
   - A new page `ListsOfValuesPage` at `#/listas-de-valores`, with the navigation entry "Listas de
-    valores" right after "Grupos de atributos" (FR-025; icon `components`, as for the other
-    administration pages).
+    valores" right after "Buscar producto", before the attribute pages (FR-025; icon
+    `components`, as for the other administration pages).
   - Master–detail layout like `AttributeGroupsPage`: the lists on the left; the selected list on the
     right, with its values table (ID, Etiqueta, Equivalencia when on), the add-value form, edit and
     delete per value, CSV upload with the error report, the template download link, and the linked

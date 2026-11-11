@@ -375,7 +375,8 @@ Requirement IDs are kept stable; requirements moved to follow-up features are ma
 **Navigation and interface**
 
 - **FR-025 – Own menu entry**: The feature MUST have its own entry in the side navigation, separate
-  from the attribute pages, labelled **"Listas de valores"**, placed right after "Grupos de atributos".
+  from the attribute pages, labelled **"Listas de valores"**, placed right after "Buscar producto" and
+  before "Crear atributo" and "Grupos de atributos" (order changed by the project owner on 2026-11-11).
   The interface MUST be in Spanish and use the existing design system components; lists and values
   MUST come from the backend, never be written into the frontend.
 - **FR-026 – Feature 004 integration**: Once lists exist, feature 004's LOV attribute creation MUST
@@ -437,7 +438,7 @@ Reported per constitution XI; not used as requirements.
 | DEP-05 | **Storage for lists and values** | Resolved 2026-11-11 | Constitution 2.4.0 (Principle IX) allows MongoDB for lists of values and their values (OQ-016) |
 | DEP-06 | **Permissions / users and roles** | Development headers only | FR-002 (OQ-009) |
 | DEP-07 | **Filters (§3.2.3)** and **templates** (future) | Not available | "Fuera de alcance", contextual and cascading filters and per-channel transformations stay out of scope |
-| DEP-08 | **Feature 005 – Attribute groups** | Implemented, on `main` | No functional dependency; the new menu entry goes after its entry |
+| DEP-08 | **Feature 005 – Attribute groups** | Implemented, on `main` | No functional dependency; its menu entry now comes after the new one |
 
 ### Key Entities
 

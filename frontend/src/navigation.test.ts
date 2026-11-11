@@ -41,9 +41,15 @@ describe('navigation for the lists of values page (feature 006)', () => {
     expect(getPathFromHash('#/listas-de-valores')).toBe('/listas-de-valores')
   })
 
-  it('places "Listas de valores" right after "Grupos de atributos"', () => {
-    const labels = NAVIGATION_ENTRIES.map((entry) => entry.label)
-    expect(labels.indexOf('Listas de valores')).toBe(labels.indexOf('Grupos de atributos') + 1)
+  it('orders the side navigation with "Listas de valores" before the attribute pages', () => {
+    expect(NAVIGATION_ENTRIES.map((entry) => entry.label)).toEqual([
+      'Inicio',
+      'Componentes',
+      'Buscar producto',
+      'Listas de valores',
+      'Crear atributo',
+      'Grupos de atributos',
+    ])
   })
 })
 
