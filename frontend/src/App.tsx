@@ -3,15 +3,12 @@ import { AppShell } from './components/layout/AppShell'
 import { NAVIGATION_ENTRIES, useCurrentPath } from './navigation'
 import { AttributeCreationPage } from './pages/AttributeCreationPage'
 import { AttributeGroupsPage } from './pages/AttributeGroupsPage'
-import { ComponentGalleryPage } from './pages/ComponentGalleryPage'
 import { HomePage } from './pages/HomePage'
 import { ListsOfValuesPage } from './pages/ListsOfValuesPage'
 import { ProductSearchPage } from './pages/ProductSearchPage'
 
 function renderPage(path: string) {
   switch (path) {
-    case '/componentes':
-      return <ComponentGalleryPage />
     case '/buscar-producto':
       return <ProductSearchPage />
     case '/crear-atributo':

@@ -98,7 +98,8 @@ Dropdowns, selection controls and tables follow in a later feature.
 **Why this priority**: Reusable components are what keep the identity consistent as product
 features are added later.
 
-**Independent Test**: Open the component reference page and confirm every listed component is
+**Independent Test** (the reference page was removed on 2026-11-11, see FR-012; the components are
+now reviewed on the pages that use them): Open the component reference page and confirm every listed component is
 shown in its normal, hover/focus, disabled and (where relevant) error states, all following the
 visual identity.
 
@@ -202,9 +203,10 @@ of 2026-11-08 and are cited as `[Source: feature request §<section>]`.
 - **FR-011**: Interactive components MUST have distinct normal, hover, focus and disabled states;
   input components MUST also have an error state with a message. [Source: feature request §3]
   (states are a design choice derived from "consistent reusable components")
-- **FR-012**: The application MUST include a component reference page that displays every
+- **FR-012**: ~~The application MUST include a component reference page that displays every
   component from FR-010 in its states, so the design can be reviewed in the running application.
-  (Technical decision TD-002)
+  (Technical decision TD-002)~~ **Withdrawn 2026-11-11** by the project owner: the component reference page was removed; the
+  components stay and are covered by their own tests and `docs/architecture/design-system.md`.
 
 #### Responsive behavior
 
@@ -247,7 +249,7 @@ These items come from tier 3 evidence. They are not requirements and are listed 
   later (for example, when official brand guidelines arrive) without editing each component.
   Rationale: feature request §Technical Constraints ("keep visual styling separate and
   maintainable").
-- **TD-002**: A component reference page is part of the deliverable. Rationale: the feature has no
+- **TD-002** (withdrawn 2026-11-11 with FR-012): A component reference page is part of the deliverable. Rationale: the feature has no
   business screens to show the components, and acceptance criteria 1 and 3 need something
   reviewable in the running application.
 - **TD-003**: No new UI component library or icon library is assumed; whether one is needed is
@@ -275,8 +277,9 @@ These items come from tier 3 evidence. They are not requirements and are listed 
   the interface come from the documented visual identity (verified by review of the styling).
 - **SC-003**: 100% of palette and typography values are labeled as official (with source) or as a
   design choice.
-- **SC-004**: All 5 component groups in FR-010 appear on the component reference page in all
-  applicable states.
+- **SC-004**: ~~All 5 component groups in FR-010 appear on the component reference page in all
+  applicable states.~~ **Withdrawn 2026-11-11** by the project owner: the component reference page was removed; the
+  components stay and are covered by their own tests and `docs/architecture/design-system.md`.
 - **SC-005**: At 1440 px, 1024 px, 1023 px and 768 px wide, no page scrolls horizontally and
   navigation is reachable within one interaction.
 - **SC-006**: Text and interactive elements meet WCAG 2.1 AA color contrast (4.5:1 for body text,

@@ -15,8 +15,8 @@ describe('getPathFromHash', () => {
     expect(getPathFromHash('#/desconocido')).toBe('/')
   })
 
-  it('returns the components path for "#/componentes"', () => {
-    expect(getPathFromHash('#/componentes')).toBe('/componentes')
+  it('returns the home path for the removed components page "#/componentes"', () => {
+    expect(getPathFromHash('#/componentes')).toBe('/')
   })
 
   it('returns the product search path for "#/buscar-producto"', () => {
@@ -44,7 +44,6 @@ describe('navigation for the lists of values page (feature 006)', () => {
   it('orders the side navigation with "Lista de Valores" before the attribute pages', () => {
     expect(NAVIGATION_ENTRIES.map((entry) => entry.label)).toEqual([
       'Inicio',
-      'Componentes',
       'Buscar Producto',
       'Lista de Valores',
       'Crear Atributos',

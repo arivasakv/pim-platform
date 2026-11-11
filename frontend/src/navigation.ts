@@ -15,7 +15,6 @@ export type NavigationEntry = {
  */
 export const NAVIGATION_ENTRIES: NavigationEntry[] = [
   { path: '/', label: 'Inicio', icon: 'home' },
-  { path: '/componentes', label: 'Componentes', icon: 'components' },
   { path: '/buscar-producto', label: 'Buscar Producto', icon: 'search' },
   { path: '/listas-de-valores', label: 'Lista de Valores', icon: 'components' },
   { path: '/crear-atributo', label: 'Crear Atributos', icon: 'components' },
@@ -24,7 +23,7 @@ export const NAVIGATION_ENTRIES: NavigationEntry[] = [
 
 const HOME_PATH = '/'
 
-/** Turns a location hash such as "#/componentes" into a known path; anything else is home. */
+/** Turns a location hash such as "#/buscar-producto" into a known path; anything else is home. */
 export function getPathFromHash(hash: string): string {
   const path = hash.replace(/^#/, '')
   const isKnownPath = NAVIGATION_ENTRIES.some((entry) => entry.path === path)

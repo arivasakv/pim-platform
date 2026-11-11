@@ -17,8 +17,8 @@ borders, radius, shadows, layout, icons and the rules that keep the interface co
 - **Every value below is a project design choice.** None of them is an official Liverpool
   specification. The Origin column states this for each value (FR-005).
 
-The running application shows every reusable component on the **Componentes** page
-(`#/componentes`), the live counterpart of this document.
+The components are in `frontend/src/components/ui` (each with its own tests) and are used by the
+application pages. The former **Componentes** reference page was removed on 2026-11-11.
 
 ## Design tokens
 

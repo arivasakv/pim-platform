@@ -77,6 +77,9 @@ changes that were committed after the baseline.
 
 Start the frontend with `npm run dev` (from `frontend\`) and open the URL Vite prints.
 
+The Componentes page was removed on 2026-11-11 (spec FR-012 withdrawn): scenario 7 no longer
+applies; in scenarios 1, 2 and 9 use "Buscar Producto" (`#/buscar-producto`) instead of Componentes.
+
 | # | Scenario | Steps | Expected | Covers |
 |---|---|---|---|---|
 | 1 | Shell present | Open `#/` | Pink header "Plataforma PIM", side navigation (Inicio, Componentes), content area | US1-AS1, FR-008 |
