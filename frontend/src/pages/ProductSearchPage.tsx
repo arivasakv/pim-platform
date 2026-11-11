@@ -79,7 +79,7 @@ export function ProductSearchPage() {
   return (
     <>
       <PageHeader
-        title="Buscar producto"
+        title="Buscar Producto"
         description="Revisa si el producto ya existe antes de proponerlo. Busca por EAN."
       />
 

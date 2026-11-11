@@ -45,7 +45,7 @@ describe('navigation for the lists of values page (feature 006)', () => {
     expect(NAVIGATION_ENTRIES.map((entry) => entry.label)).toEqual([
       'Inicio',
       'Componentes',
-      'Buscar producto',
+      'Buscar Producto',
       'Lista de Valores',
       'Crear Atributos',
       'Grupo de Atributos',

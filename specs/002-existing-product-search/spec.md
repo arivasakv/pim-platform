@@ -232,7 +232,7 @@ From tier 3 evidence; not requirements, for context only.
   example, which suppliers may propose in which catalog) comes with login and roles in a later
   feature [p360:Guía visual TO-BE: "el proveedor de Mercaderías no ve las variantes de
   Marketplace"].
-- **A-002**: The page is a new side-navigation entry, "Buscar producto". This is the first PIM
+- **A-002**: The page is a new side-navigation entry, "Buscar Producto". This is the first PIM
   business section, introduced by this spec (constitution IV).
 - **A-003**: *Superseded by FR-014 (OQ-004 resolved)*: the search covers Liverpool and Suburbia
   only, and each result shows its business.

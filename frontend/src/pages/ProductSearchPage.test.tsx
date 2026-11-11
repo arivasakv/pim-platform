@@ -55,7 +55,7 @@ describe('ProductSearchPage', () => {
 
   it('shows the page title, the EAN field and the search button', () => {
     render(<ProductSearchPage />)
-    expect(screen.getByRole('heading', { level: 1, name: 'Buscar producto' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, name: 'Buscar Producto' })).toBeTruthy()
     expect(screen.getByLabelText('EAN')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Buscar' })).toBeTruthy()
   })

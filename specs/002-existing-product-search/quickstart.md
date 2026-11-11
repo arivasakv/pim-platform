@@ -79,7 +79,7 @@ Open `http://localhost:5173/#/buscar-producto`.
 
 | # | Scenario | Steps | Expected | Covers |
 |---|---|---|---|---|
-| 1 | Navigation | Click "Buscar producto" in the side menu | Page with title, EAN field and "Buscar" button; menu item active | FR-001, FR-002 |
+| 1 | Navigation | Click "Buscar Producto" in the side menu | Page with title, EAN field and "Buscar" button; menu item active | FR-001, FR-002 |
 | 2 | Found in Liverpool | Type `7501234567890`, click "Buscar" | Warning that the product already exists; one card: Licuadora…, SKU 1000001, MARCA DEMO, Liverpool | US1-AS1, FR-006, FR-008 |
 | 3 | Two businesses | Type `7502000000017`, press Enter | Two cards, Liverpool then Suburbia | US1-AS3, FR-002 |
 | 4 | Not found | Type `7509999999999` | "No encontramos un producto con este EAN. Puedes continuar con una propuesta nueva." | US1-AS2, FR-007 |

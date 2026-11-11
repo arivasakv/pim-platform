@@ -16,7 +16,7 @@ export type NavigationEntry = {
 export const NAVIGATION_ENTRIES: NavigationEntry[] = [
   { path: '/', label: 'Inicio', icon: 'home' },
   { path: '/componentes', label: 'Componentes', icon: 'components' },
-  { path: '/buscar-producto', label: 'Buscar producto', icon: 'search' },
+  { path: '/buscar-producto', label: 'Buscar Producto', icon: 'search' },
   { path: '/listas-de-valores', label: 'Lista de Valores', icon: 'components' },
   { path: '/crear-atributo', label: 'Crear Atributos', icon: 'components' },
   { path: '/grupos-de-atributos', label: 'Grupo de Atributos', icon: 'components' },

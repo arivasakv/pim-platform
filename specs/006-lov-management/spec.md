@@ -375,7 +375,7 @@ Requirement IDs are kept stable; requirements moved to follow-up features are ma
 **Navigation and interface**
 
 - **FR-025 – Own menu entry**: The feature MUST have its own entry in the side navigation, separate
-  from the attribute pages, labelled **"Lista de Valores"**, placed right after "Buscar producto" and
+  from the attribute pages, labelled **"Lista de Valores"**, placed right after "Buscar Producto" and
   before "Crear Atributos" and "Grupo de Atributos" (order and labels changed by the project owner on
   2026-11-11).
   The interface MUST be in Spanish and use the existing design system components; lists and values
