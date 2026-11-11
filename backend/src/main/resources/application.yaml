@@ -5,6 +5,13 @@ spring:
     # Framework errors use RFC 9457 Problem Details too (docs/decisions/0001-api-conventions.md).
     problemdetails:
       enabled: true
+  servlet:
+    multipart:
+      # CSV imports of list values accept at most 5 MB per file (feature 006 research R-08, decision D-9). The
+      # import endpoint checks the 5 MB itself and answers 422 IMPORT_TOO_LARGE; this hard limit is higher so
+      # files between 5 and 10 MB still reach that check. Above it Spring answers 413.
+      max-file-size: 10MB
+      max-request-size: 11MB
   mongodb:
     # Product catalog store (constitution IX; docs/decisions/0002-mongodb-product-catalog.md).
     # The default is a local MongoDB without credentials. Set PIM_MONGODB_URI in the environment

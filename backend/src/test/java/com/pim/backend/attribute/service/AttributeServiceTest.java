@@ -30,6 +30,7 @@ import com.pim.backend.identifier.service.IdentifierService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -201,6 +202,35 @@ class AttributeServiceTest {
         assertThat(createListOfValues("Color", new ListOfValuesProperties(SelectionMode.SINGLE, "LOV-COLOR"))
                         .scope())
                 .isEqualTo(AttributeScope.GLOBAL);
+    }
+
+    // --- Feature 006 additions (plan decision D-4) ---
+
+    @Test
+    void findsTheAttributesLinkedToAListIgnoringCaseSortedByName() {
+        catalog.holds("LOV-COLOR", "LOV-TALLA");
+        createListOfValues("Tono", new ListOfValuesProperties(SelectionMode.MULTIPLE, "LOV-COLOR"));
+        createListOfValues("Color base", new ListOfValuesProperties(SelectionMode.SINGLE, "LOV-COLOR"));
+        createListOfValues("Talla", new ListOfValuesProperties(SelectionMode.SINGLE, "LOV-TALLA"));
+        createBoolean("Apto");
+
+        assertThat(service.findLinkedToList("lov-color"))
+                .extracting(attribute -> attribute.displayName().value())
+                .containsExactly("Color base", "Tono");
+        assertThat(service.findLinkedToList("LOV-OTHER")).isEmpty();
+    }
+
+    @Test
+    void runsTheActionOnlyWhenNoAttributeUsesTheList() {
+        catalog.holds("LOV-COLOR", "LOV-TALLA");
+        createListOfValues("Color", new ListOfValuesProperties(SelectionMode.SINGLE, "LOV-COLOR"));
+        List<String> ran = new ArrayList<>();
+
+        assertThat(service.runIfNoAttributeLinksTo("lov-color", () -> ran.add("color")))
+                .isFalse();
+        assertThat(service.runIfNoAttributeLinksTo("LOV-TALLA", () -> ran.add("talla")))
+                .isTrue();
+        assertThat(ran).containsExactly("talla");
     }
 
     private Attribute createListOfValues(String name, ListOfValuesProperties properties) {

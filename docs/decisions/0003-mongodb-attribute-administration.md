@@ -8,6 +8,10 @@
   ([005 plan](../../specs/005-attribute-groups/plan.md) D-1,
   [003 plan](../../specs/003-identifier-management/plan.md) and
   [004 plan](../../specs/004-attribute-creation/plan.md) amendments of 2026-11-09)
+- **Amended 2026-11-11** (constitution 2.4.0, feature 006): lists of values and their values, plus
+  their change records, are stored with the other attribute administration data
+  ([006 plan](../../specs/006-lov-management/plan.md) D-2, D-10). Rows `lists_of_values` and
+  `lov_changes` were added to the collections table.
 
 ## Context
 
@@ -33,6 +37,8 @@ where their data lives.
    | `object_type_configurations` | `identifier` (003) | `{ _id: <objectType>, sequence: { kind, prefix, minimumDigits, nextValue }, keyFields }` | `_id` |
    | `attributes` | `attribute` (004) | `{ _id: <system ID upper-cased>, systemId, displayName, displayNameKey, description, dataType, scope, properties, createdAt }` | `_id`; unique `attribute_display_name_unique` on `displayNameKey` (FR-023) |
    | `attribute_groups` | `attributegroup` (005) | `{ _id: <UUID>, name, nameKey, description, attributeIds, createdAt }` | `_id`; unique `attribute_group_name_unique` on `nameKey` (FR-003) |
+   | `lists_of_values` | `lov` (006) | `{ _id: <list system ID upper-cased>, systemId, name, nameKey, equivalencesEnabled, nextGeneratedNumber, values: [ { id, idKey, label, equivalence } ], createdAt, updatedAt }`; values embedded so each change is one atomic document update (006 research R-02; at most 50,000 values) | `_id`; unique `lov_name_unique` on `nameKey` (006 FR-003) |
+   | `lov_changes` | `lov` (006) | `{ _id: <UUID>, at, user, operation, listId, listName, valueIds, added, updated }` (006 FR-019, research R-11) | `_id`; `{ listId: 1, at: -1 }` |
 
    `*Key` fields hold the value lower-cased with `Locale.ROOT`, so uniqueness ignoring letter case is
    also enforced by the database.

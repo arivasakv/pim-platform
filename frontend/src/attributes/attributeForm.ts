@@ -14,7 +14,8 @@ export type AttributeForm = {
     richText: boolean
   }
   numeric: { numberFormat: string; precision: string; minimum: string; maximum: string }
-  listOfValues: { selectionMode: string }
+  /** `listOfValuesId` is the system ID of an existing list (feature 006 FR-026). */
+  listOfValues: { selectionMode: string; listOfValuesId?: string }
   dateTime: { dateFormat: string }
   currency: { currencyCode: string; decimals: string }
   reference: { targetObjectType: string; cardinality: string }
@@ -31,7 +32,7 @@ export function emptyForm(): AttributeForm {
     dataType: '',
     text: { minLength: '', maxLength: '', caseFormat: '', captureMask: '', richText: false },
     numeric: { numberFormat: '', precision: '', minimum: '', maximum: '' },
-    listOfValues: { selectionMode: '' },
+    listOfValues: { selectionMode: '', listOfValuesId: '' },
     dateTime: { dateFormat: '' },
     currency: { currencyCode: '', decimals: '' },
     reference: { targetObjectType: '', cardinality: '' },
@@ -142,6 +143,7 @@ export function toRequest(form: AttributeForm): AttributeCreationRequest {
     case 'LIST_OF_VALUES':
       request.listOfValuesProperties = defined({
         selectionMode: text(form.listOfValues.selectionMode),
+        listOfValuesId: text(form.listOfValues.listOfValuesId ?? ''),
       })
       break
     case 'DATE_TIME':

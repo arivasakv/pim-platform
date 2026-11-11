@@ -19,6 +19,7 @@ export const NAVIGATION_ENTRIES: NavigationEntry[] = [
   { path: '/buscar-producto', label: 'Buscar producto', icon: 'search' },
   { path: '/crear-atributo', label: 'Crear atributo', icon: 'components' },
   { path: '/grupos-de-atributos', label: 'Grupos de atributos', icon: 'components' },
+  { path: '/listas-de-valores', label: 'Listas de valores', icon: 'components' },
 ]
 
 const HOME_PATH = '/'

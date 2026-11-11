@@ -128,6 +128,15 @@ describe('toRequest', () => {
       toRequest(
         form({
           ...base,
+          dataType: 'LIST_OF_VALUES',
+          listOfValues: { selectionMode: 'MULTIPLE', listOfValuesId: ' LOV000001 ' },
+        }),
+      ).listOfValuesProperties,
+    ).toEqual({ selectionMode: 'MULTIPLE', listOfValuesId: 'LOV000001' })
+    expect(
+      toRequest(
+        form({
+          ...base,
           dataType: 'REFERENCE',
           reference: { targetObjectType: 'PRODUCT', cardinality: 'MULTIPLE' },
         }),

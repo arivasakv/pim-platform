@@ -5,6 +5,7 @@ import { AttributeCreationPage } from './pages/AttributeCreationPage'
 import { AttributeGroupsPage } from './pages/AttributeGroupsPage'
 import { ComponentGalleryPage } from './pages/ComponentGalleryPage'
 import { HomePage } from './pages/HomePage'
+import { ListsOfValuesPage } from './pages/ListsOfValuesPage'
 import { ProductSearchPage } from './pages/ProductSearchPage'
 
 function renderPage(path: string) {
@@ -17,6 +18,8 @@ function renderPage(path: string) {
       return <AttributeCreationPage />
     case '/grupos-de-atributos':
       return <AttributeGroupsPage />
+    case '/listas-de-valores':
+      return <ListsOfValuesPage />
     case '/':
     default:
       return <HomePage />

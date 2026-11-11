@@ -68,8 +68,26 @@ function response(status: number, body: unknown): FakeResponse {
 
 /** The first call answers the data types; the next ones answer the given creations, in order. */
 function stubBackend(...creations: Array<() => Promise<FakeResponse>>) {
-  const fetchMock = vi.fn().mockImplementationOnce(() => Promise.resolve(response(200, TYPES)))
-  creations.forEach((answer) => fetchMock.mockImplementationOnce(answer))
+  return stubBackendWithLists([], ...creations)
+}
+
+/**
+ * Like `stubBackend`, and `GET /api/v1/lists-of-values` (feature 006) answers these lists
+ * without using up a creation answer.
+ */
+function stubBackendWithLists(
+  lists: Array<{ systemId: string; name: string }>,
+  ...creations: Array<() => Promise<FakeResponse>>
+) {
+  const answers = [() => Promise.resolve(response(200, TYPES)), ...creations]
+  const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+    if (url.endsWith('/api/v1/lists-of-values') && !init?.method) {
+      const items = lists.map((list) => ({ ...list, valueCount: 0, attributeCount: 0 }))
+      return Promise.resolve(response(200, { items, total: items.length }))
+    }
+    const answer = answers.shift()
+    return answer ? answer() : Promise.reject(new TypeError('No more answers'))
+  })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
 }
@@ -359,6 +377,49 @@ describe('AttributeCreationPage', () => {
       ),
     ).toBeTruthy()
     expect(lastRequestBody(fetchMock).listOfValuesProperties).toEqual({ selectionMode: 'MULTIPLE' })
+  })
+
+  // --- Feature 006: lists of values to link (FR-026) ---
+
+  it('offers the existing lists and sends the chosen one', async () => {
+    const fetchMock = stubBackendWithLists(
+      [
+        { systemId: 'LOV000001', name: 'Color' },
+        { systemId: 'LOV000002', name: 'Talla' },
+      ],
+      () => Promise.resolve(response(201, { systemId: 'ATR000001' })),
+    )
+    await renderReadyPage()
+
+    type('Nombre', 'Tono')
+    type('Tipo de dato', 'LIST_OF_VALUES')
+    const listSelect = await screen.findByLabelText('Lista de valores')
+    expect(screen.getByRole('option', { name: 'Color (LOV000001)' })).toBeTruthy()
+    expect(screen.getByRole('option', { name: 'Talla (LOV000002)' })).toBeTruthy()
+    expect(screen.queryByText(/Aún no existen listas de valores/)).toBeNull()
+    fireEvent.change(listSelect, { target: { value: 'LOV000002' } })
+    type('Tipo de selección', 'SINGLE')
+    save()
+
+    expect(await screen.findByText('Atributo global creado con el ID ATR000001.')).toBeTruthy()
+    expect(lastRequestBody(fetchMock).listOfValuesProperties).toEqual({
+      selectionMode: 'SINGLE',
+      listOfValuesId: 'LOV000002',
+    })
+  })
+
+  it('shows no list select while no lists exist', async () => {
+    stubBackendWithLists([])
+    await renderReadyPage()
+
+    type('Tipo de dato', 'LIST_OF_VALUES')
+
+    expect(
+      await screen.findByText(
+        'Aún no existen listas de valores. Podrás crear este atributo cuando exista una lista.',
+      ),
+    ).toBeTruthy()
+    await waitFor(() => expect(screen.queryByLabelText('Lista de valores')).toBeNull())
   })
 
   // --- User Story 4 ---

@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
-import { getPathFromHash, useCurrentPath } from './navigation'
+import { NAVIGATION_ENTRIES, getPathFromHash, useCurrentPath } from './navigation'
 
 describe('getPathFromHash', () => {
   it('returns the home path for an empty hash', () => {
@@ -33,6 +33,17 @@ describe('getPathFromHash for the attribute creation page (feature 004)', () => 
 describe('getPathFromHash for the attribute groups page (feature 005)', () => {
   it('returns the attribute groups path for "#/grupos-de-atributos"', () => {
     expect(getPathFromHash('#/grupos-de-atributos')).toBe('/grupos-de-atributos')
+  })
+})
+
+describe('navigation for the lists of values page (feature 006)', () => {
+  it('returns the lists path for "#/listas-de-valores"', () => {
+    expect(getPathFromHash('#/listas-de-valores')).toBe('/listas-de-valores')
+  })
+
+  it('places "Listas de valores" right after "Grupos de atributos"', () => {
+    const labels = NAVIGATION_ENTRIES.map((entry) => entry.label)
+    expect(labels.indexOf('Listas de valores')).toBe(labels.indexOf('Grupos de atributos') + 1)
   })
 })
 

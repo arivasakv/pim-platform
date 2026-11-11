@@ -1,0 +1,448 @@
+openapi: 3.1.0
+info:
+  title: PIM Platform – Lists of values
+  version: 1.0.0
+  description: >
+    Feature 006 (specs/006-lov-management). Reusable lists of values (ERF 1.1 §3.2.1): create, rename,
+    delete when no attribute uses them; values as ID–label pairs with an optional equivalence; values
+    added one by one or from a CSV file. Attributes link to lists in feature 004 and are only read here.
+    Changes need the ATTRIBUTE_CREATE permission (development header X-Pim-Permissions); reading needs
+    none. Data is stored in MongoDB (constitution 2.4.0, ADR 0003). Unknown fields in request bodies are
+    ignored. Messages are in Spanish.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: lists-of-values
+paths:
+  /api/v1/lists-of-values:
+    get:
+      operationId: listListsOfValues
+      summary: Every list, sorted by name ignoring case (User Story 2)
+      tags: [lists-of-values]
+      responses:
+        '200':
+          description: The lists.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListOfValuesCollection' }
+    post:
+      operationId: createListOfValues
+      summary: Create a list with no values (FR-001)
+      tags: [lists-of-values]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+        - $ref: '#/components/parameters/ManualIdPermissions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateListOfValuesRequest' }
+            example: { name: Color }
+      responses:
+        '201':
+          description: Created.
+          headers:
+            Location:
+              description: /api/v1/lists-of-values/{listId}
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListOfValues' }
+        '400': { $ref: '#/components/responses/InvalidRequest' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/lists-of-values/import-template:
+    get:
+      operationId: getImportTemplate
+      summary: CSV template for bulk loads (FR-011)
+      tags: [lists-of-values]
+      responses:
+        '200':
+          description: UTF-8 CSV with BOM and the header line only.
+          headers:
+            Content-Disposition:
+              schema: { type: string, example: 'attachment; filename="plantilla-valores.csv"' }
+          content:
+            text/csv:
+              schema: { type: string, example: "ID,Etiqueta,Equivalencia\r\n" }
+  /api/v1/lists-of-values/{listId}:
+    parameters:
+      - $ref: '#/components/parameters/ListId'
+    get:
+      operationId: getListOfValues
+      summary: One list with its values and linked attributes (FR-005, FR-014)
+      tags: [lists-of-values]
+      responses:
+        '200':
+          description: The list.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListOfValues' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: updateListOfValues
+      summary: Rename the list and turn the equivalence column on or off (FR-001, FR-023)
+      tags: [lists-of-values]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateListOfValuesRequest' }
+            example: { name: Colores, equivalencesEnabled: true }
+      responses:
+        '200':
+          description: Updated; values and links kept.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListOfValues' }
+        '400': { $ref: '#/components/responses/InvalidRequest' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      operationId: deleteListOfValues
+      summary: Delete the list and its values, only when no attribute uses it (FR-004)
+      tags: [lists-of-values]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+        - $ref: '#/components/parameters/User'
+      responses:
+        '204': { description: Deleted. }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/lists-of-values/{listId}/values:
+    parameters:
+      - $ref: '#/components/parameters/ListId'
+    post:
+      operationId: addListValue
+      summary: Add one value; the ID is generated when absent (FR-009, FR-010)
+      tags: [lists-of-values]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddValueRequest' }
+            example: { id: '0001', label: Azul }
+      responses:
+        '201':
+          description: Added.
+          headers:
+            Location:
+              description: /api/v1/lists-of-values/{listId}/values/{valueId}
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListValue' }
+        '400': { $ref: '#/components/responses/InvalidRequest' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/TooLarge' }
+  /api/v1/lists-of-values/{listId}/values/import:
+    parameters:
+      - $ref: '#/components/parameters/ListId'
+    post:
+      operationId: importListValues
+      summary: Add or update values from a CSV file, all or nothing (FR-011, FR-016)
+      tags: [lists-of-values]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+        - $ref: '#/components/parameters/User'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary, description: 'UTF-8 CSV, at most 5 MB and 50,000 rows' }
+      responses:
+        '200':
+          description: Every row applied.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportResult' }
+        '400':
+          description: No `file` part, or the body is not multipart (field `file`, code REQUIRED). Nothing applied.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '413':
+          description: >
+            The request is over the server's hard upload limit (10 MB), answered by the framework
+            before this operation runs. Files between 5 and 10 MB get 422 IMPORT_TOO_LARGE.
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: >
+            Nothing applied. INVALID_IMPORT (rows with errors, each in rowErrors), INVALID_IMPORT_FILE
+            (unreadable file or no Etiqueta column), IMPORT_TOO_LARGE, LIST_TOO_LARGE.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                title: Archivo con errores
+                status: 422
+                detail: El archivo tiene 2 errores. No se aplicó ningún valor.
+                rowErrors:
+                  - { row: 4, column: ID, code: DUPLICATE_ID_IN_FILE, message: El ID "0002" está repetido en el archivo (filas 4 y 9). }
+                  - { row: 7, column: Etiqueta, code: REQUIRED, message: La etiqueta es obligatoria. }
+  /api/v1/lists-of-values/{listId}/values/{valueId}:
+    parameters:
+      - $ref: '#/components/parameters/ListId'
+      - name: valueId
+        in: path
+        required: true
+        description: Compared ignoring case.
+        schema: { type: string, maxLength: 40 }
+    put:
+      operationId: updateListValue
+      summary: Change the label and equivalence; the ID never changes (FR-010, FR-012)
+      tags: [lists-of-values]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateValueRequest' }
+            example: { label: AZUL, equivalence: null }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListValue' }
+        '400': { $ref: '#/components/responses/InvalidRequest' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      operationId: deleteListValue
+      summary: Delete one value after the user confirmed it in the interface (FR-013)
+      tags: [lists-of-values]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+        - $ref: '#/components/parameters/User'
+      responses:
+        '204': { description: Deleted. }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  parameters:
+    ListId:
+      name: listId
+      in: path
+      required: true
+      description: The list's feature 003 system ID, compared ignoring case.
+      schema: { type: string, maxLength: 40 }
+    Permissions:
+      name: X-Pim-Permissions
+      in: header
+      required: false
+      description: Development stand-in for the user's permissions (research R-10). ATTRIBUTE_CREATE allows changes.
+      schema: { type: string, example: ATTRIBUTE_CREATE }
+    ManualIdPermissions:
+      name: X-Pim-Manual-Id-Permissions
+      in: header
+      required: false
+      description: Feature 003's manual-ID permissions; LIST_OF_VALUES allows sending systemId.
+      schema: { type: string, example: LIST_OF_VALUES }
+    User:
+      name: X-Pim-User
+      in: header
+      required: false
+      description: Development stand-in for the user's name, stored in change records (research R-11).
+      schema: { type: string, maxLength: 100 }
+  responses:
+    InvalidRequest:
+      description: Invalid request. Nothing changed.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            title: Solicitud no válida
+            status: 400
+            detail: La solicitud tiene datos no válidos.
+            errors:
+              - { field: id, code: INVALID_VALUE_ID, message: 'El ID debe tener de 1 a 40 caracteres: letras, números, guion, guion bajo o punto.' }
+    NotPermitted:
+      description: No ATTRIBUTE_CREATE permission. Nothing changed.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            title: Sin permiso para administrar listas de valores
+            status: 403
+            detail: No tienes permiso para administrar listas de valores.
+            errors:
+              - { field: permissions, code: ATTRIBUTE_CREATE_NOT_PERMITTED, message: No tienes permiso para administrar listas de valores. }
+    NotFound:
+      description: The list (LIST_NOT_FOUND) or the value (VALUE_NOT_FOUND) does not exist.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: Name in use (LIST_NAME_IN_USE), value ID in use (VALUE_ID_IN_USE), list used by attributes (LIST_IN_USE), or manual system ID already used (SYSTEM_ID_IN_USE, feature 003). Nothing changed. A manual system ID without permission is 403 MANUAL_ID_NOT_PERMITTED and an invalid one 400 INVALID_SYSTEM_ID, as in feature 004.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          examples:
+            listInUse:
+              value:
+                title: Lista en uso
+                status: 409
+                detail: La lista "Color" está vinculada a 2 atributos y no se puede eliminar.
+                errors:
+                  - { field: listId, code: LIST_IN_USE, message: La lista "Color" está vinculada a 2 atributos y no se puede eliminar. }
+            valueIdInUse:
+              value:
+                title: ID en uso
+                status: 409
+                detail: Ya existe un valor con el ID "0001" en esta lista.
+                errors:
+                  - { field: id, code: VALUE_ID_IN_USE, message: Ya existe un valor con el ID "0001" en esta lista. }
+    TooLarge:
+      description: The list would exceed 50,000 values (LIST_TOO_LARGE). Nothing changed.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    CreateListOfValuesRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 200, description: 'Trimmed; 1–80 characters; unique ignoring letter case' }
+        systemId: { type: [string, 'null'], maxLength: 40, description: "Optional manual ID (feature 003 rules); absent = generated" }
+    UpdateListOfValuesRequest:
+      type: object
+      required: [name, equivalencesEnabled]
+      properties:
+        name: { type: string, maxLength: 200 }
+        equivalencesEnabled: { type: boolean, description: Turning it off hides equivalences and keeps them }
+    AddValueRequest:
+      type: object
+      required: [label]
+      properties:
+        id: { type: [string, 'null'], maxLength: 100, description: 'Trimmed; 1–40 of A–Z a–z 0–9 - _ .; absent or blank = generated (0001…)' }
+        label: { type: string, maxLength: 500, description: 'Trimmed; 1–200 characters' }
+        equivalence: { type: [string, 'null'], maxLength: 500, description: 'Trimmed; up to 200 characters; blank = none' }
+    UpdateValueRequest:
+      type: object
+      required: [label]
+      properties:
+        label: { type: string, maxLength: 500 }
+        equivalence: { type: [string, 'null'], maxLength: 500, description: 'Replaces the equivalence; null or blank removes it' }
+    ListValue:
+      type: object
+      required: [id, label]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        equivalence: { type: [string, 'null'] }
+    LinkedAttribute:
+      type: object
+      required: [systemId, displayName, selectionMode]
+      properties:
+        systemId: { type: string }
+        displayName: { type: string }
+        selectionMode: { type: string, enum: [SINGLE, MULTIPLE] }
+    ListOfValues:
+      type: object
+      required: [systemId, name, equivalencesEnabled, valueCount, values, attributes, createdAt]
+      properties:
+        systemId: { type: string, example: LOV000001 }
+        name: { type: string }
+        equivalencesEnabled: { type: boolean }
+        valueCount: { type: integer, minimum: 0 }
+        values:
+          type: array
+          description: In the order they were added. Equivalences are included even when the column is off.
+          items: { $ref: '#/components/schemas/ListValue' }
+        attributes:
+          type: array
+          description: Linked attributes (feature 004), sorted by display name.
+          items: { $ref: '#/components/schemas/LinkedAttribute' }
+        createdAt: { type: string, format: date-time }
+    ListOfValuesSummary:
+      type: object
+      required: [systemId, name, valueCount, attributeCount]
+      properties:
+        systemId: { type: string }
+        name: { type: string }
+        valueCount: { type: integer, minimum: 0 }
+        attributeCount: { type: integer, minimum: 0 }
+    ListOfValuesCollection:
+      type: object
+      description: Project-wide collection envelope (docs/decisions/0001-api-conventions.md).
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ListOfValuesSummary' }
+        total: { type: integer }
+    ImportResult:
+      type: object
+      required: [added, updated, total]
+      properties:
+        added: { type: integer, minimum: 0 }
+        updated: { type: integer, minimum: 0 }
+        total: { type: integer, minimum: 0, description: Values in the list after the import }
+    Problem:
+      type: object
+      description: RFC 9457 Problem Details, used by every API error (ADR 0001).
+      required: [title, status]
+      properties:
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, code, message]
+            properties:
+              field: { type: string }
+              code:
+                type: string
+                enum:
+                  - REQUIRED
+                  - INVALID_LIST_NAME
+                  - INVALID_VALUE_ID
+                  - INVALID_LABEL
+                  - INVALID_EQUIVALENCE
+                  - ATTRIBUTE_CREATE_NOT_PERMITTED
+                  - LIST_NOT_FOUND
+                  - VALUE_NOT_FOUND
+                  - LIST_NAME_IN_USE
+                  - VALUE_ID_IN_USE
+                  - LIST_IN_USE
+                  - LIST_TOO_LARGE
+                  - INVALID_IMPORT
+                  - INVALID_IMPORT_FILE
+                  - IMPORT_TOO_LARGE
+                  - SYSTEM_ID_IN_USE
+                  - MANUAL_ID_NOT_PERMITTED
+                  - INVALID_SYSTEM_ID
+                  - SEQUENCE_EXHAUSTED
+              message: { type: string }
+        rowErrors:
+          type: array
+          description: Only for INVALID_IMPORT. Row numbers count the header as row 1.
+          items:
+            type: object
+            required: [row, column, code, message]
+            properties:
+              row: { type: integer, minimum: 2 }
+              column: { type: string, enum: [ID, Etiqueta, Equivalencia] }
+              code:
+                type: string
+                enum: [REQUIRED, INVALID_VALUE_ID, INVALID_LABEL, INVALID_EQUIVALENCE, DUPLICATE_ID_IN_FILE]
+              message: { type: string }

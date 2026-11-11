@@ -68,10 +68,12 @@ public class AttributeService {
         }
         DisplayName displayName = DisplayName.of(draft.displayName());
         Optional<String> description = Attribute.normalizedDescription(draft.description());
-        if (draft.properties() instanceof ListOfValuesProperties listOfValues) {
-            checkListOfValues(listOfValues);
-        }
         synchronized (lock) {
+            // Checked under the lock, so a list cannot be deleted between this check and the save (feature 006
+            // research R-04). The order of the checks is unchanged.
+            if (draft.properties() instanceof ListOfValuesProperties listOfValues) {
+                checkListOfValues(listOfValues);
+            }
             if (attributes.existsWithDisplayName(displayName)) {
                 throw new DisplayNameInUseException(displayName);
             }
@@ -112,6 +114,41 @@ public class AttributeService {
         synchronized (lock) {
             return attributes.findAll();
         }
+    }
+
+    /**
+     * The list-of-values attributes linked to this list, compared ignoring letter case, sorted by display name
+     * ignoring letter case (feature 006 plan decision D-4).
+     */
+    public List<Attribute> findLinkedToList(String listOfValuesId) {
+        synchronized (lock) {
+            return linkedTo(listOfValuesId);
+        }
+    }
+
+    /**
+     * Runs {@code action} only if no attribute is linked to the list, while still holding the attribute lock, so no
+     * attribute can be linked to the list in between (feature 006 plan decision D-4, research R-04). Callers must not
+     * hold a lock that attribute creation also takes.
+     *
+     * @return {@code true} if the action ran; {@code false} if an attribute uses the list (the action did not run)
+     */
+    public boolean runIfNoAttributeLinksTo(String listOfValuesId, Runnable action) {
+        synchronized (lock) {
+            if (!linkedTo(listOfValuesId).isEmpty()) {
+                return false;
+            }
+            action.run();
+            return true;
+        }
+    }
+
+    private List<Attribute> linkedTo(String listOfValuesId) {
+        return attributes.findAll().stream()
+                .filter(attribute -> attribute.properties() instanceof ListOfValuesProperties listOfValues
+                        && listOfValues.listOfValuesId() != null
+                        && listOfValues.listOfValuesId().equalsIgnoreCase(listOfValuesId))
+                .toList();
     }
 
     /**

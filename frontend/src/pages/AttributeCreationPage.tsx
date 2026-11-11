@@ -7,6 +7,7 @@ import {
   type AttributeType,
   type DataType,
 } from '../api/attributesApi'
+import { listLists, type ListOfValuesSummary } from '../api/listsOfValuesApi'
 import {
   emptyForm,
   toRequest,
@@ -37,6 +38,9 @@ type SaveState =
   | { status: 'created'; systemId: string }
   | { status: 'failed'; message: string }
 
+/** The lists a list-of-values attribute can use (feature 006 FR-026); `null` until requested. */
+type ListsState = null | { status: 'error' } | { status: 'ready'; lists: ListOfValuesSummary[] }
+
 /**
  * Creates one attribute definition at a time (spec 004). The data types and their options come
  * from the backend (FR-022); the backend checks every rule and assigns the system ID.
@@ -48,6 +52,25 @@ export function AttributeCreationPage() {
   const [saveState, setSaveState] = useState<SaveState>({ status: 'idle' })
 
   const [typesRequest, setTypesRequest] = useState(0)
+  const [listsState, setListsState] = useState<ListsState>(null)
+  const wantsLists = form.dataType === 'LIST_OF_VALUES'
+
+  // Loads the existing lists the first time "Lista de valores" is chosen (feature 006 FR-026).
+  useEffect(() => {
+    if (!wantsLists || listsState !== null) return
+    let isCurrent = true
+    listLists().then(
+      (lists) => {
+        if (isCurrent) setListsState({ status: 'ready', lists })
+      },
+      () => {
+        if (isCurrent) setListsState({ status: 'error' })
+      },
+    )
+    return () => {
+      isCurrent = false
+    }
+  }, [wantsLists, listsState])
 
   // Loads the data types; a retry increments typesRequest. State changes only in the callbacks.
   useEffect(() => {
@@ -94,7 +117,13 @@ export function AttributeCreationPage() {
           error.errors.map((item) => [item.field, item.message]),
         )
         setErrors(fieldErrors)
-        const shownNextToAField = error.errors.some((item) => FORM_FIELDS.has(item.field))
+        // The list select exists only while lists are offered (feature 006 FR-026).
+        const listSelectShown = listsState?.status === 'ready' && listsState.lists.length > 0
+        const shownNextToAField = error.errors.some(
+          (item) =>
+            FORM_FIELDS.has(item.field) ||
+            (listSelectShown && item.field === 'listOfValuesProperties.listOfValuesId'),
+        )
         setSaveState(
           shownNextToAField
             ? { status: 'idle' }
@@ -173,6 +202,7 @@ export function AttributeCreationPage() {
               form={form}
               errors={errors}
               options={optionsOf(typesState.types, form.dataType)}
+              listsState={listsState}
               onChange={update}
             />
 
@@ -229,11 +259,12 @@ type TypeFieldsProps = {
   form: AttributeForm
   errors: FieldErrors
   options: Record<string, AttributeOption[]>
+  listsState: ListsState
   onChange: (changes: Partial<AttributeForm>) => void
 }
 
 /** The properties of the chosen data type (FR-008 to FR-015); none for Booleano. */
-function TypeFields({ form, errors, options, onChange }: TypeFieldsProps) {
+function TypeFields({ form, errors, options, listsState, onChange }: TypeFieldsProps) {
   switch (form.dataType) {
     case 'TEXT': {
       const set = (changes: Partial<AttributeForm['text']>) =>
@@ -335,24 +366,47 @@ function TypeFields({ form, errors, options, onChange }: TypeFieldsProps) {
         </fieldset>
       )
     }
-    case 'LIST_OF_VALUES':
+    case 'LIST_OF_VALUES': {
+      const set = (changes: Partial<AttributeForm['listOfValues']>) =>
+        onChange({ listOfValues: { ...form.listOfValues, ...changes } })
+      const lists = listsState?.status === 'ready' ? listsState.lists : []
       return (
         <fieldset className={styles.typeFields}>
           <legend className={styles.legend}>Propiedades de la lista de valores</legend>
-          <Notification variant="info">
-            Aún no existen listas de valores. Podrás crear este atributo cuando exista una lista.
-          </Notification>
+          {listsState?.status === 'error' ? (
+            <Notification variant="error">
+              No se pudieron cargar las listas de valores. Inténtalo de nuevo.
+            </Notification>
+          ) : lists.length === 0 ? (
+            <Notification variant="info">
+              Aún no existen listas de valores. Podrás crear este atributo cuando exista una lista.
+            </Notification>
+          ) : (
+            <SelectField
+              id="listOfValues-listOfValuesId"
+              label="Lista de valores"
+              placeholder="Elige una lista"
+              options={lists.map((list) => ({
+                code: list.systemId,
+                label: `${list.name} (${list.systemId})`,
+              }))}
+              value={form.listOfValues.listOfValuesId ?? ''}
+              onChange={(code) => set({ listOfValuesId: code })}
+              error={errors['listOfValuesProperties.listOfValuesId']}
+            />
+          )}
           <SelectField
             id="listOfValues-selectionMode"
             label="Tipo de selección"
             placeholder="Elige un tipo de selección"
             options={options.selectionMode ?? []}
             value={form.listOfValues.selectionMode}
-            onChange={(code) => onChange({ listOfValues: { selectionMode: code } })}
+            onChange={(code) => set({ selectionMode: code })}
             error={errors['listOfValuesProperties.selectionMode']}
           />
         </fieldset>
       )
+    }
     case 'DATE_TIME':
       return (
         <fieldset className={styles.typeFields}>
