@@ -180,7 +180,7 @@ reset on change.
   `.\gradlew.bat clean build` to confirm it is untouched; record counts. (FR-013, FR-014)
 - [X] T019 Scope check per quickstart "Scope checks": no change in `backend/`, `FE/api/`,
   `FE/components/ui/`, LOV Management files or `package.json`. (FR-014)
-- [ ] T020 Owner check: quickstart UI scenarios P1–P19 in the browser (left to the project owner).
+- [X] T020 Owner check: quickstart UI scenarios P1–P19 in the browser (left to the project owner).
 
 ---
 
@@ -214,7 +214,7 @@ reset on change.
     `fieldPreview.ts` and `AttributeFieldPreview.tsx` (+ CSS and tests), and fixture-only updates in
     `AttributeEditor.test.tsx` and `AttributesPage.test.tsx`; no change in `backend/`, `FE/api/`,
     `FE/components/ui/`, LOV Management or `package.json`.
-  - T020 (browser check of P1–P19) is left to the project owner.
+  - T020 (browser check of P1–P19): marked done by the project owner on 2026-11-12.
 - **Existing assertions**: none changed. The editor test stub and the page fake backend now answer
   `GET /api/v1/lists-of-values/{id}` (T006, T017), so the preview's list read does not consume a reply
   meant for saving.
