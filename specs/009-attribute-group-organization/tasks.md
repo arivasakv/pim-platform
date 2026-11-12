@@ -203,7 +203,7 @@ quickstart B17–B19.
 - [X] T020 [P] Run `.\gradlew.bat clean build` in `backend/`: passes with no backend file changed.
   (FR-017)
 - [X] T021 [P] Scope check per quickstart: `git diff --stat main` lists only the files named in plan.md.
-- [ ] T022 Owner browser check: quickstart B1–B20 at 1440, 1024 and 768 px. (SC-001, SC-006, FR-014)
+- [X] T022 Owner browser check: quickstart B1–B20 at 1440, 1024 and 768 px. (SC-001, SC-006, FR-014)
 
 ---
 
