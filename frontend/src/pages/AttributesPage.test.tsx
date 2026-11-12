@@ -419,4 +419,104 @@ describe('AttributesPage', () => {
     const detail = screen.getByRole('region', { name: 'Activo' })
     await waitFor(() => expect(within(detail).getByText('Ventas')).toBeTruthy())
   })
+
+  // --- Feature 008 amendment: preview when consulting (FR-016 to FR-018) ---
+
+  it('shows the field preview after the details of a saved attribute', async () => {
+    const fetchMock = fakeBackend([peso()])
+    render(<AttributesPage />)
+    await open(/Peso logístico/)
+
+    const detail = screen.getByRole('region', { name: 'Peso logístico' })
+    const preview = within(detail).getByRole('region', { name: 'Vista previa del campo' })
+    const created = within(detail).getByText('Creado')
+    expect(created.compareDocumentPosition(preview) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const field = within(preview).getByLabelText<HTMLInputElement>('Peso logístico (opcional)')
+    expect(field.type).toBe('number')
+    expect(field.step).toBe('0.01')
+
+    fireEvent.change(field, { target: { value: '1.234' } })
+    expect(within(preview).getByText('Usa como máximo 2 decimales.')).toBeTruthy()
+    expect(
+      fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT' || init?.method === 'POST'),
+    ).toBe(false)
+  })
+
+  it('previews a saved list-of-values attribute with its values', async () => {
+    fakeBackend([color()])
+    render(<AttributesPage />)
+    await open(/^Color/)
+
+    const preview = screen.getByRole('region', { name: 'Vista previa del campo' })
+    const group = await within(preview).findByRole('group', { name: 'Color (opcional)' })
+    expect(within(group).getByRole('checkbox', { name: 'Azul' })).toBeTruthy()
+    expect(within(preview).getByText('Lista: Colores · Puedes elegir varios valores')).toBeTruthy()
+  })
+
+  it('shows the first 50 values of a long list in the consultation preview', async () => {
+    const values = Array.from({ length: 80 }, (_, index) => ({
+      id: String(index + 1).padStart(4, '0'),
+      label: `Color ${index + 1}`,
+    }))
+    fakeBackend([color()], {
+      [`GET ${BASE_URL}/api/v1/lists-of-values/LOV000001`]: () =>
+        response(200, {
+          systemId: 'LOV000001',
+          name: 'Colores',
+          equivalencesEnabled: false,
+          valueCount: 80,
+          values,
+          attributes: [],
+        }),
+    })
+    render(<AttributesPage />)
+    await open(/^Color/)
+
+    const preview = screen.getByRole('region', { name: 'Vista previa del campo' })
+    const group = await within(preview).findByRole('group', { name: 'Color (opcional)' })
+    expect(within(group).getAllByRole('checkbox')).toHaveLength(50)
+    expect(
+      within(preview).getByText('Vista previa con los primeros 50 de 80 valores.'),
+    ).toBeTruthy()
+  })
+
+  it('discards preview values when another attribute is opened', async () => {
+    fakeBackend([peso(), activo()])
+    render(<AttributesPage />)
+    await open(/Peso logístico/)
+    const field = () => screen.getByLabelText<HTMLInputElement>('Peso logístico (opcional)')
+    fireEvent.change(field(), { target: { value: '42' } })
+    expect(field().value).toBe('42')
+
+    await open(/Activo/)
+    expect(screen.getByRole('checkbox', { name: 'Activo (opcional)' })).toBeTruthy()
+    await open(/Peso logístico/)
+    expect(field().value).toBe('')
+  })
+
+  it('shows the preview without the development permission', async () => {
+    vi.stubEnv('VITE_DEV_PERMISSIONS', '')
+    fakeBackend([activo()])
+    render(<AttributesPage />)
+    await open(/Activo/)
+
+    const preview = screen.getByRole('region', { name: 'Vista previa del campo' })
+    expect(within(preview).getByRole('checkbox', { name: 'Activo (opcional)' })).toBeTruthy()
+  })
+
+  it('previews the new configuration after an edit is saved', async () => {
+    fakeBackend([peso()])
+    render(<AttributesPage />)
+    await open(/Peso logístico/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar' }))
+    fireEvent.change(await screen.findByLabelText('Decimales'), { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    await screen.findByText('Atributo «Peso logístico» actualizado.')
+    const preview = screen.getByRole('region', { name: 'Vista previa del campo' })
+    expect(within(preview).getByLabelText<HTMLInputElement>('Peso logístico (opcional)').step).toBe(
+      '0.001',
+    )
+  })
 })

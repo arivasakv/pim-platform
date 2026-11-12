@@ -10,6 +10,10 @@ on `main` until the project owner asks)
 **Approved**: 2026-11-12, by the project owner (decisions 1–5 with the feature request; plan decisions
 D-1 to D-8)
 
+**Amended**: 2026-11-12, at the project owner's request: the preview is also shown when consulting an
+existing attribute (User Story 4, FR-016 to FR-018). Amendment approved by the project owner on
+2026-11-12 together with plan decision D-9.
+
 **Input**: User request of 2026-11-12 (referred to below as *the feature request*): while creating or
 editing an attribute, show a live preview of how the attribute's field will look in a product form. It
 is a configuration preview only: it creates no product, saves no value and adds no product-management
@@ -33,7 +37,8 @@ preview inside that form.
 | Reading a list of values with its values | **Exists** | Feature 006 |
 | Product forms that capture attribute values | **Does not exist** | Out of scope (feature 004 "attribute value" is a future capability) |
 | A "required" setting on attributes | **Does not exist**, by design | Mandatory fields per template, ERF 1.1 §3.2.5, future Template Management (decision 1) |
-| A live preview of the field inside the attribute form | **New** | This feature |
+| A live preview of the field inside the attribute form | **New** (implemented 2026-11-12) | This feature, User Stories 1–3 |
+| The same preview in the attribute detail (consultation) | **New** (amendment) | This feature, User Story 4 |
 
 ## Clarifications
 
@@ -51,6 +56,14 @@ preview inside that form.
 - Q: What happens to values typed into the preview? → A: **Never kept**; they reset when the
   configuration changes or the form closes, without touching the configuration fields (decision 5).
   FR-011, FR-012.
+
+### Session 2026-11-12 (amendment requested by the project owner)
+
+- Q: Is the preview also shown when consulting an attribute? → A: **Yes.** The attribute detail shows
+  the same preview, built from the saved configuration, after the configuration details; it reuses the
+  same component and rules, with no second implementation (User Story 4, FR-016 to FR-018).
+- Q: Can the consultation preview be used? → A: **Yes, as a demonstration only**; values can be typed
+  or chosen but are never saved, and there is no save action for them (FR-012, FR-017).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -160,6 +173,42 @@ validation when saving.
 
 ---
 
+### User Story 4 - See the field when consulting an attribute (Priority: P2)
+
+When the user opens an existing attribute on the "Atributos" page, the detail shows, after the
+configuration details, the same "Vista previa del campo" panel built from the attribute's saved
+configuration.
+
+**Why this priority**: It lets anyone who consults an attribute understand its effect without opening
+the editor (consultation needs no permission, feature 007 A-001); it reuses User Stories 1–3.
+
+**Independent Test**: Open the saved attribute "Peso" (decimal, 2 decimals, 0–100): below its details
+the preview shows a number field "Peso (opcional)" with step 0.01 that warns at 150. Open the saved LOV
+attribute "Color" (multiple selection, list with 80 values): the preview shows 50 checkboxes and says the
+list has 80 values. Open another attribute: the typed value is gone.
+
+**Acceptance Scenarios**:
+
+1. **Given** an attribute opened in the detail, **When** the detail is shown, **Then** a "Vista previa
+   del campo" panel appears after the configuration details, with the same look, note and texts as in
+   the form, visually distinct from the details.
+2. **Given** the detail of a saved attribute of any of the 7 types, **When** the preview is shown,
+   **Then** it shows the field that User Stories 1–3 would show for the same configuration, including
+   the configuration notes of FR-010 for saved settings the preview cannot use.
+3. **Given** a saved list-of-values attribute, **When** the preview is shown, **Then** the list's values
+   are loaded with the existing list API and shown with the attribute's selection mode, at most 50 with
+   the total when there are more; a list that cannot be loaded gives the FR-008 message and the detail
+   stays usable.
+4. **Given** the preview in the detail, **When** the user types or chooses values, **Then** nothing is
+   saved and no action to save them exists; opening another attribute, editing, deleting or leaving the
+   page discards them.
+5. **Given** a user without the development permission `ATTRIBUTE_CREATE`, **When** they consult an
+   attribute, **Then** they see the preview too (consultation stays open, feature 007 A-001).
+6. **Given** the attribute is edited and saved, **When** the detail returns, **Then** the preview shows
+   the new saved configuration.
+
+---
+
 ### Edge Cases
 
 - **Name changes**: the label follows the name as the user types; a typed preview value is cleared,
@@ -175,6 +224,10 @@ validation when saving.
   as today (feature 004) and the preview resets with it.
 - **Cancelling or closing the form**: the preview and its typed values disappear (FR-012).
 - **Narrow screens**: the preview stays below the configuration, full width.
+- **Consultation of an attribute whose list was renamed**: the preview shows the list's current name
+  and values, read when the detail opens.
+- **Detail opened while the list read is pending, then another attribute opened**: only the last
+  opened attribute's list is shown (as in the form, FR-008).
 
 ## Requirements *(mandatory)*
 
@@ -192,8 +245,9 @@ properties and their options. No ERF section asks for a preview; the feature req
   nothing. [Decision 2; feature request §UI/UX]
 - **FR-002 – Live**: The preview MUST reflect the current, unsaved configuration and update on every
   change, without saving. [Feature request req. 2]
-- **FR-003 – Both modes**: The preview MUST work the same for a new attribute and for an existing
-  attribute being edited. [Feature request req. 9]
+- **FR-003 – Three scenarios**: The preview MUST work the same for a new attribute (creation), for an
+  existing attribute being edited (live, before saving) and for an existing attribute being consulted
+  (from its saved configuration, FR-016). [Feature request req. 9; amendment 2026-11-12]
 - **FR-004 – Label and state**: The field MUST be labelled with the attribute name ("Nombre del
   atributo" while empty) and marked "Opcional"; the attribute description, when present, MUST be shown
   as the field's help text. [Decision 1; feature request req. 4]
@@ -251,10 +305,24 @@ properties and their options. No ERF section asks for a preview; the feature req
 - **FR-015 – Language and look**: Spanish (es-MX) text, existing design-system components and styles,
   no horizontal scrolling at the supported widths. [Feature request §UI/UX; feature 001]
 
+**Consultation** (amendment 2026-11-12)
+
+- **FR-016 – Preview in the detail**: The attribute detail on the "Atributos" page MUST show the "Vista
+  previa del campo" panel after the configuration details, built from the attribute's saved
+  configuration as returned by the backend, for every user who can consult attributes. [Amendment]
+- **FR-017 – Same behavior, demonstration only**: The consultation preview MUST use the same panel and
+  rules as the form preview (FR-004 to FR-012): same field per type, same notes, same list behavior
+  (first 50 values, total, messages), values temporary and never saved. It MUST NOT offer any action to
+  save values. Its values MUST be discarded when another attribute is opened, the detail changes to
+  edit, the attribute is deleted, or the user leaves the page. [Amendment]
+- **FR-018 – One implementation**: The consultation preview MUST reuse the form's preview component
+  and rules; there MUST NOT be a second implementation of the per-type rendering. [Amendment §Technical
+  considerations]
+
 ### Key Entities
 
-- **Attribute configuration** (existing, feature 004/007): the form state the preview reads; not
-  changed by the preview.
+- **Attribute configuration** (existing, feature 004/007): the form state the preview reads during
+  creation and editing, or the saved attribute during consultation; never changed by the preview.
 - **Preview value** (new, temporary): what the user types or chooses in the preview; lives only while
   the configuration stays the same and the form is open.
 - **List values** (existing, feature 006): read for LOV attributes; never changed.
@@ -271,6 +339,8 @@ properties and their options. No ERF section asks for a preview; the feature req
 - **SC-004**: Every incomplete or invalid setting listed in FR-010 produces a preview message, and the
   form stays usable and savable as before.
 - **SC-005**: All existing tests of features 004, 006 and 007 pass without changing their assertions.
+- **SC-007**: For 100% of saved attributes, the consultation preview shows the same field as the form
+  preview shows when the same attribute is opened for editing.
 - **SC-006**: In a walkthrough, at least 4 of 5 users correctly predict from the preview how a product
   field will behave (limit, decimals, list values) without reading the configuration again.
 

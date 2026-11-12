@@ -10,6 +10,8 @@ import {
   type AttributeType,
 } from '../api/attributesApi'
 import { AttributeEditor } from '../attributes/AttributeEditor'
+import { AttributeFieldPreview } from '../attributes/AttributeFieldPreview'
+import { fromAttribute } from '../attributes/attributeForm'
 import { Button, Card, Notification, PageHeader, SelectField, TextField } from '../components/ui'
 import styles from './AttributesPage.module.css'
 
@@ -353,6 +355,14 @@ export function AttributesPage() {
                 )}
 
                 <AttributeDetail attribute={selected} types={types} />
+
+                {/* The same preview as in the form, from the saved configuration (feature 008 FR-016). */}
+                <div className={styles.preview}>
+                  <AttributeFieldPreview
+                    form={fromAttribute(selected)}
+                    options={types.find((type) => type.code === selected.dataType)?.options ?? {}}
+                  />
+                </div>
               </Card>
             )}
           </div>

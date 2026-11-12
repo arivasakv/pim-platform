@@ -113,6 +113,11 @@
   overflow-wrap: anywhere;
 }
 
+/* The field preview (feature 008) after the details. */
+.preview {
+  margin-top: var(--space-4);
+}
+
 @media (max-width: 64rem) {
   .layout {
     grid-template-columns: minmax(0, 1fr);

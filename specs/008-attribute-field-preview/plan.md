@@ -7,7 +7,9 @@
 approved with the feature request on 2026-11-12)
 
 **Status**: **Approved** by the project owner on 2026-11-12, including decisions D-1 to D-8
-(constitution X).
+(constitution X); implemented for creation and editing. **Amendment of 2026-11-12** (consultation
+preview, spec User Story 4, FR-016 to FR-018; decision D-9): approved by the project owner on
+2026-11-12.
 
 ## Summary
 
@@ -18,6 +20,11 @@ cannot use; a panel renders it with the existing design-system components. Typed
 only in an inner component keyed by the configuration, so any change or closing the form discards
 them. The only request is the existing list read for LOV attributes. No backend, design-system, API
 client or LOV Management change.
+
+**Amendment (consultation)**: the attribute detail on the "Atributos" page (feature 007) renders the
+same `AttributeFieldPreview` after the configuration details, fed with the saved attribute turned into
+form state by feature 007's existing `fromAttribute`. No change to the preview component or its rules;
+one element added to the page's detail (D-9).
 
 ## Technical Context
 
@@ -60,7 +67,7 @@ tests; lists show at most 50 values.
 | VII | API design | PASS | No API change |
 | VIII | Security | PASS | Nothing sent or stored; capture masks compiled in `try/catch` with the `u` flag; no `eval` |
 | IX | Development scope | PASS | No storage, no integration |
-| X | AI governance | PASS | Decisions D-1 to D-8 approved by the project owner on 2026-11-12 |
+| X | AI governance | PASS | D-1 to D-8 and the amendment's D-9 approved by the project owner on 2026-11-12 |
 | XI | Sources | PASS | Feature request is the source; OQ-001 recorded, not resolved by assumption beyond "no transformation" |
 | XII | Package structure | PASS | Backend untouched; frontend files next to the attribute form |
 
@@ -78,6 +85,12 @@ tests; lists show at most 50 values.
 | D-6 | Number, currency | Number field with min/max/step from settings; defaults 2 decimals when missing; symbol from `Intl` (es-MX) | R-06 |
 | D-7 | Date | Text field showing the configured format, with format and real-date checks | R-07 |
 | D-8 | Look | Panel with page-background token and subtle border, h3 heading, "no se guarda" note, notes in an info notification, ids prefixed `vista-previa-` | R-08, R-09 |
+
+### Amendment decision (approved 2026-11-12)
+
+| ID | Question | Proposal | Research |
+|---|---|---|---|
+| D-9 | Consultation preview | `AttributesPage`'s detail renders `<AttributeFieldPreview form={fromAttribute(selected)} options={…of selected.dataType} />` after the details list; no component change; values reset by the existing key when another attribute opens; unmounted on edit, delete or leaving the page. **Changes feature 007's page (additive)** | R-11 |
 
 ## Project Structure
 
@@ -100,6 +113,7 @@ frontend/src/attributes/
 ├── AttributeEditor.tsx                                              # + <AttributeFieldPreview …/> above actions
 └── AttributeEditor.test.tsx                                         # + 2 tests; fetch stub answers list detail
 frontend/src/pages/AttributesPage.test.tsx                           # fake backend answers list detail (fixture only)
+frontend/src/pages/AttributesPage.tsx (+ test)                       # amendment: preview in the attribute detail (D-9)
 ```
 
 No change to `backend/`, `frontend/src/api/`, `frontend/src/components/ui/`, LOV Management files or
@@ -117,6 +131,8 @@ for placement conventions).
 4. US3: reference field; every FR-010 note.
 5. Polish: fixture updates, full frontend suite, lint, format, build, backend build unchanged, quickstart
    UI scenarios (owner), scope check.
+6. Amendment (US4): page tests first, then the preview in the attribute detail; full suites; quickstart
+   P20–P25 (owner).
 
 ## Complexity Tracking
 

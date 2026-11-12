@@ -9,7 +9,7 @@ and, for LOV attributes, one list through the existing API.
 
 | Input | Source | Used for |
 |---|---|---|
-| `AttributeForm` | the editor's state (feature 004 `attributeForm.ts`) | every preview rule |
+| `AttributeForm` | the editor's state (feature 004 `attributeForm.ts`) during creation and editing; `fromAttribute(saved attribute)` (feature 007) during consultation | every preview rule |
 | Option lists of the chosen data type | `GET /api/v1/attribute-types`, already loaded by the editor | Spanish labels (reference target, selection mode) |
 | List of values (`values`, `valueCount`) | `GET /api/v1/lists-of-values/{id}` via `getList` (feature 006) | LOV preview |
 

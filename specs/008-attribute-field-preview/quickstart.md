@@ -40,10 +40,26 @@ Open "Atributos" → "Nuevo atributo" unless stated.
 | P18 | FR-013 | Create and edit attributes as in features 004 and 007 | Same requests, responses and messages as before |
 | P19 | FR-015 | Browser at 1440 px and 768 px | Panel full width under the form; no horizontal scroll |
 
+## Consultation scenarios (amendment 2026-11-12)
+
+Open "Atributos" and select an attribute in the list (detail view, no editing).
+
+| # | Story / requirement | Steps | Expected |
+|---|---|---|---|
+| P20 | US4, FR-016 | Open "Peso" (decimal, 2 decimals, 0–100) | After "Modificado"/"Creado", the "Vista previa del campo" panel with the same look as in the form; number field "Peso (opcional)", step 0.01 |
+| P21 | FR-017 | Type 150 in the preview | Range message; nothing saved; no save action for it |
+| P22 | FR-017 | Open an LOV attribute (multiple selection) whose list has 80 values | 50 checkboxes; "Vista previa con los primeros 50 de 80 valores." |
+| P23 | FR-017 | Type in the preview, open another attribute, come back | Preview empty again |
+| P24 | FR-016 | Without `ATTRIBUTE_CREATE` | The preview is shown in the detail as well |
+| P25 | US4 sc. 6 | "Editar", change the decimals, save | The detail's preview shows the new decimals |
+
 ## Scope checks
 
 - `git diff --stat` shows changes only under `frontend/src/attributes/` (new preview files, one added
   element in `AttributeEditor.tsx`, test fixture updates) and `frontend/src/pages/AttributesPage.test.tsx`
   (fixture only).
+- Amendment: additionally only `frontend/src/pages/AttributesPage.tsx` (imports and one element in
+  the detail), a spacing class in `AttributesPage.module.css` and new tests in `AttributesPage.test.tsx`; `AttributeFieldPreview.tsx` and
+  `fieldPreview.ts` unchanged.
 - No change in `backend/`, `frontend/src/components/ui/`, `frontend/src/api/`, LOV Management files,
   `package.json`.

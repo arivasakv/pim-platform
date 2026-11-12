@@ -116,6 +116,26 @@ Each section records a decision, why, and the alternatives rejected.
     campo en un formulario de producto. Lo que escribas aquí no se guarda."
 - **IDs**: preview inputs use ids prefixed `vista-previa-` so they never collide with the form's ids.
 
+## R-11 Consultation preview (amendment 2026-11-12)
+
+- **Decision**: In `pages/AttributesPage.tsx`, the detail card renders `AttributeFieldPreview` after
+  the definition list of `AttributeDetail`, with:
+  - `form = fromAttribute(selected)`: feature 007's existing function that turns a saved attribute
+    (as returned by `GET /api/v1/attributes/{id}`) into `AttributeForm`, the same input the editor
+    uses, so the per-type rules run once, in `fieldPreview.ts`;
+  - `options` = the option lists of the attribute's data type from the attribute types the page already
+    loads with the list (`GET /api/v1/attribute-types`).
+  The component, its rules and texts are unchanged. Opening another attribute gives another form, so
+  the existing key resets typed values; switching to edit, deleting or leaving the page unmounts the
+  panel. The list read uses the panel's existing loader (one read per opened LOV attribute).
+- **Rationale**: Satisfies "one implementation" (spec FR-018) with one added element; the saved
+  configuration is the backend's own data (spec FR-016).
+- **Alternatives**: A read-only variant of the panel (disabled inputs) — rejected: the request asks for
+  the same experience and a demonstration; a `mode` prop would add branching for no behavior. Passing
+  the saved attribute to a second rules function — rejected: duplicates `fieldPreview.ts` (FR-018).
+- **Note**: The panel is placed inside the detail card, after "Modificado", so it reads as part of the
+  attribute's detail but stays visually distinct (its own background, heading and note).
+
 ## R-10 Testing
 
 - `fieldPreview.test.ts`: every rule of R-05–R-09 as pure functions (each type, defaults, invalid
@@ -127,3 +147,7 @@ Each section records a decision, why, and the alternatives rejected.
   `GET /api/v1/lists-of-values/{id}` so the preview's read does not consume an answer meant for
   creation (fixture change only, as feature 006 did).
 - `AttributesPage.test.tsx`: its fake backend answers the list detail the same way; no assertion change.
+- Amendment: `AttributesPage.test.tsx` gains consultation tests (preview after the details for each
+  kind of attribute in its fixtures, LOV values and the 50-value summary, reset when another attribute
+  opens, shown without the permission, no request carrying preview values). Existing assertions stay;
+  where a detail query could now also match preview text, the preview is checked inside its own region.

@@ -37,3 +37,6 @@
   choice.
 - OQ-001 ("Capitalización mixta") does not block planning: the preview applies no transformation
   (A-003).
+- Amendment of 2026-11-12 (consultation preview, User Story 4, FR-016 to FR-018) re-validated: every
+  item still passes; the amendment's decisions came with the owner's request, so no clarification
+  questions remain.

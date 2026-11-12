@@ -5,7 +5,13 @@ shows, so tests and reviewers share one reference. Texts are exact (Spanish, es-
 
 ## Panel
 
-- Position: inside the attribute form card, after the type-specific fields, before the action buttons.
+- Position:
+  - creation and editing: inside the attribute form card, after the type-specific fields, before the
+    action buttons;
+  - consultation (amendment 2026-11-12): inside the attribute detail card on "Atributos", after the
+    configuration details ("Modificado" row), built from the saved attribute.
+- Heading, note, label, help text, per-type fields, notes and list states are identical in the three
+  scenarios.
 - Heading (h3): **Vista previa del campo**
 - Note: **Así se verá el campo en un formulario de producto. Lo que escribas aquí no se guarda.**
 - Label of the field: **{nombre} (opcional)**; empty name: **Nombre del atributo (opcional)**.

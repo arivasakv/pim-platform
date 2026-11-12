@@ -184,9 +184,45 @@ reset on change.
 
 ---
 
+## Phase 7: User Story 4 – Preview when consulting an attribute (P2, amendment 2026-11-12)
+
+**Prerequisites**: amendment decision D-9, approved by the project owner on 2026-11-12.
+
+**Goal**: spec FR-016 to FR-018: the attribute detail shows the same preview from the saved
+configuration.
+
+**Independent test**: spec US4; quickstart P20–P25.
+
+### Tests first
+
+- [X] T021 [P] [US4] Extend `FE/pages/AttributesPage.test.tsx` (consultation): opening "Peso logístico"
+  shows, inside the detail region and after the "Creado" row, a region "Vista previa del campo" with a
+  number input labelled "Peso logístico (opcional)" and step "0.01"; typing 1.234 shows "Usa como máximo
+  2 decimales." and no `PUT`/`POST` is sent; opening "Color" (multiple, list LOV000001) shows a group
+  "Color (opcional)" with the list's checkboxes and "Lista: Colores · Puedes elegir varios valores";
+  with a list of 80 values the preview shows 50 and the summary; a typed value is gone after opening
+  another attribute and coming back; without `ATTRIBUTE_CREATE` the preview is shown; after editing the
+  decimals and saving, the detail's preview uses the new step. Existing tests keep their assertions;
+  where a detail query could also match preview text, scope it to the details list. (FR-016, FR-017,
+  SC-007)
+
+### Implementation
+
+- [X] T022 [US4] `FE/pages/AttributesPage.tsx`: in the detail card, after `<AttributeDetail …/>`, render
+  `<AttributeFieldPreview form={fromAttribute(selected)} options={types.find((type) => type.code ===
+  selected.dataType)?.options ?? {}} />`; no change to `AttributeFieldPreview.tsx` or `fieldPreview.ts`.
+  T021 passes. (FR-016, FR-018)
+- [X] T023 Run frontend `npm run lint`, `npm run format:check`, `npm test`, `npm run build`; confirm no
+  file outside `FE/pages/AttributesPage.tsx` and its test changed for the amendment, and no backend
+  change; record counts. (FR-013, FR-014, FR-018)
+- [ ] T024 Owner check: quickstart consultation scenarios P20–P25 in the browser (left to the project
+  owner).
+
+---
+
 ## Dependencies & Execution Order
 
-- Phase 1 → Phase 2 → US1 → US2 → US3 → Polish.
+- Phase 1 → Phase 2 → US1 → US2 → US3 → Polish (done) → US4 (amendment): T021 → T022 → T023 → T024.
 - US2 and US3 depend only on Phase 2, but all stories edit `fieldPreview.ts` and
   `AttributeFieldPreview.tsx`, so their implementation tasks run one at a time.
 - Within a phase: [P] tests first, then implementation in ID order.
@@ -215,6 +251,14 @@ reset on change.
     `AttributeEditor.test.tsx` and `AttributesPage.test.tsx`; no change in `backend/`, `FE/api/`,
     `FE/components/ui/`, LOV Management or `package.json`.
   - T020 (browser check of P1–P19): marked done by the project owner on 2026-11-12.
+- **Amendment results (2026-11-12)**:
+  - T021/T022: 6 consultation tests in `AttributesPage.test.tsx`; the detail renders the existing
+    `AttributeFieldPreview` from `fromAttribute(selected)` (two imports, one element), inside a wrapper
+    with a top margin added to `AttributesPage.module.css`. `AttributeFieldPreview.tsx` and
+    `fieldPreview.ts` unchanged. No existing assertion needed scoping.
+  - T023: frontend 224 tests, lint, format check and build pass; amendment changes limited to
+    `FE/pages/AttributesPage.tsx`, its CSS module and its test; no backend change.
+  - T024 (browser check of P20–P25) is left to the project owner.
 - **Existing assertions**: none changed. The editor test stub and the page fake backend now answer
   `GET /api/v1/lists-of-values/{id}` (T006, T017), so the preview's list read does not consume a reply
   meant for saving.
@@ -222,4 +266,5 @@ reset on change.
 - Requirement coverage: FR-001 T003/T005/T006 · FR-002 T009/T011 · FR-003 T006/T009 · FR-004 T002/T004 ·
   FR-005 T007/T008/T010/T011 · FR-006 T007/T008/T010/T011 · FR-007 T008/T011 · FR-008 T012/T013 ·
   FR-009 T007/T014/T016 · FR-010 T014/T015/T016 · FR-011 T002/T008 · FR-012 T003/T009 · FR-013
-  T001/T006/T018 · FR-014 T018/T019 · FR-015 T005/T020.
+  T001/T006/T018/T023 · FR-014 T018/T019/T023 · FR-015 T005/T020 · FR-016 T021/T022 · FR-017 T021 ·
+  FR-018 T022/T023.
