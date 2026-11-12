@@ -13,6 +13,7 @@ import {
   type AttributeGroup,
   type AttributeGroupSummary,
 } from '../api/attributeGroupsApi'
+import { matchesFilters } from '../attributes/attributeBrowsing'
 import {
   Button,
   Card,
@@ -26,6 +27,8 @@ import styles from './AttributeGroupsPage.module.css'
 
 const CONNECTION_ERROR = 'No se pudo conectar con el servidor. Inténtalo de nuevo.'
 const NAME_REQUIRED = 'Escribe el nombre del grupo.'
+/** Attributes shown at a time in "Agregar atributos" (feature 009 FR-015). */
+const PICKER_PAGE_SIZE = 50
 
 /** Spanish labels of feature 004's data types, for the member list. */
 const DATA_TYPE_LABELS: Record<string, string> = {
@@ -41,7 +44,7 @@ const DATA_TYPE_LABELS: Record<string, string> = {
 type ListState =
   { status: 'loading' } | { status: 'error' } | { status: 'ready'; groups: AttributeGroupSummary[] }
 
-type Picker = { attributes: Attribute[]; chosen: string[] }
+type Picker = { attributes: Attribute[]; chosen: string[]; search: string; shown: number }
 
 type Editing = { name: string; description: string; nameError?: string }
 
@@ -84,6 +87,7 @@ export function AttributeGroupsPage() {
   const [panelError, setPanelError] = useState<string>()
   const [picker, setPicker] = useState<Picker | null>(null)
   const [editing, setEditing] = useState<Editing | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [busy, setBusy] = useState(false)
 
   // Loads the groups; a reload increments listRequest. State changes only in the callbacks.
@@ -141,6 +145,7 @@ export function AttributeGroupsPage() {
     setPanelError(undefined)
     setPicker(null)
     setEditing(null)
+    setConfirmingDelete(false)
     try {
       setSelected(await getGroup(groupId))
     } catch (error) {
@@ -167,7 +172,12 @@ export function AttributeGroupsPage() {
   async function openPicker() {
     setPanelError(undefined)
     try {
-      setPicker({ attributes: await listAttributes(), chosen: [] })
+      setPicker({
+        attributes: await listAttributes(),
+        chosen: [],
+        search: '',
+        shown: PICKER_PAGE_SIZE,
+      })
     } catch {
       setPanelError(CONNECTION_ERROR)
     }
@@ -230,11 +240,13 @@ export function AttributeGroupsPage() {
     setBusy(true)
     try {
       await deleteGroup(group.id)
+      setConfirmingDelete(false)
       setSelected(null)
       setPicker(null)
       setConfirmation(`Grupo «${group.name}» eliminado.`)
       reloadList()
     } catch (error) {
+      setConfirmingDelete(false)
       setPanelError(messageOf(error))
     } finally {
       setBusy(false)
@@ -244,6 +256,9 @@ export function AttributeGroupsPage() {
   const memberIds = new Set(selected?.attributes.map((member) => member.systemId.toUpperCase()))
   const available =
     picker?.attributes.filter((attribute) => !memberIds.has(attribute.systemId.toUpperCase())) ?? []
+  const matching = picker
+    ? available.filter((attribute) => matchesFilters(attribute, picker.search, ''))
+    : []
 
   return (
     <>
@@ -333,7 +348,7 @@ export function AttributeGroupsPage() {
               <Card
                 title={selected.name}
                 actions={
-                  canChange && !editing ? (
+                  canChange && !editing && !confirmingDelete ? (
                     <>
                       <Button
                         variant="secondary"
@@ -350,7 +365,11 @@ export function AttributeGroupsPage() {
                       <Button
                         variant="secondary"
                         disabled={busy}
-                        onClick={() => void removeGroup(selected)}
+                        onClick={() => {
+                          setConfirmation(undefined)
+                          setPanelError(undefined)
+                          setConfirmingDelete(true)
+                        }}
                       >
                         Eliminar grupo
                       </Button>
@@ -394,6 +413,15 @@ export function AttributeGroupsPage() {
                   selected.description && <p className={styles.muted}>{selected.description}</p>
                 )}
 
+                {confirmingDelete && (
+                  <GroupDeleteConfirmation
+                    group={selected}
+                    busy={busy}
+                    onCancel={() => setConfirmingDelete(false)}
+                    onConfirm={() => void removeGroup(selected)}
+                  />
+                )}
+
                 <h3 className={styles.subheading}>Atributos del grupo</h3>
                 {selected.attributes.length === 0 ? (
                   <p className={styles.muted}>Este grupo todavía no tiene atributos.</p>
@@ -434,15 +462,48 @@ export function AttributeGroupsPage() {
                     {available.length === 0 ? (
                       <p className={styles.muted}>No hay más atributos para agregar.</p>
                     ) : (
-                      available.map((attribute) => (
-                        <CheckboxField
-                          key={attribute.systemId}
-                          id={`agregar-${attribute.systemId}`}
-                          label={`${attribute.displayName} (${attribute.systemId})`}
-                          checked={picker.chosen.includes(attribute.systemId)}
-                          onChange={(checked) => toggleChosen(attribute.systemId, checked)}
+                      <>
+                        <TextField
+                          id="buscar-para-agregar"
+                          label="Buscar atributo"
+                          type="search"
+                          value={picker.search}
+                          onChange={(event) =>
+                            setPicker({
+                              ...picker,
+                              search: event.target.value,
+                              shown: PICKER_PAGE_SIZE,
+                            })
+                          }
                         />
-                      ))
+                        {matching.length === 0 && (
+                          <p className={styles.muted}>Ningún atributo coincide con la búsqueda.</p>
+                        )}
+                        {matching.slice(0, picker.shown).map((attribute) => (
+                          <CheckboxField
+                            key={attribute.systemId}
+                            id={`agregar-${attribute.systemId}`}
+                            label={`${attribute.displayName} (${attribute.systemId})`}
+                            checked={picker.chosen.includes(attribute.systemId)}
+                            onChange={(checked) => toggleChosen(attribute.systemId, checked)}
+                          />
+                        ))}
+                        {matching.length > picker.shown && (
+                          <div className={styles.actions}>
+                            <p className={styles.muted}>
+                              Mostrando {picker.shown} de {matching.length} atributos.
+                            </p>
+                            <Button
+                              variant="secondary"
+                              onClick={() =>
+                                setPicker({ ...picker, shown: picker.shown + PICKER_PAGE_SIZE })
+                              }
+                            >
+                              Mostrar más
+                            </Button>
+                          </div>
+                        )}
+                      </>
                     )}
                     <div className={styles.actions}>
                       <Button variant="secondary" onClick={() => setPicker(null)}>
@@ -452,7 +513,7 @@ export function AttributeGroupsPage() {
                         disabled={busy || picker.chosen.length === 0}
                         onClick={() => addChosen(selected, picker.chosen)}
                       >
-                        Agregar seleccionados
+                        Agregar seleccionados ({picker.chosen.length})
                       </Button>
                     </div>
                   </fieldset>
@@ -463,5 +524,44 @@ export function AttributeGroupsPage() {
         )}
       </div>
     </>
+  )
+}
+
+type GroupDeleteConfirmationProps = {
+  group: AttributeGroup
+  busy: boolean
+  onCancel: () => void
+  onConfirm: () => void
+}
+
+/**
+ * Inline confirmation before deleting a group (feature 009 FR-015). A group with attributes cannot
+ * be deleted (feature 005 FR-005), so it only explains why and offers "Cancelar".
+ */
+function GroupDeleteConfirmation({
+  group,
+  busy,
+  onCancel,
+  onConfirm,
+}: GroupDeleteConfirmationProps) {
+  const count = group.attributes.length
+  return (
+    <Notification variant="warning">
+      <p className={styles.inlineMessage}>
+        {count > 0
+          ? `El grupo «${group.name}» tiene ${countLabel(count)}. Quítalos del grupo antes de eliminarlo; los atributos no se eliminan.`
+          : `¿Eliminar el grupo «${group.name}»? Ningún atributo se elimina.`}
+      </p>
+      <div className={styles.actions}>
+        <Button variant="secondary" onClick={onCancel}>
+          Cancelar
+        </Button>
+        {count === 0 && (
+          <Button disabled={busy} onClick={onConfirm}>
+            Sí, eliminar grupo
+          </Button>
+        )}
+      </div>
+    </Notification>
   )
 }

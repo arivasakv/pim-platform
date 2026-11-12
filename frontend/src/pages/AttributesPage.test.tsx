@@ -4,6 +4,7 @@ import { AttributesPage } from './AttributesPage'
 
 const BASE_URL = 'http://servidor.ejemplo:9090'
 const ATTRIBUTES = `${BASE_URL}/api/v1/attributes`
+const GROUPS = `${BASE_URL}/api/v1/attribute-groups`
 
 const TYPES = {
   total: 3,
@@ -32,7 +33,12 @@ const TYPES = {
   ],
 }
 
-type Attribute = Record<string, unknown> & { systemId: string; displayName: string }
+type GroupRef = { id: string; name: string }
+type Attribute = Record<string, unknown> & {
+  systemId: string
+  displayName: string
+  groups?: GroupRef[]
+}
 
 function peso(): Attribute {
   return {
@@ -86,16 +92,44 @@ function byName(attributes: Attribute[]) {
   )
 }
 
+/** The groups named by these attributes, plus `extra` ones. */
+function groupsOf(attributes: Attribute[], extra: GroupRef[] = []): GroupRef[] {
+  const all = [...attributes.flatMap((attribute) => attribute.groups ?? []), ...extra]
+  return all.filter((group, index) => all.findIndex((other) => other.id === group.id) === index)
+}
+
 /**
- * A backend holding these attributes. `overrides` answer a "METHOD url" before the default
- * behavior, once each.
+ * A backend holding these attributes and groups (feature 005 endpoints included). `overrides`
+ * answer a "METHOD url" before the default behavior, once each.
  */
 function fakeBackend(
   initial: Attribute[],
   overrides: Record<string, () => FakeResponse> = {},
-  options: { failList?: boolean } = {},
+  options: { failList?: boolean; failGroups?: boolean; groups?: GroupRef[] } = {},
 ) {
   let attributes = [...initial]
+  let groups = groupsOf(initial, options.groups)
+  const groupsAnswer = () => {
+    const items = [...groups]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((group) => ({
+        ...group,
+        attributeCount: attributes.filter((attribute) =>
+          (attribute.groups ?? []).some((member) => member.id === group.id),
+        ).length,
+      }))
+    return response(200, { items, total: items.length })
+  }
+  const setGroups = (id: string, change: (current: GroupRef[]) => GroupRef[]) => {
+    attributes = attributes.map((attribute) =>
+      attribute.systemId === id
+        ? {
+            ...attribute,
+            groups: change(attribute.groups ?? []).sort((a, b) => a.name.localeCompare(b.name)),
+          }
+        : attribute,
+    )
+  }
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     const method = init?.method ?? 'GET'
     const key = `${method} ${url}`
@@ -103,6 +137,26 @@ function fakeBackend(
     if (override) {
       delete overrides[key]
       return Promise.resolve(override())
+    }
+    if (url === GROUPS && method === 'GET') {
+      if (options.failGroups) return Promise.reject(new TypeError('Network down'))
+      return Promise.resolve(groupsAnswer())
+    }
+    if (url.startsWith(`${GROUPS}/`)) {
+      const [groupId, , attributeId] = url.slice(GROUPS.length + 1).split('/')
+      const group = groups.find((candidate) => candidate.id === groupId)
+      if (!group) {
+        return Promise.resolve(response(404, { status: 404, detail: 'No existe el grupo.' }))
+      }
+      if (method === 'POST') {
+        const [id] = JSON.parse(String(init?.body)).attributeIds as string[]
+        setGroups(id, (current) => [...current, group])
+        return Promise.resolve(response(200, { group, added: [id], alreadyInGroup: [] }))
+      }
+      if (method === 'DELETE' && attributeId) {
+        setGroups(attributeId, (current) => current.filter((member) => member.id !== groupId))
+        return Promise.resolve(response(204, null))
+      }
     }
     if (url.endsWith('/api/v1/attribute-types')) return Promise.resolve(response(200, TYPES))
     if (url.endsWith('/api/v1/lists-of-values')) {
@@ -163,11 +217,49 @@ function fakeBackend(
     return Promise.reject(new TypeError(`Unexpected ${key}`))
   })
   vi.stubGlobal('fetch', fetchMock)
-  return fetchMock
+  return Object.assign(fetchMock, {
+    /** Deletes a group on the "server", as another user would. */
+    dropGroup(id: string) {
+      groups = groups.filter((group) => group.id !== id)
+      attributes = attributes.map((attribute) => ({
+        ...attribute,
+        groups: (attribute.groups ?? []).filter((group) => group.id !== id),
+      }))
+    },
+  })
 }
 
-function listButtons() {
-  return within(screen.getByRole('list')).getAllByRole('button')
+/** The rows of the attribute list, whose card is titled after the chosen entry. */
+function listButtons(entry = 'Todos los atributos') {
+  const card = within(screen.getByRole('region', { name: entry }))
+  return within(card.getByRole('list')).getAllByRole('button')
+}
+
+function panel() {
+  return within(screen.getByRole('region', { name: 'Grupos' }))
+}
+
+async function choose(entryName: RegExp) {
+  fireEvent.click(await panel().findByRole('button', { name: entryName }))
+}
+
+const LOGISTICOS = { id: 'g1', name: 'Logísticos' }
+const VENTAS = { id: 'g2', name: 'Compra Ventas' }
+const TEMPORAL = { id: 'g3', name: 'Temporal' }
+
+/** Peso in two groups, Volumen in one, Activo in none (feature 009 fixtures). */
+function organized(): Attribute[] {
+  return [
+    { ...peso(), groups: [VENTAS, LOGISTICOS] },
+    {
+      ...peso(),
+      systemId: 'ATR000004',
+      displayName: 'Volumen',
+      description: undefined,
+      groups: [LOGISTICOS],
+    },
+    activo(),
+  ]
 }
 
 async function open(name: RegExp) {
@@ -390,7 +482,9 @@ describe('AttributesPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }))
 
     expect(
-      screen.getByText(/pertenece a 1 grupo: Logísticos\. Quítalo de esos grupos/),
+      screen.getByText(
+        'El atributo «Peso logístico» pertenece a 1 grupo: Logísticos. Quítalo de esos grupos en la sección «Grupos» de este atributo antes de eliminarlo.',
+      ),
     ).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Sí, eliminar atributo' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeTruthy()
@@ -518,5 +612,188 @@ describe('AttributesPage', () => {
     expect(within(preview).getByLabelText<HTMLInputElement>('Peso logístico (opcional)').step).toBe(
       '0.001',
     )
+  })
+
+  // --- Feature 009, User Story 1: browse by group ---
+
+  it('shows a group panel with counts and lists the attributes of the chosen entry', async () => {
+    fakeBackend(organized())
+    render(<AttributesPage />)
+
+    expect(await panel().findByRole('button', { name: 'Compra Ventas, 1 atributo' })).toBeTruthy()
+    expect(panel().getByRole('button', { name: 'Todos los atributos, 3 atributos' })).toBeTruthy()
+    expect(panel().getByRole('button', { name: 'Sin grupo, 1 atributo' })).toBeTruthy()
+    expect(panel().getByRole('button', { name: 'Logísticos, 2 atributos' })).toBeTruthy()
+    expect(listButtons()).toHaveLength(3)
+
+    await choose(/^Logísticos/)
+    expect(listButtons('Logísticos').map((row) => row.textContent)).toEqual([
+      expect.stringContaining('Peso logístico'),
+      expect.stringContaining('Volumen'),
+    ])
+    expect(screen.getByText('2 atributos')).toBeTruthy()
+
+    await choose(/^Compra Ventas/)
+    expect(listButtons('Compra Ventas')).toHaveLength(1)
+    await open(/Peso logístico/)
+    expect(
+      within(screen.getByRole('region', { name: 'Peso logístico' })).getByText('ATR000001'),
+    ).toBeTruthy()
+
+    await choose(/^Sin grupo/)
+    expect(listButtons('Sin grupo').map((row) => row.textContent)).toEqual([
+      expect.stringContaining('Activo'),
+    ])
+    // The detail stays open while browsing (FR-009).
+    expect(screen.getByRole('region', { name: 'Peso logístico' })).toBeTruthy()
+  })
+
+  it('explains an empty group and an empty "Sin grupo"', async () => {
+    fakeBackend([{ ...peso(), groups: [LOGISTICOS] }], {}, { groups: [TEMPORAL] })
+    render(<AttributesPage />)
+
+    await choose(/^Temporal/)
+    expect(screen.getByText('Este grupo todavía no tiene atributos.')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Agrégalos desde la sección «Grupos» de cada atributo o en «Grupo de Atributos».',
+      ),
+    ).toBeTruthy()
+
+    await choose(/^Sin grupo/)
+    expect(screen.getByText('Todos los atributos pertenecen al menos a un grupo.')).toBeTruthy()
+  })
+
+  it('keeps the list usable when the groups cannot be loaded', async () => {
+    fakeBackend(organized(), {}, { failGroups: true })
+    render(<AttributesPage />)
+
+    expect(await panel().findByText('No se pudieron cargar los grupos.')).toBeTruthy()
+    expect(listButtons()).toHaveLength(3)
+    await choose(/^Sin grupo/)
+    expect(listButtons('Sin grupo')).toHaveLength(1)
+
+    fakeBackend(organized())
+    fireEvent.click(panel().getByRole('button', { name: 'Reintentar' }))
+    expect(await panel().findByRole('button', { name: 'Logísticos, 2 atributos' })).toBeTruthy()
+  })
+
+  it('goes back to every attribute when the chosen group no longer exists', async () => {
+    const backend = fakeBackend(organized())
+    render(<AttributesPage />)
+    await choose(/^Logísticos/)
+    await open(/Volumen/)
+
+    backend.dropGroup('g1')
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar del grupo Logísticos' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sí, quitar del grupo' }))
+
+    expect(await screen.findByText('No existe el grupo.')).toBeTruthy()
+    await waitFor(() => expect(listButtons()).toHaveLength(3))
+    expect(panel().queryByRole('button', { name: /^Logísticos/ })).toBeNull()
+  })
+
+  // --- Feature 009, User Story 2: find attributes and groups ---
+
+  it('searches within the chosen group and points to matches elsewhere', async () => {
+    fakeBackend(organized())
+    render(<AttributesPage />)
+    await choose(/^Logísticos/)
+    const search = screen.getByLabelText('Buscar por nombre o ID')
+
+    fireEvent.change(search, { target: { value: 'VOL' } })
+    expect(listButtons('Logísticos').map((row) => row.textContent)).toEqual([
+      expect.stringContaining('Volumen'),
+    ])
+
+    fireEvent.change(search, { target: { value: 'activo' } })
+    expect(
+      screen.getByText('Ningún atributo de «Logísticos» coincide con la búsqueda.'),
+    ).toBeTruthy()
+    expect(screen.getByText('1 coincidencia en otros grupos.')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar en todos los atributos' }))
+    expect(listButtons().map((row) => row.textContent)).toEqual([expect.stringContaining('Activo')])
+    expect(screen.getByLabelText<HTMLInputElement>('Buscar por nombre o ID').value).toBe('activo')
+  })
+
+  it('keeps the filters when changing entry and says when "Sin grupo" has no match', async () => {
+    fakeBackend(organized())
+    render(<AttributesPage />)
+    await screen.findByText('3 atributos')
+
+    fireEvent.change(screen.getByLabelText('Tipo de dato'), { target: { value: 'NUMERIC' } })
+    await choose(/^Sin grupo/)
+    expect(screen.getByText('Ningún atributo sin grupo coincide con la búsqueda.')).toBeTruthy()
+    expect(screen.getByText('2 coincidencias en otros grupos.')).toBeTruthy()
+
+    fireEvent.change(screen.getByLabelText('Buscar por nombre o ID'), { target: { value: 'nada' } })
+    expect(screen.queryByText(/en otros grupos/)).toBeNull()
+  })
+
+  it('shows the first 50 rows again after changing entry', async () => {
+    const many = Array.from({ length: 60 }, (_, index) => ({
+      ...activo(),
+      systemId: `ATR${String(index).padStart(6, '0')}`,
+      displayName: `Atributo ${String(index).padStart(2, '0')}`,
+    }))
+    fakeBackend(many)
+    render(<AttributesPage />)
+    await screen.findByText('60 atributos')
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar más' }))
+    expect(listButtons()).toHaveLength(60)
+
+    await choose(/^Sin grupo/)
+    expect(listButtons('Sin grupo')).toHaveLength(50)
+  })
+
+  // --- Feature 009, User Story 3: groups from the attribute ---
+
+  it('adds the open attribute to a group and updates the counts', async () => {
+    fakeBackend(organized(), {}, { groups: [TEMPORAL] })
+    render(<AttributesPage />)
+    await open(/Activo/)
+
+    const detail = within(screen.getByRole('region', { name: 'Activo' }))
+    expect(detail.getAllByRole('term').length).toBeGreaterThan(0)
+    expect(detail.queryByText('Grupos', { selector: 'dt' })).toBeNull()
+    fireEvent.change(await detail.findByLabelText('Agregar a un grupo'), {
+      target: { value: 'g3' },
+    })
+    fireEvent.click(detail.getByRole('button', { name: 'Agregar' }))
+
+    expect(await screen.findByText('Atributo «Activo» agregado al grupo «Temporal».')).toBeTruthy()
+    expect(detail.getByRole('button', { name: 'Quitar del grupo Temporal' })).toBeTruthy()
+    expect(await panel().findByRole('button', { name: 'Temporal, 1 atributo' })).toBeTruthy()
+    expect(panel().getByRole('button', { name: 'Sin grupo, 0 atributos' })).toBeTruthy()
+  })
+
+  it('removes the open attribute from the chosen group and keeps its detail', async () => {
+    fakeBackend(organized())
+    render(<AttributesPage />)
+    await choose(/^Logísticos/)
+    await open(/Volumen/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar del grupo Logísticos' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sí, quitar del grupo' }))
+
+    expect(
+      await screen.findByText('Atributo «Volumen» quitado del grupo «Logísticos».'),
+    ).toBeTruthy()
+    await waitFor(() => expect(listButtons('Logísticos')).toHaveLength(1))
+    const detail = within(screen.getByRole('region', { name: 'Volumen' }))
+    expect(detail.getByText('Sin grupos')).toBeTruthy()
+    expect(panel().getByRole('button', { name: 'Sin grupo, 2 atributos' })).toBeTruthy()
+  })
+
+  it('lists the groups without change controls without the permission', async () => {
+    vi.stubEnv('VITE_DEV_PERMISSIONS', '')
+    fakeBackend(organized())
+    render(<AttributesPage />)
+    await open(/Peso logístico/)
+
+    const detail = within(screen.getByRole('region', { name: 'Peso logístico' }))
+    expect(detail.getByText('Compra Ventas')).toBeTruthy()
+    expect(detail.queryByRole('button', { name: /Quitar/ })).toBeNull()
+    expect(detail.queryByLabelText('Agregar a un grupo')).toBeNull()
   })
 })

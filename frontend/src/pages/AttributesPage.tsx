@@ -9,7 +9,21 @@ import {
   type Attribute,
   type AttributeType,
 } from '../api/attributesApi'
+import { canChangeGroups, listGroups } from '../api/attributeGroupsApi'
 import { AttributeEditor } from '../attributes/AttributeEditor'
+import { AttributeGroupPanel } from '../attributes/AttributeGroupPanel'
+import { AttributeGroupsSection } from '../attributes/AttributeGroupsSection'
+import {
+  ALL,
+  ALL_TYPES,
+  browse,
+  countLabel,
+  effectiveEntry,
+  entryLabel,
+  ungroupedCount,
+  type BrowseEntry,
+  type GroupsState,
+} from '../attributes/attributeBrowsing'
 import { AttributeFieldPreview } from '../attributes/AttributeFieldPreview'
 import { fromAttribute } from '../attributes/attributeForm'
 import { Button, Card, Notification, PageHeader, SelectField, TextField } from '../components/ui'
@@ -18,7 +32,6 @@ import styles from './AttributesPage.module.css'
 const CONNECTION_ERROR = 'No se pudo conectar con el servidor. Inténtalo de nuevo.'
 /** Rows shown at a time; "Mostrar más" adds this many (feature 007 research R-10). */
 const PAGE_SIZE = 50
-const ALL_TYPES = ''
 
 type ListState =
   | { status: 'loading' }
@@ -32,26 +45,16 @@ function plural(count: number, one: string, many: string): string {
   return `${count} ${count === 1 ? one : many}`
 }
 
+/** "1 coincidencia" / "N coincidencias en otros grupos." (feature 009 FR-006). */
+function elsewhereLabel(count: number): string {
+  return `${plural(count, 'coincidencia', 'coincidencias')} en otros grupos.`
+}
+
 function messageOf(error: unknown): string {
   if (error instanceof AttributeApiError && error.kind !== 'unavailable') {
     return error.detail ?? error.errors[0]?.message ?? CONNECTION_ERROR
   }
   return CONNECTION_ERROR
-}
-
-/** Lower case without accents, so "logistico" finds "Logístico". */
-function normalized(text: string): string {
-  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-}
-
-function matches(attribute: Attribute, search: string, dataType: string): boolean {
-  if (dataType !== ALL_TYPES && attribute.dataType !== dataType) return false
-  const wanted = normalized(search.trim())
-  if (wanted === '') return true
-  return (
-    normalized(attribute.displayName).includes(wanted) ||
-    normalized(attribute.systemId).includes(wanted)
-  )
 }
 
 function formatDate(iso: string | undefined): string | undefined {
@@ -61,13 +64,16 @@ function formatDate(iso: string | undefined): string | undefined {
 
 /**
  * Consults, searches, creates, edits and deletes attributes (feature 007; feature 004 for the
- * form), laid out like "Lista de Valores" (feature 006). Everything shown comes from the backend
- * (FR-003). Create, edit and delete controls appear only with the development permission
- * `ATTRIBUTE_CREATE` (FR-018); the backend checks it again.
+ * form), laid out like "Lista de Valores" (feature 006), browsed by attribute group (feature 009).
+ * Everything shown comes from the backend (FR-003). Change controls appear only with the
+ * development permission `ATTRIBUTE_CREATE` (FR-018); the backend checks it again.
  */
 export function AttributesPage() {
   const canChange = canChangeAttributes()
+  const canChangeMemberships = canChangeGroups()
   const [listState, setListState] = useState<ListState>({ status: 'loading' })
+  const [groupsState, setGroupsState] = useState<GroupsState>({ status: 'loading' })
+  const [entry, setEntry] = useState<BrowseEntry>(ALL)
   const [listRequest, setListRequest] = useState(0)
   const [confirmation, setConfirmation] = useState<string>()
   const [search, setSearch] = useState('')
@@ -80,8 +86,8 @@ export function AttributesPage() {
   const [busy, setBusy] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
-  // Loads the attributes and the data types; a reload increments listRequest. State changes
-  // only in the callbacks.
+  // Loads the attributes, the data types and, independently, the groups (feature 009 FR-008); a
+  // reload increments listRequest. State changes only in the callbacks.
   useEffect(() => {
     let isCurrent = true
     Promise.all([listAttributes(), fetchAttributeTypes()]).then(
@@ -90,6 +96,14 @@ export function AttributesPage() {
       },
       () => {
         if (isCurrent) setListState({ status: 'error' })
+      },
+    )
+    listGroups().then(
+      (groups) => {
+        if (isCurrent) setGroupsState({ status: 'ready', groups })
+      },
+      () => {
+        if (isCurrent) setGroupsState({ status: 'error' })
       },
     )
     return () => {
@@ -102,6 +116,30 @@ export function AttributesPage() {
   function retryList() {
     setListState({ status: 'loading' })
     reloadList()
+  }
+
+  function retryGroups() {
+    setGroupsState({ status: 'loading' })
+    reloadList()
+  }
+
+  function chooseEntry(chosen: BrowseEntry) {
+    setEntry(chosen)
+    setShown(PAGE_SIZE)
+  }
+
+  function handleMembershipChanged(attribute: Attribute, message?: string) {
+    setSelected(attribute)
+    if (message) {
+      setPanelError(undefined)
+      setConfirmation(message)
+    }
+    reloadList()
+  }
+
+  function handleMembershipError(message: string) {
+    setConfirmation(undefined)
+    setPanelError(message)
   }
 
   function closePanel() {
@@ -180,10 +218,11 @@ export function AttributesPage() {
   }
 
   const types = listState.status === 'ready' ? listState.types : []
-  const visible =
-    listState.status === 'ready'
-      ? listState.attributes.filter((attribute) => matches(attribute, search, typeFilter))
-      : []
+  const attributes = listState.status === 'ready' ? listState.attributes : []
+  const shownEntry = effectiveEntry(entry, groupsState)
+  const shownLabel = entryLabel(shownEntry, groupsState, attributes)
+  const { visible, elsewhere } = browse(attributes, shownEntry, search, typeFilter)
+  const filtering = search.trim() !== '' || typeFilter !== ALL_TYPES
   const typeLabel = (code: string) => types.find((type) => type.code === code)?.label ?? code
 
   return (
@@ -202,9 +241,21 @@ export function AttributesPage() {
       )}
 
       <div className={styles.layout}>
+        <div className={styles.groupsArea}>
+          <AttributeGroupPanel
+            groupsState={groupsState}
+            totalCount={attributes.length}
+            ungroupedCount={ungroupedCount(attributes)}
+            entry={shownEntry}
+            entryLabel={shownLabel}
+            onSelect={chooseEntry}
+            onRetry={retryGroups}
+          />
+        </div>
+
         <div className={styles.column}>
           <Card
-            title="Atributos"
+            title={shownLabel}
             actions={
               canChange ? (
                 <Button disabled={panel === 'create'} onClick={startCreating}>
@@ -249,10 +300,16 @@ export function AttributesPage() {
                   }}
                 />
                 <p className={styles.counts} aria-live="polite">
-                  {plural(visible.length, 'atributo', 'atributos')}
+                  {countLabel(visible.length)}
                 </p>
                 {visible.length === 0 ? (
-                  <p className={styles.muted}>Ningún atributo coincide con la búsqueda.</p>
+                  <NoMatch
+                    entry={shownEntry}
+                    label={shownLabel}
+                    filtering={filtering}
+                    elsewhere={elsewhere}
+                    onSearchAll={() => chooseEntry(ALL)}
+                  />
                 ) : (
                   <ul className={styles.attributeList}>
                     {visible.slice(0, shown).map((attribute) => (
@@ -356,6 +413,15 @@ export function AttributesPage() {
 
                 <AttributeDetail attribute={selected} types={types} />
 
+                <AttributeGroupsSection
+                  key={selected.systemId}
+                  attribute={selected}
+                  groupsState={groupsState}
+                  canChange={canChangeMemberships}
+                  onChanged={handleMembershipChanged}
+                  onError={handleMembershipError}
+                />
+
                 {/* The same preview as in the form, from the saved configuration (feature 008 FR-016). */}
                 <div className={styles.preview}>
                   <AttributeFieldPreview
@@ -372,6 +438,52 @@ export function AttributesPage() {
   )
 }
 
+type NoMatchProps = {
+  entry: BrowseEntry
+  label: string
+  /** Whether a search or type filter is active. */
+  filtering: boolean
+  elsewhere: number
+  onSearchAll: () => void
+}
+
+/** What the list says when the chosen entry shows nothing (feature 009 FR-006, FR-008). */
+function NoMatch({ entry, label, filtering, elsewhere, onSearchAll }: NoMatchProps) {
+  if (entry.kind === 'all') {
+    return <p className={styles.muted}>Ningún atributo coincide con la búsqueda.</p>
+  }
+  if (!filtering && entry.kind === 'group') {
+    return (
+      <>
+        <p className={styles.muted}>Este grupo todavía no tiene atributos.</p>
+        <p className={styles.muted}>
+          Agrégalos desde la sección «Grupos» de cada atributo o en «Grupo de Atributos».
+        </p>
+      </>
+    )
+  }
+  if (!filtering) {
+    return <p className={styles.muted}>Todos los atributos pertenecen al menos a un grupo.</p>
+  }
+  return (
+    <>
+      <p className={styles.muted}>
+        {entry.kind === 'group'
+          ? `Ningún atributo de «${label}» coincide con la búsqueda.`
+          : 'Ningún atributo sin grupo coincide con la búsqueda.'}
+      </p>
+      {elsewhere > 0 && (
+        <div className={styles.actions}>
+          <p className={styles.muted}>{elsewhereLabel(elsewhere)}</p>
+          <Button variant="secondary" onClick={onSearchAll}>
+            Buscar en todos los atributos
+          </Button>
+        </div>
+      )}
+    </>
+  )
+}
+
 type DeleteConfirmationProps = {
   attribute: Attribute
   busy: boolean
@@ -381,7 +493,8 @@ type DeleteConfirmationProps = {
 
 /**
  * Inline confirmation, as in "Lista de Valores" (feature 007 FR-012). An attribute in groups
- * cannot be deleted until it is removed from them (FR-014), so only "Cancelar" is offered.
+ * cannot be deleted until it is removed from them (FR-014), so only "Cancelar" is offered; the
+ * "Grupos" section of the detail removes it (feature 009 FR-013).
  */
 function DeleteConfirmation({ attribute, busy, onCancel, onConfirm }: DeleteConfirmationProps) {
   const groups = attribute.groups ?? []
@@ -392,7 +505,7 @@ function DeleteConfirmation({ attribute, busy, onCancel, onConfirm }: DeleteConf
         <p className={styles.inlineMessage}>
           El atributo «{attribute.displayName}» pertenece a{' '}
           {plural(groups.length, 'grupo', 'grupos')}: {groups.map((group) => group.name).join(', ')}
-          . Quítalo de esos grupos en «Grupo de Atributos» antes de eliminarlo.
+          . Quítalo de esos grupos en la sección «Grupos» de este atributo antes de eliminarlo.
         </p>
         <div className={styles.actions}>
           <Button variant="secondary" onClick={onCancel}>
@@ -481,11 +594,6 @@ function AttributeDetail({ attribute, types }: AttributeDetailProps) {
     add('Objeto referenciado', option('targetObjectType', reference.targetObjectType))
     add('Cantidad', option('cardinality', reference.cardinality))
   }
-  const groups = attribute.groups ?? []
-  rows.push([
-    'Grupos',
-    groups.length > 0 ? groups.map((group) => group.name).join(', ') : 'Sin grupos',
-  ])
   add('Creado', formatDate(attribute.createdAt))
   add('Modificado', formatDate(attribute.updatedAt))
 
