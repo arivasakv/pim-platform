@@ -124,7 +124,7 @@ async function openGroup(name: string) {
 async function addToGroup(panel: ReturnType<typeof within>, ...labels: string[]) {
   fireEvent.click(panel.getByRole('button', { name: 'Agregar atributos' }))
   for (const label of labels) fireEvent.click(await panel.findByLabelText(new RegExp(label)))
-  fireEvent.click(panel.getByRole('button', { name: 'Agregar seleccionados' }))
+  fireEvent.click(panel.getByRole('button', { name: /^Agregar seleccionados/ }))
 }
 
 describe('AttributeGroupsPage', () => {
@@ -308,7 +308,7 @@ describe('AttributeGroupsPage', () => {
   })
 
   it('refuses to delete a group with attributes, then deletes it once empty', async () => {
-    fakeBackend([PESO])
+    const backend = fakeBackend([PESO])
     render(<AttributeGroupsPage />)
     await screen.findByText('Todavía no hay grupos de atributos.')
     await createGroupNamed('Logísticos')
@@ -316,18 +316,77 @@ describe('AttributeGroupsPage', () => {
     await addToGroup(panel, 'Peso')
     await panel.findByText('ATR000001')
 
+    // Feature 009 FR-015: a group with attributes is not offered for deletion.
     fireEvent.click(panel.getByRole('button', { name: 'Eliminar grupo' }))
     expect(
-      await screen.findByText(
-        'El grupo "Logísticos" tiene 1 atributos. Quítalos antes de eliminarlo.',
+      panel.getByText(
+        'El grupo «Logísticos» tiene 1 atributo. Quítalos del grupo antes de eliminarlo; los atributos no se eliminan.',
       ),
     ).toBeTruthy()
+    expect(panel.queryByRole('button', { name: 'Sí, eliminar grupo' })).toBeNull()
+    const deletes = backend.fetchMock.mock.calls.filter(([, init]) => init?.method === 'DELETE')
+    expect(deletes).toHaveLength(0)
+    fireEvent.click(panel.getByRole('button', { name: 'Cancelar' }))
 
     fireEvent.click(panel.getByRole('button', { name: 'Quitar Peso' }))
     await panel.findByText('Este grupo todavía no tiene atributos.')
     fireEvent.click(panel.getByRole('button', { name: 'Eliminar grupo' }))
+    expect(
+      panel.getByText('¿Eliminar el grupo «Logísticos»? Ningún atributo se elimina.'),
+    ).toBeTruthy()
+    fireEvent.click(panel.getByRole('button', { name: 'Cancelar' }))
+    expect(backend.groups).toHaveLength(1)
+    fireEvent.click(panel.getByRole('button', { name: 'Eliminar grupo' }))
+    fireEvent.click(panel.getByRole('button', { name: 'Sí, eliminar grupo' }))
 
     expect(await screen.findByText('Grupo «Logísticos» eliminado.')).toBeTruthy()
     expect(await screen.findByText('Todavía no hay grupos de atributos.')).toBeTruthy()
+  })
+
+  // --- Feature 009, User Story 4: scalable picker ---
+
+  it('finds attributes to add and keeps the chosen ones across searches', async () => {
+    fakeBackend([COLOR, PESO, VOLUMEN])
+    render(<AttributeGroupsPage />)
+    await screen.findByText('Todavía no hay grupos de atributos.')
+    await createGroupNamed('Logísticos')
+    const panel = await openGroup('Logísticos')
+    fireEvent.click(panel.getByRole('button', { name: 'Agregar atributos' }))
+    const search = await panel.findByLabelText('Buscar atributo')
+
+    fireEvent.change(search, { target: { value: 'VOL' } })
+    expect(panel.queryByLabelText('Peso (ATR000001)')).toBeNull()
+    fireEvent.click(panel.getByLabelText('Volumen (ATR000002)'))
+    fireEvent.change(search, { target: { value: 'atr000003' } })
+    fireEvent.click(panel.getByLabelText('Color (ATR000003)'))
+    fireEvent.change(search, { target: { value: 'nada' } })
+    expect(panel.getByText('Ningún atributo coincide con la búsqueda.')).toBeTruthy()
+    fireEvent.change(search, { target: { value: '' } })
+    expect(panel.getByLabelText<HTMLInputElement>('Volumen (ATR000002)').checked).toBe(true)
+
+    fireEvent.click(panel.getByRole('button', { name: 'Agregar seleccionados (2)' }))
+
+    expect(await panel.findByText('Volumen')).toBeTruthy()
+    expect(panel.getByText('Color')).toBeTruthy()
+  })
+
+  it('shows 50 attributes to add at a time', async () => {
+    const many = Array.from({ length: 60 }, (_, index) => ({
+      systemId: `ATR${String(index).padStart(6, '0')}`,
+      displayName: `Atributo ${String(index).padStart(2, '0')}`,
+      dataType: 'TEXT',
+    }))
+    fakeBackend(many)
+    render(<AttributeGroupsPage />)
+    await screen.findByText('Todavía no hay grupos de atributos.')
+    await createGroupNamed('Logísticos')
+    const panel = await openGroup('Logísticos')
+    fireEvent.click(panel.getByRole('button', { name: 'Agregar atributos' }))
+
+    await panel.findByLabelText('Buscar atributo')
+    expect(panel.getAllByRole('checkbox')).toHaveLength(50)
+    expect(panel.getByText('Mostrando 50 de 60 atributos.')).toBeTruthy()
+    fireEvent.click(panel.getByRole('button', { name: 'Mostrar más' }))
+    expect(panel.getAllByRole('checkbox')).toHaveLength(60)
   })
 })

@@ -1,9 +1,28 @@
-/* Same layout and list styles as ListsOfValuesPage.module.css (feature 007 FR-002). */
+/* Same layout and list styles as ListsOfValuesPage.module.css (feature 007 FR-002), with the
+   group panel of feature 009 (research R-03): above list and detail below 90rem, a column at
+   90rem and wider. */
 .layout {
   display: grid;
   grid-template-columns: minmax(18rem, 1fr) minmax(0, 2fr);
   align-items: start;
   gap: var(--space-5);
+}
+
+.groupsArea {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+@media (min-width: 90rem) {
+  .layout {
+    grid-template-columns: minmax(13rem, 16rem) minmax(18rem, 1fr) minmax(0, 2fr);
+  }
+
+  .groupsArea {
+    grid-column: auto;
+    position: sticky;
+    top: var(--space-4);
+  }
 }
 
 .column {

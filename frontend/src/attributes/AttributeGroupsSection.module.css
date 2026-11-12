@@ -1,0 +1,62 @@
+/* "Grupos" section of the attribute detail (feature 009). */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--text-md);
+}
+
+.muted {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.inlineMessage {
+  margin: 0 0 var(--space-2);
+}
+
+.groups {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: var(--border-width) solid var(--color-border-subtle);
+}
+
+.groupName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.add > :first-child {
+  flex: 1 1 14rem;
+}
