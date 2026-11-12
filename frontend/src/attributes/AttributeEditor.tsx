@@ -27,6 +27,7 @@ import {
   type AttributeForm,
   type FieldErrors,
 } from './attributeForm'
+import { AttributeFieldPreview } from './AttributeFieldPreview'
 import styles from './AttributeEditor.module.css'
 
 const CONNECTION_ERROR = 'No se pudo conectar con el servidor. Inténtalo de nuevo.'
@@ -242,6 +243,8 @@ export function AttributeEditor({
             listsState={listsState}
             onChange={update}
           />
+
+          <AttributeFieldPreview form={form} options={optionsOf(typesState.types, form.dataType)} />
 
           <div className={styles.actions}>
             {onCancel && (

@@ -113,6 +113,19 @@ function fakeBackend(
         }),
       )
     }
+    // The field preview (feature 008) reads the chosen list.
+    if (url.endsWith('/api/v1/lists-of-values/LOV000001')) {
+      return Promise.resolve(
+        response(200, {
+          systemId: 'LOV000001',
+          name: 'Colores',
+          equivalencesEnabled: false,
+          valueCount: 1,
+          values: [{ id: '0001', label: 'Azul' }],
+          attributes: [],
+        }),
+      )
+    }
     if (url === ATTRIBUTES && method === 'GET') {
       if (options.failList) return Promise.reject(new TypeError('Network down'))
       return Promise.resolve(response(200, { items: byName(attributes), total: attributes.length }))

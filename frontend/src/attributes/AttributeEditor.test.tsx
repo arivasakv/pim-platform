@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AttributeEditor } from './AttributeEditor'
 
@@ -84,6 +84,20 @@ function stubBackendWithLists(
     if (url.endsWith('/api/v1/lists-of-values') && !init?.method) {
       const items = lists.map((list) => ({ ...list, valueCount: 0, attributeCount: 0 }))
       return Promise.resolve(response(200, { items, total: items.length }))
+    }
+    // The field preview (feature 008) reads the chosen list; answered without using up an answer.
+    const listDetail = /\/api\/v1\/lists-of-values\/([^/]+)$/.exec(url)
+    if (listDetail && !init?.method) {
+      const list = lists.find((candidate) => candidate.systemId === listDetail[1])
+      return Promise.resolve(
+        response(200, {
+          ...list,
+          valueCount: 0,
+          values: [],
+          attributes: [],
+          equivalencesEnabled: false,
+        }),
+      )
     }
     const answer = answers.shift()
     return answer ? answer() : Promise.reject(new TypeError('No more answers'))
@@ -536,5 +550,58 @@ describe('AttributeEditor (edit mode, feature 007)', () => {
 
     expect(onCancel).toHaveBeenCalled()
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('AttributeEditor with the field preview (feature 008)', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_API_BASE_URL', BASE_URL)
+    vi.stubEnv('VITE_DEV_PERMISSIONS', 'ATTRIBUTE_CREATE')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('shows the preview above the buttons and follows the configuration', async () => {
+    stubBackend()
+    render(<AttributeEditor />)
+    await screen.findByLabelText('Tipo de dato')
+
+    const panel = screen.getByRole('region', { name: 'Vista previa del campo' })
+    const button = screen.getByRole('button', { name: 'Crear atributo' })
+    expect(panel.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(within(panel).getByText('Elige un tipo de dato para ver el campo.')).toBeTruthy()
+
+    type('Nombre', 'Peso')
+    type('Tipo de dato', 'NUMERIC')
+    const field = await within(panel).findByLabelText<HTMLInputElement>('Peso (opcional)')
+    expect(field.type).toBe('number')
+  })
+
+  it('previews an attribute being edited and never sends preview values', async () => {
+    const attribute = {
+      systemId: 'ATR000001',
+      displayName: 'Activo',
+      dataType: 'BOOLEAN' as const,
+      scope: 'GLOBAL' as const,
+      groups: [],
+    }
+    const fetchMock = stubBackend(() => Promise.resolve(response(200, attribute)))
+    render(<AttributeEditor mode="edit" attribute={attribute} onSaved={vi.fn()} />)
+    await screen.findByLabelText('Tipo de dato')
+
+    const panel = screen.getByRole('region', { name: 'Vista previa del campo' })
+    fireEvent.click(within(panel).getByRole('checkbox', { name: 'Activo (opcional)' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    expect(lastRequestBody(fetchMock)).toEqual({
+      systemId: 'ATR000001',
+      displayName: 'Activo',
+      description: null,
+      dataType: 'BOOLEAN',
+    })
   })
 })
