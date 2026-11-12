@@ -215,7 +215,7 @@ configuration.
 - [X] T023 Run frontend `npm run lint`, `npm run format:check`, `npm test`, `npm run build`; confirm no
   file outside `FE/pages/AttributesPage.tsx` and its test changed for the amendment, and no backend
   change; record counts. (FR-013, FR-014, FR-018)
-- [ ] T024 Owner check: quickstart consultation scenarios P20–P25 in the browser (left to the project
+- [X] T024 Owner check: quickstart consultation scenarios P20–P25 in the browser (left to the project
   owner).
 
 ---
@@ -258,7 +258,7 @@ configuration.
     `fieldPreview.ts` unchanged. No existing assertion needed scoping.
   - T023: frontend 224 tests, lint, format check and build pass; amendment changes limited to
     `FE/pages/AttributesPage.tsx`, its CSS module and its test; no backend change.
-  - T024 (browser check of P20–P25) is left to the project owner.
+  - T024 (browser check of P20–P25): marked done by the project owner on 2026-11-12.
 - **Existing assertions**: none changed. The editor test stub and the page fake backend now answer
   `GET /api/v1/lists-of-values/{id}` (T006, T017), so the preview's list read does not consume a reply
   meant for saving.
