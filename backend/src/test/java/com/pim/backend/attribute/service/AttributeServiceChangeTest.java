@@ -11,6 +11,7 @@ import com.pim.backend.attribute.model.AttributeDraft;
 import com.pim.backend.attribute.model.AttributeErrorCode;
 import com.pim.backend.attribute.model.AttributeInGroupsException;
 import com.pim.backend.attribute.model.AttributeNotFoundException;
+import com.pim.backend.attribute.model.AttributeOnTaxonomyNodesException;
 import com.pim.backend.attribute.model.AttributePermissions;
 import com.pim.backend.attribute.model.AttributeScope;
 import com.pim.backend.attribute.model.DisplayNameInUseException;
@@ -22,7 +23,9 @@ import com.pim.backend.attribute.model.ListOfValuesUnavailableException;
 import com.pim.backend.attribute.model.NumberFormat;
 import com.pim.backend.attribute.model.NumericProperties;
 import com.pim.backend.attribute.model.SelectionMode;
+import com.pim.backend.attribute.model.TaxonomyNodeReference;
 import com.pim.backend.attribute.repository.FakeAttributeGroups;
+import com.pim.backend.attribute.repository.FakeTaxonomyAssignments;
 import com.pim.backend.attribute.repository.InMemoryAttributeRepository;
 import com.pim.backend.identifier.config.DefaultObjectTypeConfigurations;
 import com.pim.backend.identifier.model.ManualIdPermissions;
@@ -54,8 +57,9 @@ class AttributeServiceChangeTest {
     private final InMemoryAttributeRepository attributes = new InMemoryAttributeRepository();
     private final AttributeServiceTest.TestCatalog catalog = new AttributeServiceTest.TestCatalog();
     private final FakeAttributeGroups groups = new FakeAttributeGroups();
-    private final AttributeService service =
-            new AttributeService(attributes, catalog, groups, identifierService, Clock.fixed(NOW, ZoneOffset.UTC));
+    private final FakeTaxonomyAssignments taxonomy = new FakeTaxonomyAssignments();
+    private final AttributeService service = new AttributeService(
+            attributes, catalog, groups, taxonomy, identifierService, Clock.fixed(NOW, ZoneOffset.UTC));
 
     private IdentifierService newIdentifierService() {
         new DefaultObjectTypeConfigurations(objectTypes).afterPropertiesSet();
@@ -279,6 +283,43 @@ class AttributeServiceChangeTest {
         groups.put(peso.systemId(), LOGISTICOS);
         assertThatThrownBy(() -> service.delete(peso.systemId(), CAN_CHANGE))
                 .hasMessage("El atributo pertenece a 1 grupo: Logísticos. Quítalo de esos grupos antes de eliminarlo.");
+    }
+
+    @Test
+    void refusesToDeleteAnAttributeOnTaxonomyNodesAndNamesThem() {
+        Attribute color = createBoolean("Color");
+        TaxonomyNodeReference ropa = new TaxonomyNodeReference("CLS000001", "Ropa");
+        TaxonomyNodeReference calzado = new TaxonomyNodeReference("CLS000002", "Calzado");
+        taxonomy.put(color.systemId().toLowerCase(), ropa, calzado);
+
+        assertThatThrownBy(() -> service.delete(color.systemId(), CAN_CHANGE))
+                .isInstanceOfSatisfying(AttributeOnTaxonomyNodesException.class, exception -> {
+                    assertThat(exception.nodes()).containsExactly(ropa, calzado);
+                    assertThat(exception.getMessage())
+                            .isEqualTo("El atributo pertenece a 2 nodos de la taxonomía: Ropa, Calzado. "
+                                    + "Quítalo de esos nodos antes de eliminarlo.");
+                });
+        assertThat(service.find(color.systemId())).isEqualTo(color);
+
+        taxonomy.put(color.systemId(), ropa);
+        assertThatThrownBy(() -> service.delete(color.systemId(), CAN_CHANGE))
+                .hasMessage("El atributo pertenece a 1 nodo de la taxonomía: Ropa. "
+                        + "Quítalo de esos nodos antes de eliminarlo.");
+
+        taxonomy.put(color.systemId());
+        service.delete(color.systemId(), CAN_CHANGE);
+        assertThat(attributes.count()).isZero();
+    }
+
+    @Test
+    void checksGroupsBeforeTaxonomyNodes() {
+        Attribute peso = createNumeric("Peso", 2);
+        groups.put(peso.systemId(), LOGISTICOS);
+        taxonomy.put(peso.systemId(), new TaxonomyNodeReference("CLS000001", "Ropa"));
+
+        assertThatThrownBy(() -> service.delete(peso.systemId(), CAN_CHANGE))
+                .isInstanceOf(AttributeInGroupsException.class);
+        assertThat(service.find(peso.systemId())).isEqualTo(peso);
     }
 
     @Test

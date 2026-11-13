@@ -31,7 +31,9 @@ public enum AttributeErrorCode {
     ATTRIBUTE_CHANGE_NOT_PERMITTED("No tienes permiso para modificar atributos."),
     SYSTEM_ID_IMMUTABLE("El ID de sistema no se puede cambiar."),
     DATA_TYPE_IMMUTABLE("El tipo de dato no se puede cambiar."),
-    ATTRIBUTE_IN_GROUPS("El atributo pertenece a %s: %s. Quítalo de esos grupos antes de eliminarlo.");
+    ATTRIBUTE_IN_GROUPS("El atributo pertenece a %s: %s. Quítalo de esos grupos antes de eliminarlo."),
+    ATTRIBUTE_ON_TAXONOMY_NODES(
+            "El atributo pertenece a %s de la taxonomía: %s. Quítalo de esos nodos antes de eliminarlo.");
 
     private final String template;
 

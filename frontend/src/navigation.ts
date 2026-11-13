@@ -19,6 +19,7 @@ export const NAVIGATION_ENTRIES: NavigationEntry[] = [
   { path: '/listas-de-valores', label: 'Lista de Valores', icon: 'components' },
   { path: '/atributos', label: 'Atributos', icon: 'components' },
   { path: '/grupos-de-atributos', label: 'Grupo de Atributos', icon: 'components' },
+  { path: '/taxonomia', label: 'Taxonomía', icon: 'components' },
 ]
 
 const HOME_PATH = '/'

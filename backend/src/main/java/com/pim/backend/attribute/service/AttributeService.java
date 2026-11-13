@@ -8,6 +8,7 @@ import com.pim.backend.attribute.model.AttributeDraft;
 import com.pim.backend.attribute.model.AttributeErrorCode;
 import com.pim.backend.attribute.model.AttributeInGroupsException;
 import com.pim.backend.attribute.model.AttributeNotFoundException;
+import com.pim.backend.attribute.model.AttributeOnTaxonomyNodesException;
 import com.pim.backend.attribute.model.AttributePermissions;
 import com.pim.backend.attribute.model.DisplayName;
 import com.pim.backend.attribute.model.DisplayNameInUseException;
@@ -16,15 +17,18 @@ import com.pim.backend.attribute.model.ImmutableFieldException;
 import com.pim.backend.attribute.model.InvalidAttributeException;
 import com.pim.backend.attribute.model.ListOfValuesProperties;
 import com.pim.backend.attribute.model.ListOfValuesUnavailableException;
+import com.pim.backend.attribute.model.TaxonomyNodeReference;
 import com.pim.backend.attribute.repository.AttributeGroupDirectory;
 import com.pim.backend.attribute.repository.AttributeRepository;
 import com.pim.backend.attribute.repository.ListOfValuesCatalog;
+import com.pim.backend.attribute.repository.TaxonomyAssignmentDirectory;
 import com.pim.backend.identifier.model.AssignmentOutcome;
 import com.pim.backend.identifier.model.AssignmentResult;
 import com.pim.backend.identifier.model.ManualIdPermissions;
 import com.pim.backend.identifier.model.ObjectType;
 import com.pim.backend.identifier.service.IdentifierService;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -37,8 +41,9 @@ import org.springframework.stereotype.Service;
  * refused attribute never uses up an ID (feature 004 research R-03). Feature 003 is used only through {@link
  * IdentifierService} (constitution III). Every change runs under one lock (feature 004 research R-18).
  *
- * <p>Lock order (feature 007 research R-06): list of values, then attribute; group, then attribute. This service
- * never calls {@link AttributeGroupDirectory} while holding its own lock.
+ * <p>Lock order (feature 007 research R-06; feature 010 research R-05): list of values, then attribute; group, then
+ * taxonomy, then attribute. This service
+ * never calls {@link AttributeGroupDirectory} or {@link TaxonomyAssignmentDirectory} while holding its own lock.
  */
 @Service
 public class AttributeService {
@@ -49,6 +54,7 @@ public class AttributeService {
     private final AttributeRepository attributes;
     private final ListOfValuesCatalog listsOfValues;
     private final AttributeGroupDirectory groupDirectory;
+    private final TaxonomyAssignmentDirectory taxonomyDirectory;
     private final IdentifierService identifierService;
     private final Clock clock;
     private final Object lock = new Object();
@@ -57,11 +63,13 @@ public class AttributeService {
             AttributeRepository attributes,
             ListOfValuesCatalog listsOfValues,
             AttributeGroupDirectory groupDirectory,
+            TaxonomyAssignmentDirectory taxonomyDirectory,
             IdentifierService identifierService,
             Clock clock) {
         this.attributes = attributes;
         this.listsOfValues = listsOfValues;
         this.groupDirectory = groupDirectory;
+        this.taxonomyDirectory = taxonomyDirectory;
         this.identifierService = identifierService;
         this.clock = clock;
     }
@@ -202,22 +210,30 @@ public class AttributeService {
      *
      * @throws AttributeChangeNotPermittedException without the {@code ATTRIBUTE_CREATE} permission
      * @throws AttributeInGroupsException if groups contain the attribute; nothing changes
+     * @throws AttributeOnTaxonomyNodesException if taxonomy nodes list the attribute (feature 010 FR-021)
      * @throws AttributeNotFoundException if no attribute has the system ID
      */
     public void delete(String systemId, AttributePermissions permissions) {
         if (!permissions.allowsCreation()) {
             throw new AttributeChangeNotPermittedException();
         }
-        // The group lock is taken first, then this service's lock (research R-06).
-        List<GroupReference> groups = groupDirectory.runIfInNoGroup(systemId, () -> {
-            synchronized (lock) {
-                Attribute attribute =
-                        attributes.findBySystemId(systemId).orElseThrow(() -> new AttributeNotFoundException(systemId));
-                attributes.delete(attribute.systemId());
-            }
-        });
+        // Lock order: group, then taxonomy (feature 010 research R-05), then this service's lock (research R-06).
+        List<TaxonomyNodeReference> nodes = new ArrayList<>();
+        List<GroupReference> groups = groupDirectory.runIfInNoGroup(
+                systemId,
+                () -> nodes.addAll(taxonomyDirectory.runIfOnNoNode(systemId, () -> {
+                    synchronized (lock) {
+                        Attribute attribute = attributes
+                                .findBySystemId(systemId)
+                                .orElseThrow(() -> new AttributeNotFoundException(systemId));
+                        attributes.delete(attribute.systemId());
+                    }
+                })));
         if (!groups.isEmpty()) {
             throw new AttributeInGroupsException(groups);
+        }
+        if (!nodes.isEmpty()) {
+            throw new AttributeOnTaxonomyNodesException(nodes);
         }
     }
 

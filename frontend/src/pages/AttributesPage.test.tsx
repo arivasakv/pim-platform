@@ -514,6 +514,28 @@ describe('AttributesPage', () => {
     await waitFor(() => expect(within(detail).getByText('Ventas')).toBeTruthy())
   })
 
+  it('shows the refusal for an attribute assigned to taxonomy nodes (feature 010 FR-021)', async () => {
+    const message =
+      'El atributo pertenece a 1 nodo de la taxonomía: Ropa. Quítalo de esos nodos antes de eliminarlo.'
+    fakeBackend([activo()], {
+      [`DELETE ${ATTRIBUTES}/ATR000003`]: () =>
+        response(409, {
+          status: 409,
+          detail: message,
+          errors: [{ field: 'nodes', code: 'ATTRIBUTE_ON_TAXONOMY_NODES', message }],
+          nodes: [{ systemId: 'CLS000001', name: 'Ropa' }],
+        }),
+    })
+    render(<AttributesPage />)
+    await open(/Activo/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sí, eliminar atributo' }))
+
+    expect(await screen.findByText(message)).toBeTruthy()
+    expect(screen.getByRole('region', { name: 'Activo' })).toBeTruthy()
+  })
+
   // --- Feature 008 amendment: preview when consulting (FR-016 to FR-018) ---
 
   it('shows the field preview after the details of a saved attribute', async () => {

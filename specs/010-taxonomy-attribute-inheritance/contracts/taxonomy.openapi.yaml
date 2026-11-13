@@ -1,0 +1,377 @@
+openapi: 3.1.0
+info:
+  title: PIM Platform – Product taxonomy and attribute inheritance
+  version: 1.0.0
+  description: >
+    Feature 010 (specs/010-taxonomy-attribute-inheritance). The product hierarchy (ERF 1.1 §3.3):
+    nodes with one parent, created, renamed and deleted when empty; attributes (feature 004) assigned
+    directly to nodes and inherited by every descendant. The detail of a node returns its effective
+    attributes, each once, with its assignment type and origin, computed from the current tree on
+    every read. Changes need the ATTRIBUTE_CREATE permission (development header X-Pim-Permissions,
+    as in features 004–007); reading needs none. Node system IDs come from feature 003 (object type
+    CLASSIFICATION). Data is stored in MongoDB (ADR 0003, constitution 2.5.0). Unknown fields in
+    request bodies are ignored. Messages are in Spanish. Errors are RFC 9457 problems with `errors[]`
+    entries {field, code, message} (ADR 0001).
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: taxonomy-nodes
+paths:
+  /api/v1/taxonomy-nodes:
+    get:
+      operationId: listTaxonomyNodes
+      summary: Every node as a flat list, sorted by name (ignoring letter case) within each parent (FR-018)
+      tags: [taxonomy-nodes]
+      responses:
+        '200':
+          description: All nodes; the client nests them by `parentId`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaxonomyNodeCollection' }
+    post:
+      operationId: createTaxonomyNode
+      summary: Create a top-level node or a child of an existing node (FR-001 to FR-004)
+      tags: [taxonomy-nodes]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaxonomyNodeCreateRequest' }
+            example: { name: Ropa de hombre, description: null, parentId: CLS000001 }
+      responses:
+        '201':
+          description: Created, with a generated CLASSIFICATION system ID and no direct attributes.
+          headers:
+            Location: { schema: { type: string }, description: '/api/v1/taxonomy-nodes/{systemId}' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaxonomyNode' }
+        '400': { $ref: '#/components/responses/InvalidRequest' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404':
+          description: The parent does not exist (`NODE_NOT_FOUND`, field parentId). Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '409': { $ref: '#/components/responses/NameInUse' }
+  /api/v1/taxonomy-nodes/{nodeId}:
+    parameters:
+      - $ref: '#/components/parameters/NodeId'
+    get:
+      operationId: getTaxonomyNode
+      summary: One node with its path, children and effective attributes (FR-007, FR-012 to FR-016)
+      tags: [taxonomy-nodes]
+      responses:
+        '200':
+          description: The node.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaxonomyNode' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: updateTaxonomyNode
+      summary: Rename the node and replace its description; parent, ID, children and assignments stay (FR-005)
+      tags: [taxonomy-nodes]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaxonomyNodeUpdateRequest' }
+      responses:
+        '200':
+          description: The updated node.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaxonomyNode' }
+        '400': { $ref: '#/components/responses/InvalidRequest' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/NameInUse' }
+    delete:
+      operationId: deleteTaxonomyNode
+      summary: Delete a node with no children and no direct attributes (FR-006)
+      tags: [taxonomy-nodes]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      responses:
+        '204': { description: Deleted. }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The node has children (`NODE_HAS_CHILDREN`) or direct attributes (`NODE_HAS_ATTRIBUTES`). Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                children:
+                  value:
+                    title: Nodo con nodos hijos
+                    status: 409
+                    detail: El nodo «Ropa» tiene 1 nodo hijo. Elimínalo antes de eliminar este nodo.
+                    errors:
+                      - { field: nodeId, code: NODE_HAS_CHILDREN, message: El nodo «Ropa» tiene 1 nodo hijo. Elimínalo antes de eliminar este nodo. }
+                attributes:
+                  value:
+                    title: Nodo con atributos
+                    status: 409
+                    detail: El nodo «Camisas» tiene 1 atributo asignado. Quítalo antes de eliminar el nodo.
+                    errors:
+                      - { field: nodeId, code: NODE_HAS_ATTRIBUTES, message: El nodo «Camisas» tiene 1 atributo asignado. Quítalo antes de eliminar el nodo. }
+  /api/v1/taxonomy-nodes/{nodeId}/attributes:
+    parameters:
+      - $ref: '#/components/parameters/NodeId'
+    post:
+      operationId: assignAttributesToNode
+      summary: Assign existing attributes directly to the node, all or nothing (FR-008, FR-009, FR-011)
+      tags: [taxonomy-nodes]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AssignAttributesRequest' }
+      responses:
+        '200':
+          description: Assigned; IDs already direct on the node are reported in `alreadyAssigned`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AssignAttributesResult' }
+        '400': { $ref: '#/components/responses/InvalidRequest' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: An attribute does not exist (`ATTRIBUTE_NOT_FOUND`, field attributeIds); nothing assigned.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+  /api/v1/taxonomy-nodes/{nodeId}/attributes/{attributeId}:
+    parameters:
+      - $ref: '#/components/parameters/NodeId'
+      - name: attributeId
+        in: path
+        required: true
+        schema: { type: string, maxLength: 40 }
+    delete:
+      operationId: removeAttributeFromNode
+      summary: Remove a direct assignment; descendants stop inheriting it from this node (FR-010)
+      tags: [taxonomy-nodes]
+      parameters:
+        - $ref: '#/components/parameters/Permissions'
+      responses:
+        '204': { description: Removed. The attribute itself is unchanged. }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404':
+          description: The node does not exist (`NODE_NOT_FOUND`), or the attribute is neither direct nor inherited on it (`ATTRIBUTE_NOT_ON_NODE`).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '409':
+          description: The attribute is only inherited here (`ATTRIBUTE_NOT_DIRECT`); the message names the origin node. Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                title: Atributo heredado
+                status: 409
+                detail: El atributo «Color» se hereda de «Ropa». Quítalo en ese nodo.
+                errors:
+                  - { field: attributeId, code: ATTRIBUTE_NOT_DIRECT, message: El atributo «Color» se hereda de «Ropa». Quítalo en ese nodo. }
+components:
+  parameters:
+    NodeId:
+      name: nodeId
+      in: path
+      required: true
+      description: Node system ID, compared ignoring letter case.
+      schema: { type: string, maxLength: 40 }
+    Permissions:
+      name: X-Pim-Permissions
+      in: header
+      required: false
+      description: Development stand-in for the user's permissions (feature 004, research R-06). ATTRIBUTE_CREATE allows changes.
+      schema: { type: string, example: ATTRIBUTE_CREATE }
+  responses:
+    InvalidRequest:
+      description: Invalid request (`INVALID_NODE_NAME`, `INVALID_NODE_DESCRIPTION`, `INVALID_ATTRIBUTE_IDS`). Nothing changed.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            title: Solicitud no válida
+            status: 400
+            detail: La solicitud tiene datos no válidos.
+            errors:
+              - { field: name, code: INVALID_NODE_NAME, message: El nombre del nodo debe tener de 1 a 80 caracteres. }
+    NotPermitted:
+      description: No ATTRIBUTE_CREATE permission (`TAXONOMY_CHANGE_NOT_PERMITTED`). Nothing changed.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            title: Sin permiso para administrar la taxonomía
+            status: 403
+            detail: No tienes permiso para administrar la taxonomía.
+            errors:
+              - { field: permissions, code: TAXONOMY_CHANGE_NOT_PERMITTED, message: No tienes permiso para administrar la taxonomía. }
+    NotFound:
+      description: The node does not exist (`NODE_NOT_FOUND`).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            title: Nodo no encontrado
+            status: 404
+            detail: No existe un nodo con el ID CLS000099.
+            errors:
+              - { field: nodeId, code: NODE_NOT_FOUND, message: No existe un nodo con el ID CLS000099. }
+    NameInUse:
+      description: A sibling already has the name, ignoring letter case and surrounding spaces (`NODE_NAME_IN_USE`). Nothing changed.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            title: Nombre en uso
+            status: 409
+            detail: Ya existe un nodo «Ropa de hombre» en este nivel. Usa otro nombre.
+            errors:
+              - { field: name, code: NODE_NAME_IN_USE, message: Ya existe un nodo «Ropa de hombre» en este nivel. Usa otro nombre. }
+  schemas:
+    TaxonomyNodeCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 200, description: 'Trimmed; 1–80 characters; unique among siblings ignoring letter case' }
+        description: { type: [string, 'null'], maxLength: 1000, description: 'Trimmed; up to 500 characters' }
+        parentId: { type: [string, 'null'], maxLength: 40, description: 'Parent system ID; null or absent for a top-level node' }
+    TaxonomyNodeUpdateRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 200 }
+        description: { type: [string, 'null'], maxLength: 1000 }
+    AssignAttributesRequest:
+      type: object
+      required: [attributeIds]
+      properties:
+        attributeIds:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: { type: string, maxLength: 40 }
+    NodeReference:
+      type: object
+      required: [systemId, name]
+      properties:
+        systemId: { type: string, example: CLS000001 }
+        name: { type: string, example: Ropa }
+    TaxonomyNodeSummary:
+      type: object
+      required: [systemId, name, level, directAttributeCount, childCount]
+      properties:
+        systemId: { type: string }
+        name: { type: string }
+        parentId: { type: [string, 'null'] }
+        level: { type: integer, minimum: 1, description: '1 for top-level nodes' }
+        directAttributeCount: { type: integer, minimum: 0 }
+        childCount: { type: integer, minimum: 0 }
+    TaxonomyNodeCollection:
+      type: object
+      description: Project-wide collection envelope (docs/decisions/0001-api-conventions.md).
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/TaxonomyNodeSummary' }
+        total: { type: integer }
+    EffectiveAttribute:
+      type: object
+      required: [systemId, displayName, dataType, assignment, origin]
+      properties:
+        systemId: { type: string, example: ATR000001 }
+        displayName: { type: string, example: Color }
+        dataType: { type: string, example: LIST_OF_VALUES, description: Feature 004 data type code }
+        assignment:
+          type: string
+          enum: [DIRECT, INHERITED]
+          description: DIRECT if assigned to this node; otherwise INHERITED from an ancestor (FR-014)
+        origin:
+          $ref: '#/components/schemas/NodeReference'
+          description: This node for DIRECT; the nearest ancestor with a direct assignment for INHERITED
+        alsoInheritedFrom:
+          description: Only for DIRECT entries that an ancestor also has directly; the nearest such ancestor
+          oneOf:
+            - $ref: '#/components/schemas/NodeReference'
+            - type: 'null'
+    TaxonomyNode:
+      type: object
+      required: [systemId, name, level, path, children, directAttributeCount, effectiveAttributes, createdAt]
+      properties:
+        systemId: { type: string }
+        name: { type: string }
+        description: { type: [string, 'null'] }
+        parentId: { type: [string, 'null'] }
+        level: { type: integer, minimum: 1 }
+        path:
+          type: array
+          description: Ancestors from the top level down to the parent; empty for a top-level node
+          items: { $ref: '#/components/schemas/NodeReference' }
+        children:
+          type: array
+          description: Direct children sorted by name ignoring letter case
+          items: { $ref: '#/components/schemas/NodeReference' }
+        directAttributeCount: { type: integer, minimum: 0 }
+        effectiveAttributes:
+          type: array
+          description: >
+            Each attribute once (FR-013). INHERITED entries first, grouped by origin from the top level
+            down; DIRECT entries last; within one origin, in assignment order (FR-016).
+          items: { $ref: '#/components/schemas/EffectiveAttribute' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: [string, 'null'], format: date-time }
+    AssignAttributesResult:
+      type: object
+      required: [node, added, alreadyAssigned]
+      properties:
+        node: { $ref: '#/components/schemas/TaxonomyNode' }
+        added: { type: array, items: { type: string } }
+        alreadyAssigned: { type: array, items: { type: string } }
+    Problem:
+      type: object
+      description: RFC 9457 problem (ADR 0001).
+      required: [title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, code, message]
+            properties:
+              field: { type: string }
+              code:
+                type: string
+                enum:
+                  - REQUIRED
+                  - INVALID_NODE_NAME
+                  - INVALID_NODE_DESCRIPTION
+                  - INVALID_ATTRIBUTE_IDS
+                  - TAXONOMY_CHANGE_NOT_PERMITTED
+                  - NODE_NOT_FOUND
+                  - NODE_NAME_IN_USE
+                  - NODE_HAS_CHILDREN
+                  - NODE_HAS_ATTRIBUTES
+                  - ATTRIBUTE_NOT_FOUND
+                  - ATTRIBUTE_NOT_DIRECT
+                  - ATTRIBUTE_NOT_ON_NODE
+                  - STORAGE_UNAVAILABLE
+              message: { type: string }

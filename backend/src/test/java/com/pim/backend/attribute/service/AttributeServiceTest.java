@@ -19,6 +19,7 @@ import com.pim.backend.attribute.model.SelectionMode;
 import com.pim.backend.attribute.repository.FakeAttributeGroups;
 import com.pim.backend.attribute.repository.InMemoryAttributeRepository;
 import com.pim.backend.attribute.repository.ListOfValuesCatalog;
+import com.pim.backend.attribute.repository.NoTaxonomyAssignments;
 import com.pim.backend.identifier.config.DefaultObjectTypeConfigurations;
 import com.pim.backend.identifier.model.KeyFieldDeclaration;
 import com.pim.backend.identifier.model.ManualIdNotPermittedException;
@@ -57,8 +58,13 @@ class AttributeServiceTest {
     private final InMemoryAttributeRepository attributes = new InMemoryAttributeRepository();
     private final TestCatalog catalog = new TestCatalog();
     private final FakeAttributeGroups groups = new FakeAttributeGroups();
-    private final AttributeService service =
-            new AttributeService(attributes, catalog, groups, identifierService, Clock.fixed(NOW, ZoneOffset.UTC));
+    private final AttributeService service = new AttributeService(
+            attributes,
+            catalog,
+            groups,
+            new NoTaxonomyAssignments(),
+            identifierService,
+            Clock.fixed(NOW, ZoneOffset.UTC));
 
     private IdentifierService newIdentifierService() {
         new DefaultObjectTypeConfigurations(objectTypes).afterPropertiesSet();
