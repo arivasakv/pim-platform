@@ -6,6 +6,7 @@ import com.pim.backend.attribute.model.AttributePermissions;
 import com.pim.backend.attribute.repository.EmptyListOfValuesCatalog;
 import com.pim.backend.attribute.repository.InMemoryAttributeRepository;
 import com.pim.backend.attribute.repository.NoAttributeGroups;
+import com.pim.backend.attribute.repository.NoTaxonomyAssignments;
 import com.pim.backend.attribute.service.AttributeService;
 import com.pim.backend.identifier.config.DefaultObjectTypeConfigurations;
 import com.pim.backend.identifier.model.ManualIdPermissions;
@@ -47,6 +48,7 @@ class ListOfValuesServiceConcurrencyTest {
                 new InMemoryAttributeRepository(),
                 new EmptyListOfValuesCatalog(),
                 new NoAttributeGroups(),
+                new NoTaxonomyAssignments(),
                 identifierService,
                 clock);
         return new ListOfValuesService(

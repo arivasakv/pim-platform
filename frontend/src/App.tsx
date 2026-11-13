@@ -6,6 +6,7 @@ import { AttributesPage } from './pages/AttributesPage'
 import { HomePage } from './pages/HomePage'
 import { ListsOfValuesPage } from './pages/ListsOfValuesPage'
 import { ProductSearchPage } from './pages/ProductSearchPage'
+import { TaxonomyPage } from './pages/TaxonomyPage'
 
 function renderPage(path: string) {
   switch (path) {
@@ -15,6 +16,8 @@ function renderPage(path: string) {
       return <AttributesPage />
     case '/grupos-de-atributos':
       return <AttributeGroupsPage />
+    case '/taxonomia':
+      return <TaxonomyPage />
     case '/listas-de-valores':
       return <ListsOfValuesPage />
     case '/':

@@ -8,6 +8,7 @@ import com.pim.backend.attribute.model.AttributePermissions;
 import com.pim.backend.attribute.repository.EmptyListOfValuesCatalog;
 import com.pim.backend.attribute.repository.InMemoryAttributeRepository;
 import com.pim.backend.attribute.repository.NoAttributeGroups;
+import com.pim.backend.attribute.repository.NoTaxonomyAssignments;
 import com.pim.backend.attribute.service.AttributeService;
 import com.pim.backend.attributegroup.model.GroupNameInUseException;
 import com.pim.backend.attributegroup.repository.InMemoryAttributeGroupRepository;
@@ -48,6 +49,7 @@ class AttributeGroupServiceConcurrencyTest {
                 new InMemoryAttributeRepository(),
                 new EmptyListOfValuesCatalog(),
                 new NoAttributeGroups(),
+                new NoTaxonomyAssignments(),
                 identifierService,
                 clock);
     }

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PIM Platform – Attribute creation
-  version: 1.2.0
+  version: 1.3.0
   description: >
     Feature 004 (specs/004-attribute-creation). Creates attribute definitions, one at a time, with a
     data type and type-specific properties (ERF 1.1 §3.2, §3.2.1). Every attribute is global and has
@@ -11,7 +11,9 @@ info:
     (GET /api/v1/attributes, feature 005 plan decision D-3). v1.2.0 (feature 007,
     specs/007-attribute-management) adds editing (PUT) and deleting (DELETE) one attribute, and the
     response fields `groups`, `updatedAt` and `listOfValuesProperties.listOfValuesName`; the change
-    record is specs/007-attribute-management/contracts/attributes-v1.2.openapi.yaml. Unknown fields in request bodies are ignored, as in the rest of
+    record is specs/007-attribute-management/contracts/attributes-v1.2.openapi.yaml. v1.3.0 (feature 010,
+    specs/010-taxonomy-attribute-inheritance) refuses deleting an attribute assigned to taxonomy nodes
+    (409 ATTRIBUTE_ON_TAXONOMY_NODES). Unknown fields in request bodies are ignored, as in the rest of
     the API. Messages are in Spanish.
 servers:
   - url: http://localhost:8080
@@ -219,7 +221,7 @@ paths:
               schema: { $ref: '#/components/schemas/Problem' }
     delete:
       operationId: deleteAttribute
-      summary: Delete an attribute that belongs to no group (v1.2.0; feature 007 FR-012 to FR-016)
+      summary: Delete an attribute that belongs to no group and no taxonomy node (v1.2.0; feature 007 FR-012 to FR-016; v1.3.0 feature 010 FR-021)
       description: >
         Removes the definition. Lists of values, their values, groups and products are not changed.
         The system ID stays registered in feature 003 and is never assigned again.
@@ -245,8 +247,9 @@ paths:
               schema: { $ref: '#/components/schemas/Problem' }
         '409':
           description: >
-            The attribute belongs to groups (`ATTRIBUTE_IN_GROUPS`); the problem also lists them in
-            `groups`. Nothing changed.
+            The attribute belongs to groups (`ATTRIBUTE_IN_GROUPS`, problem property `groups`) or, since
+            v1.3.0 (feature 010 FR-021), is assigned to taxonomy nodes (`ATTRIBUTE_ON_TAXONOMY_NODES`,
+            problem property `nodes`). Groups are checked first. Nothing changed.
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/Problem' }
@@ -469,8 +472,18 @@ components:
                   - SYSTEM_ID_IMMUTABLE
                   - DATA_TYPE_IMMUTABLE
                   - ATTRIBUTE_IN_GROUPS
+                  - ATTRIBUTE_ON_TAXONOMY_NODES
               message: { type: string }
         groups:
           type: array
           description: v1.2.0; only with ATTRIBUTE_IN_GROUPS
           items: { $ref: '#/components/schemas/GroupReference' }
+        nodes:
+          type: array
+          description: v1.3.0 (feature 010); only with ATTRIBUTE_ON_TAXONOMY_NODES; the nodes listing the attribute, sorted by name
+          items:
+            type: object
+            required: [systemId, name]
+            properties:
+              systemId: { type: string, example: CLS000001 }
+              name: { type: string, example: Ropa }

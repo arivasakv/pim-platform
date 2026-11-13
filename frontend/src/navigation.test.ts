@@ -52,7 +52,14 @@ describe('navigation for the lists of values page (feature 006)', () => {
       'Lista de Valores',
       'Atributos',
       'Grupo de Atributos',
+      'Taxonomía',
     ])
+  })
+})
+
+describe('navigation for the taxonomy page (feature 010)', () => {
+  it('returns the taxonomy path for "#/taxonomia"', () => {
+    expect(getPathFromHash('#/taxonomia')).toBe('/taxonomia')
   })
 })
 

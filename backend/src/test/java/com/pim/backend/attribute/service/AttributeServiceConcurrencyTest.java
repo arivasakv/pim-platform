@@ -9,6 +9,7 @@ import com.pim.backend.attribute.model.DisplayNameInUseException;
 import com.pim.backend.attribute.repository.EmptyListOfValuesCatalog;
 import com.pim.backend.attribute.repository.InMemoryAttributeRepository;
 import com.pim.backend.attribute.repository.NoAttributeGroups;
+import com.pim.backend.attribute.repository.NoTaxonomyAssignments;
 import com.pim.backend.identifier.config.DefaultObjectTypeConfigurations;
 import com.pim.backend.identifier.model.ManualIdPermissions;
 import com.pim.backend.identifier.repository.InMemoryObjectTypeConfigurationRepository;
@@ -45,6 +46,7 @@ class AttributeServiceConcurrencyTest {
                 attributes,
                 new EmptyListOfValuesCatalog(),
                 new NoAttributeGroups(),
+                new NoTaxonomyAssignments(),
                 identifierService,
                 Clock.systemUTC());
     }

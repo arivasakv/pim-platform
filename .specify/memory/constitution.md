@@ -141,9 +141,10 @@ Until this constitution is amended:
   source code and version control (Principle VIII).
 - **Attribute administration data** MAY also be stored in MongoDB, under the same conditions:
   attribute definitions, attribute groups and their memberships, the system identifier
-  registry with its per-object-type sequence configuration, and lists of values with their
-  values. These are stored together because groups reference attribute system IDs, LOV
-  attributes reference lists, and lists receive system IDs.
+  registry with its per-object-type sequence configuration, lists of values with their
+  values, and taxonomy nodes with their direct attribute assignments. These are stored
+  together because groups and taxonomy nodes reference attribute system IDs, LOV attributes
+  reference lists, and lists and taxonomy nodes receive system IDs.
 - All other backend data MUST use in-memory mock data (e.g. seeded repositories behind
   repository interfaces) until a specification and a constitution amendment extend MongoDB to it.
 - JPA, JDBC, SQL databases, embedded databases, schema migration tools, and any database other
@@ -370,4 +371,4 @@ A feature MAY be merged only when all of the following are true:
   request review, and every `/speckit-analyze` run. The constitution itself SHOULD be reviewed at
   least once per release milestone for relevance.
 
-**Version**: 2.4.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-11
+**Version**: 2.5.0 | **Ratified**: 2026-11-06 | **Last Amended**: 2026-11-12

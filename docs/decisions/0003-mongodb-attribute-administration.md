@@ -12,6 +12,11 @@
   their change records, are stored with the other attribute administration data
   ([006 plan](../../specs/006-lov-management/plan.md) D-2, D-10). Rows `lists_of_values` and
   `lov_changes` were added to the collections table.
+- **Amended 2026-11-12** (constitution 2.5.0, feature 010): taxonomy nodes and their direct attribute
+  assignments are stored with the other attribute administration data, because nodes reference
+  attribute system IDs and receive `CLASSIFICATION` system IDs
+  ([010 plan](../../specs/010-taxonomy-attribute-inheritance/plan.md) D-2, D-3). Row
+  `taxonomy_nodes` was added to the collections table.
 
 ## Context
 
@@ -39,6 +44,7 @@ where their data lives.
    | `attribute_groups` | `attributegroup` (005) | `{ _id: <UUID>, name, nameKey, description, attributeIds, createdAt }` | `_id`; unique `attribute_group_name_unique` on `nameKey` (FR-003) |
    | `lists_of_values` | `lov` (006) | `{ _id: <list system ID upper-cased>, systemId, name, nameKey, equivalencesEnabled, nextGeneratedNumber, values: [ { id, idKey, label, equivalence } ], createdAt, updatedAt }`; values embedded so each change is one atomic document update (006 research R-02; at most 50,000 values) | `_id`; unique `lov_name_unique` on `nameKey` (006 FR-003) |
    | `lov_changes` | `lov` (006) | `{ _id: <UUID>, at, user, operation, listId, listName, valueIds, added, updated }` (006 FR-019, research R-11) | `_id`; `{ listId: 1, at: -1 }` |
+   | `taxonomy_nodes` | `taxonomy` (010) | `{ _id: <node system ID upper-cased>, systemId, name, nameKey, parentId, description, attributeIds, createdAt, updatedAt }`; direct attribute IDs embedded in assignment order (010 research R-03) | `_id`; unique `taxonomy_node_sibling_name_unique` on `{ parentId: 1, nameKey: 1 }` (010 FR-004); `taxonomy_node_attribute_ids` on `attributeIds` (010 FR-021) |
 
    `*Key` fields hold the value lower-cased with `Locale.ROOT`, so uniqueness ignoring letter case is
    also enforced by the database.

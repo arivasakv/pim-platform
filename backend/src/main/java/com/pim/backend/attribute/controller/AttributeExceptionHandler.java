@@ -5,6 +5,7 @@ import com.pim.backend.attribute.model.AttributeCreateNotPermittedException;
 import com.pim.backend.attribute.model.AttributeErrorCode;
 import com.pim.backend.attribute.model.AttributeInGroupsException;
 import com.pim.backend.attribute.model.AttributeNotFoundException;
+import com.pim.backend.attribute.model.AttributeOnTaxonomyNodesException;
 import com.pim.backend.attribute.model.DisplayNameInUseException;
 import com.pim.backend.attribute.model.ImmutableFieldException;
 import com.pim.backend.attribute.model.InvalidAttributeException;
@@ -110,6 +111,23 @@ public class AttributeExceptionHandler {
                 "groups",
                 exception.groups().stream()
                         .map(group -> Map.of("id", group.id(), "name", group.name()))
+                        .toList());
+        return problem;
+    }
+
+    /** Feature 010 FR-021: the nodes are also returned as the extension property {@code nodes}. */
+    @ExceptionHandler(AttributeOnTaxonomyNodesException.class)
+    ProblemDetail handleOnTaxonomyNodes(AttributeOnTaxonomyNodesException exception, HttpServletRequest request) {
+        ProblemDetail problem = ApiProblems.problem(
+                request,
+                HttpStatus.CONFLICT,
+                "Atributo en la taxonomía",
+                exception.getMessage(),
+                List.of(error("nodes", AttributeErrorCode.ATTRIBUTE_ON_TAXONOMY_NODES, exception.getMessage())));
+        problem.setProperty(
+                "nodes",
+                exception.nodes().stream()
+                        .map(node -> Map.of("systemId", node.systemId(), "name", node.name()))
                         .toList());
         return problem;
     }
