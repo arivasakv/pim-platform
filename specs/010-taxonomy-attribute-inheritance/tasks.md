@@ -248,7 +248,7 @@ test**: quickstart A7, B9, B10, B15.
 - [X] T039 Quickstart API scenarios A1–A9 against a temporary backend on a separate MongoDB port (as
   feature 007's check); stop temporary processes afterwards.
 - [X] T040 [P] Scope check per quickstart (`git diff --stat main`).
-- [ ] T041 Owner browser check: quickstart B1–B17. (SC-003, SC-004)
+- [X] T041 Owner browser check: quickstart B1–B17. (SC-003, SC-004)
 
 ---
 
