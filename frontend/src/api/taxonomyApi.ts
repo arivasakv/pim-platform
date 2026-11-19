@@ -1,7 +1,8 @@
 import { buildApiUrl } from './apiConfig'
 import { permissionHeaders, readProblem, type ApiFieldError } from './attributesApi'
 
-// Shapes from specs/010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml.
+// Shapes from specs/010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml (v1.1.0,
+// including feature 011's move).
 export type NodeReference = { systemId: string; name: string }
 
 export type TaxonomyNodeSummary = {
@@ -53,6 +54,12 @@ export type AssignAttributesResult = {
   node: TaxonomyNode
   added: string[]
   alreadyAssigned: string[]
+}
+
+/** Feature 011: the moved node and how many nodes moved with it (the node plus its descendants). */
+export type MoveNodeResult = {
+  node: TaxonomyNode
+  movedNodeCount: number
 }
 
 export type TaxonomyApiErrorKind =
@@ -162,6 +169,15 @@ export async function updateNode(
 /** Deletes a node with no children and no direct attributes (`DELETE …/{nodeId}`). */
 export async function deleteNode(nodeId: string): Promise<void> {
   await request(nodePath(nodeId), change('DELETE'))
+}
+
+/**
+ * Moves a node with its whole branch under another node, or to the top level with `null`
+ * (`POST …/{nodeId}/move`, feature 011).
+ */
+export async function moveNode(nodeId: string, parentId: string | null): Promise<MoveNodeResult> {
+  const response = await request(`${nodePath(nodeId)}/move`, change('POST', { parentId }))
+  return (await response.json()) as MoveNodeResult
 }
 
 /** Assigns existing attributes directly to the node, all or nothing (`POST …/{nodeId}/attributes`). */

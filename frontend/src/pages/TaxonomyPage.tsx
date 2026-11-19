@@ -13,6 +13,7 @@ import {
   deleteNode,
   getNode,
   listNodes,
+  moveNode,
   removeAttribute,
   updateNode,
   type EffectiveAttribute,
@@ -29,6 +30,7 @@ import {
   TextAreaField,
   TextField,
 } from '../components/ui'
+import { MoveNodePanel } from '../taxonomy/MoveNodePanel'
 import { NodeAttributesTable } from '../taxonomy/NodeAttributesTable'
 import { TaxonomyTree } from '../taxonomy/TaxonomyTree'
 import { buildTree } from '../taxonomy/nodeTree'
@@ -89,6 +91,8 @@ export function TaxonomyPage() {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [removing, setRemoving] = useState<EffectiveAttribute | null>(null)
   const [picker, setPicker] = useState<Picker | null>(null)
+  /** Feature 011: the move panel of the chosen node is open. */
+  const [moving, setMoving] = useState(false)
 
   // Loads the nodes; a reload increments listRequest. The first load expands the top level.
   useEffect(() => {
@@ -151,6 +155,7 @@ export function TaxonomyPage() {
     setConfirmingDelete(false)
     setRemoving(null)
     setPicker(null)
+    setMoving(false)
   }
 
   /** Shows a node in the detail and expands its ancestors in the tree. */
@@ -234,6 +239,39 @@ export function TaxonomyPage() {
       reloadList()
     } catch (error) {
       setConfirmingDelete(false)
+      setPanelError(messageOf(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** Feature 011: moves the node with its branch; the panel stays open on a refusal. */
+  async function move(node: TaxonomyNode, parentId: string | null) {
+    setPanelError(undefined)
+    setConfirmation(undefined)
+    setBusy(true)
+    try {
+      const result = await moveNode(node.systemId, parentId)
+      setMoving(false)
+      show(result.node)
+      const parent = result.node.path[result.node.path.length - 1]
+      const where = parent ? `a «${parent.name}»` : 'al primer nivel'
+      setConfirmation(
+        `Nodo «${result.node.name}» movido ${where}.` +
+          (result.movedNodeCount > 1 ? ` Se movieron ${result.movedNodeCount} nodos.` : ''),
+      )
+      reloadList()
+    } catch (error) {
+      const nodeGone =
+        error instanceof TaxonomyApiError &&
+        error.kind === 'notFound' &&
+        error.errors[0]?.field === 'nodeId'
+      if (nodeGone) {
+        setMoving(false)
+        setSelected(null)
+        setPanel('none')
+        reloadList()
+      }
       setPanelError(messageOf(error))
     } finally {
       setBusy(false)
@@ -422,7 +460,7 @@ export function TaxonomyPage() {
               <Card
                 title={selected.name}
                 actions={
-                  canChange && !confirmingDelete ? (
+                  canChange && !confirmingDelete && !moving ? (
                     <>
                       <Button
                         variant="secondary"
@@ -433,6 +471,19 @@ export function TaxonomyPage() {
                       </Button>
                       <Button variant="secondary" disabled={busy} onClick={() => startForm('edit')}>
                         Editar
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        disabled={busy}
+                        onClick={() => {
+                          setConfirmation(undefined)
+                          setPanelError(undefined)
+                          setPicker(null)
+                          setRemoving(null)
+                          setMoving(true)
+                        }}
+                      >
+                        Mover
                       </Button>
                       <Button
                         variant="secondary"
@@ -476,6 +527,19 @@ export function TaxonomyPage() {
                     busy={busy}
                     onCancel={() => setConfirmingDelete(false)}
                     onConfirm={() => void removeNode(selected)}
+                  />
+                )}
+
+                {canChange && moving && (
+                  <MoveNodePanel
+                    node={selected}
+                    items={items}
+                    busy={busy}
+                    onCancel={() => {
+                      setPanelError(undefined)
+                      setMoving(false)
+                    }}
+                    onMove={(parentId) => void move(selected, parentId)}
                   />
                 )}
 

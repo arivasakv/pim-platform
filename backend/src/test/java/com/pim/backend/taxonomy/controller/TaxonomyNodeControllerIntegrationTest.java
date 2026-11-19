@@ -283,7 +283,125 @@ class TaxonomyNodeControllerIntegrationTest {
                 .andExpect(status().isNoContent());
     }
 
+    // --- Feature 011: moving nodes ---
+
+    @Test
+    void movesANodeWithItsBranchAndPersistsTheNewParent() throws Exception {
+        createAttributes("Color", "Género", "Largo de manga", "Material de suela");
+        String ropa = createNode("Ropa", null);
+        String hombre = createNode("Ropa de hombre", ropa);
+        String camisas = createNode("Camisas", hombre);
+        String formales = createNode("Camisas formales", camisas);
+        String calzado = createNode("Calzado", null);
+        assign(ropa, "ATR000001").andExpect(status().isOk());
+        assign(hombre, "ATR000002").andExpect(status().isOk());
+        assign(camisas, "ATR000003").andExpect(status().isOk());
+        assign(calzado, "ATR000004").andExpect(status().isOk());
+
+        move(camisas, "\"" + calzado.toLowerCase() + "\"")
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.movedNodeCount").value(2))
+                .andExpect(jsonPath("$.node.systemId").value(camisas))
+                .andExpect(jsonPath("$.node.parentId").value(calzado))
+                .andExpect(jsonPath("$.node.level").value(2))
+                .andExpect(jsonPath("$.node.path[*].name", contains("Calzado")))
+                .andExpect(jsonPath("$.node.children[*].name", contains("Camisas formales")))
+                .andExpect(jsonPath("$.node.directAttributeCount").value(1))
+                .andExpect(jsonPath("$.node.updatedAt", notNullValue()));
+
+        mockMvc.perform(get(NODES + "/" + formales))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.level").value(3))
+                .andExpect(jsonPath("$.path[*].name", contains("Calzado", "Camisas")))
+                .andExpect(jsonPath(
+                        "$.effectiveAttributes[*].displayName", contains("Material de suela", "Largo de manga")))
+                .andExpect(jsonPath("$.effectiveAttributes[0].origin.name").value("Calzado"))
+                .andExpect(jsonPath("$.effectiveAttributes[1].origin.name").value("Camisas"));
+        mockMvc.perform(get(NODES + "/" + hombre))
+                .andExpect(jsonPath("$.children").isEmpty())
+                .andExpect(jsonPath("$.effectiveAttributes[*].displayName", contains("Color", "Género")));
+    }
+
+    @Test
+    void movesANodeToTheTopLevel() throws Exception {
+        String ropa = createNode("Ropa", null);
+        String mujer = createNode("Ropa de mujer", ropa);
+        createNode("Blusas", mujer);
+
+        move(mujer, "null")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.movedNodeCount").value(2))
+                .andExpect(jsonPath("$.node.parentId").value(nullValue()))
+                .andExpect(jsonPath("$.node.level").value(1))
+                .andExpect(jsonPath("$.node.path").isEmpty());
+        mockMvc.perform(get(NODES)).andExpect(jsonPath("$.items[?(@.name == 'Blusas')].level", contains(2)));
+
+        mockMvc.perform(post(NODES + "/" + mujer + "/move")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(PERMISSIONS, CAN_CHANGE)
+                        .content("{}"))
+                .andExpect(status().isConflict())
+                .andExpect(error("parentId", "NODE_ALREADY_THERE"))
+                .andExpect(jsonPath("$.title").value("Movimiento sin efecto"))
+                .andExpect(jsonPath("$.detail").value("«Ropa de mujer» ya está en el primer nivel."));
+    }
+
+    @Test
+    void refusesMovesThatWouldBreakTheHierarchyAndChangesNothing() throws Exception {
+        String ropa = createNode("Ropa", null);
+        String hombre = createNode("Ropa de hombre", ropa);
+        String camisas = createNode("Camisas", hombre);
+        String mujer = createNode("Ropa de mujer", ropa);
+        createNode("Camisas", mujer);
+
+        move(hombre, "\"" + camisas + "\"")
+                .andExpect(status().isConflict())
+                .andExpect(error("parentId", "NODE_MOVE_INTO_OWN_BRANCH"))
+                .andExpect(jsonPath("$.title").value("Movimiento no válido"))
+                .andExpect(jsonPath("$.detail")
+                        .value("No puedes mover «Ropa de hombre» dentro de sí mismo ni de uno de sus nodos"
+                                + " descendientes."));
+        move(camisas, "\"" + hombre + "\"")
+                .andExpect(status().isConflict())
+                .andExpect(error("parentId", "NODE_ALREADY_THERE"))
+                .andExpect(jsonPath("$.detail").value("«Camisas» ya está en «Ropa de hombre»."));
+        move(camisas, "\"" + mujer + "\"")
+                .andExpect(status().isConflict())
+                .andExpect(error("parentId", "NODE_NAME_IN_USE"))
+                .andExpect(jsonPath("$.title").value("Nombre en uso"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Ya existe un nodo «Camisas» en «Ropa de mujer». Cambia el nombre de uno de los dos"
+                                + " antes de mover."));
+        move(camisas, "\"CLS999999\"")
+                .andExpect(status().isNotFound())
+                .andExpect(error("parentId", "NODE_NOT_FOUND"))
+                .andExpect(jsonPath("$.detail").value("No existe un nodo con el ID CLS999999."));
+        move("CLS999999", "\"" + mujer + "\"")
+                .andExpect(status().isNotFound())
+                .andExpect(error("nodeId", "NODE_NOT_FOUND"));
+        move(camisas, "\"" + "X".repeat(41) + "\"")
+                .andExpect(status().isBadRequest())
+                .andExpect(error("parentId", "NODE_NOT_FOUND"));
+        mockMvc.perform(post(NODES + "/" + camisas + "/move")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"parentId\":\"" + mujer + "\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(error("permissions", "TAXONOMY_CHANGE_NOT_PERMITTED"));
+
+        mockMvc.perform(get(NODES + "/" + camisas))
+                .andExpect(jsonPath("$.parentId").value(hombre))
+                .andExpect(jsonPath("$.updatedAt").value(nullValue()));
+    }
+
     // --- helpers ---
+
+    private ResultActions move(String nodeId, String parentJson) throws Exception {
+        return mockMvc.perform(post(NODES + "/" + nodeId + "/move")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(PERMISSIONS, CAN_CHANGE)
+                .content("{\"parentId\":" + parentJson + "}"));
+    }
 
     private ResultActions createRequest(String body) throws Exception {
         return mockMvc.perform(post(NODES)

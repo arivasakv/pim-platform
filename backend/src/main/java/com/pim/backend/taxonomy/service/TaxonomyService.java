@@ -13,8 +13,10 @@ import com.pim.backend.taxonomy.model.AttributeNotDirectException;
 import com.pim.backend.taxonomy.model.AttributeNotOnNodeException;
 import com.pim.backend.taxonomy.model.EffectiveAttribute;
 import com.pim.backend.taxonomy.model.EffectiveAttributes;
+import com.pim.backend.taxonomy.model.MoveOutcome;
 import com.pim.backend.taxonomy.model.NodeAttribute;
 import com.pim.backend.taxonomy.model.NodeDetails;
+import com.pim.backend.taxonomy.model.NodeMoveNotAllowedException;
 import com.pim.backend.taxonomy.model.NodeName;
 import com.pim.backend.taxonomy.model.NodeNameInUseException;
 import com.pim.backend.taxonomy.model.NodeNotEmptyException;
@@ -26,8 +28,11 @@ import com.pim.backend.taxonomy.model.TaxonomyNode;
 import com.pim.backend.taxonomy.model.UnknownAttributeException;
 import com.pim.backend.taxonomy.repository.TaxonomyNodeRepository;
 import java.time.Clock;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,7 +44,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * The product hierarchy and its attribute inheritance (spec FR-001 to FR-021; plan decisions D-1 to D-9). Attributes
+ * The product hierarchy and its attribute inheritance (spec FR-001 to FR-021; plan decisions D-1 to D-9), and moving
+ * nodes with their branch (feature 011; {@link #move}). Attributes
  * come from feature 004 and are used only through {@link AttributeService}; node IDs come from feature 003 through
  * {@link IdentifierService} (constitution III). Effective attributes are computed on every read from the current
  * tree (D-4), so ancestor changes reach every descendant at once (FR-015).
@@ -176,6 +182,46 @@ public class TaxonomyService {
     }
 
     /**
+     * Moves a node, with its whole branch, under another node or to the top level (feature 011 FR-001 to FR-009). Only
+     * the node's parent and modification date change: its descendants point to it, so they follow without being
+     * written, and levels, paths and effective attributes are derived from the new chain on the next read (feature
+     * 011 research R-01, R-05). The checks and the single save run under the taxonomy lock, so two moves cannot
+     * interleave and create a loop (R-02). No depth limit applies (FR-008).
+     *
+     * @param parentId the new parent's system ID; {@code null} or blank for the top level (FR-004)
+     * @throws TaxonomyChangeNotPermittedException without {@code ATTRIBUTE_CREATE}
+     * @throws NodeNotFoundException if the node (field {@code nodeId}) or the new parent (field {@code parentId}) does
+     *     not exist
+     * @throws NodeMoveNotAllowedException if the new parent is the node or one of its descendants, or is already its
+     *     parent; nothing changes
+     * @throws NodeNameInUseException if the destination already has a child with the node's name; nothing changes
+     */
+    public MoveOutcome move(String systemId, String parentId, AttributePermissions permissions) {
+        checkPermission(permissions);
+        String requestedParent = parentId == null || parentId.isBlank() ? null : parentId.strip();
+        synchronized (lock) {
+            TaxonomyNode node = existing(systemId, "nodeId");
+            TaxonomyNode destination = requestedParent == null ? null : existing(requestedParent, "parentId");
+            Set<String> descendants = descendantIds(node, nodes.findAll());
+            if (destination != null && (destination.id().equals(node.id()) || descendants.contains(destination.id()))) {
+                throw NodeMoveNotAllowedException.intoOwnBranch(node);
+            }
+            String destinationId = destination == null ? null : destination.id();
+            if (node.parentId().equals(Optional.ofNullable(destinationId))) {
+                throw destination == null
+                        ? NodeMoveNotAllowedException.alreadyTopLevel(node)
+                        : NodeMoveNotAllowedException.alreadyUnder(node, destination);
+            }
+            if (nodes.existsWithName(destinationId, node.name(), node.id())) {
+                throw NodeNameInUseException.atDestination(node.name(), destination);
+            }
+            TaxonomyNode moved = node.movedTo(destinationId, clock.instant());
+            nodes.update(moved);
+            return new MoveOutcome(details(moved), 1 + descendants.size());
+        }
+    }
+
+    /**
      * Assigns existing attributes directly to the node, all or nothing (FR-008, FR-009, FR-011). Attributes already
      * direct are reported, not added again.
      *
@@ -293,6 +339,30 @@ public class TaxonomyService {
                 .fieldNames()
                 .contains(NAME_KEY_FIELD);
         return declared ? Map.of(NAME_KEY_FIELD, name.value()) : Map.of();
+    }
+
+    /**
+     * The storage keys of every node below {@code node}, at any depth, walking parent links breadth-first. The visited
+     * set stops the walk on a damaged store, as {@link EffectiveAttributes#chain} does.
+     */
+    private static Set<String> descendantIds(TaxonomyNode node, List<TaxonomyNode> all) {
+        Map<String, List<String>> childrenByParent = new HashMap<>();
+        for (TaxonomyNode candidate : all) {
+            candidate
+                    .parentId()
+                    .ifPresent(parent -> childrenByParent
+                            .computeIfAbsent(parent, key -> new ArrayList<>())
+                            .add(candidate.id()));
+        }
+        Set<String> found = new LinkedHashSet<>();
+        Deque<String> pending = new ArrayDeque<>(childrenByParent.getOrDefault(node.id(), List.of()));
+        while (!pending.isEmpty()) {
+            String current = pending.removeFirst();
+            if (!current.equals(node.id()) && found.add(current)) {
+                pending.addAll(childrenByParent.getOrDefault(current, List.of()));
+            }
+        }
+        return found;
     }
 
     private static Map<String, TaxonomyNode> byId(List<TaxonomyNode> all) {

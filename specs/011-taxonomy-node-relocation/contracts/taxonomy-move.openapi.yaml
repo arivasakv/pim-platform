@@ -1,0 +1,130 @@
+openapi: 3.1.0
+info:
+  title: PIM Platform – Move a taxonomy node (feature 011)
+  version: 1.1.0
+  description: >
+    Reviewed delta. Since task T002 (2026-11-19) the operation, its schemas and the two new error codes are
+    merged into the canonical contract specs/010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml
+    (v1.1.0), which is the one to use; both files say the same.
+    Feature 011 (specs/011-taxonomy-node-relocation). Adds one operation to the taxonomy API of feature
+    010 (specs/010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml), which becomes version
+    1.1.0 when this operation is merged into it (plan, research R-08). Everything else in that contract is
+    unchanged; shared parameters, responses and schemas are referenced from it. A move changes the node's
+    parent; its whole branch follows; IDs, names, descriptions, children and direct attributes do not
+    change. Effective attributes of the moved branch are computed from the new ancestors on the next read
+    (ERF 1.1 §3.3 «Reubicación de Nodos»). Changes need ATTRIBUTE_CREATE. Messages are in Spanish; errors
+    are RFC 9457 problems with `errors[]` entries {field, code, message} (ADR 0001).
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: taxonomy-nodes
+paths:
+  /api/v1/taxonomy-nodes/{nodeId}/move:
+    parameters:
+      - $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/parameters/NodeId'
+    post:
+      operationId: moveTaxonomyNode
+      summary: Move a node, with its whole branch, under another node or to the top level (FR-001 to FR-009)
+      tags: [taxonomy-nodes]
+      parameters:
+        - $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/parameters/Permissions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MoveNodeRequest' }
+            examples:
+              underAnotherNode:
+                value: { parentId: CLS000005 }
+              toTopLevel:
+                value: { parentId: null }
+      responses:
+        '200':
+          description: Moved. The node detail reflects its new level, path and effective attributes.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MoveNodeResult' }
+        '400':
+          description: '`parentId` longer than 40 characters (`NODE_NOT_FOUND`, field parentId, "El ID del nodo padre no es válido."). Nothing changed.'
+          content:
+            application/problem+json:
+              schema: { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/schemas/Problem' }
+        '403': { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/responses/NotPermitted' }
+        '404':
+          description: The node (`NODE_NOT_FOUND`, field nodeId) or the destination (`NODE_NOT_FOUND`, field parentId) does not exist. Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/schemas/Problem' }
+              example:
+                title: Nodo no encontrado
+                status: 404
+                detail: No existe un nodo con el ID CLS000099.
+                errors:
+                  - { field: parentId, code: NODE_NOT_FOUND, message: No existe un nodo con el ID CLS000099. }
+        '409':
+          description: >
+            The move conflicts with the current tree; nothing changed. `NODE_MOVE_INTO_OWN_BRANCH`: the
+            destination is the node or one of its descendants. `NODE_ALREADY_THERE`: the destination is the
+            current parent (or the top level for a top-level node). `NODE_NAME_IN_USE`: the destination
+            already has a child with the node's name, ignoring letter case and surrounding spaces.
+          content:
+            application/problem+json:
+              schema: { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/schemas/Problem' }
+              examples:
+                ownBranch:
+                  value:
+                    title: Movimiento no válido
+                    status: 409
+                    detail: No puedes mover «Ropa de hombre» dentro de sí mismo ni de uno de sus nodos descendientes.
+                    errors:
+                      - { field: parentId, code: NODE_MOVE_INTO_OWN_BRANCH, message: No puedes mover «Ropa de hombre» dentro de sí mismo ni de uno de sus nodos descendientes. }
+                alreadyThere:
+                  value:
+                    title: Movimiento sin efecto
+                    status: 409
+                    detail: «Camisas» ya está en «Ropa de hombre».
+                    errors:
+                      - { field: parentId, code: NODE_ALREADY_THERE, message: «Camisas» ya está en «Ropa de hombre». }
+                alreadyTopLevel:
+                  value:
+                    title: Movimiento sin efecto
+                    status: 409
+                    detail: «Ropa» ya está en el primer nivel.
+                    errors:
+                      - { field: parentId, code: NODE_ALREADY_THERE, message: «Ropa» ya está en el primer nivel. }
+                nameInUse:
+                  value:
+                    title: Nombre en uso
+                    status: 409
+                    detail: Ya existe un nodo «Camisas» en «Ropa de mujer». Cambia el nombre de uno de los dos antes de mover.
+                    errors:
+                      - { field: parentId, code: NODE_NAME_IN_USE, message: Ya existe un nodo «Camisas» en «Ropa de mujer». Cambia el nombre de uno de los dos antes de mover. }
+                nameInUseTopLevel:
+                  value:
+                    title: Nombre en uso
+                    status: 409
+                    detail: Ya existe un nodo «Calzado» en el primer nivel. Cambia el nombre de uno de los dos antes de mover.
+                    errors:
+                      - { field: parentId, code: NODE_NAME_IN_USE, message: Ya existe un nodo «Calzado» en el primer nivel. Cambia el nombre de uno de los dos antes de mover. }
+components:
+  schemas:
+    MoveNodeRequest:
+      type: object
+      properties:
+        parentId:
+          type: [string, 'null']
+          maxLength: 40
+          description: >
+            System ID of the new parent, compared ignoring letter case. `null` or absent moves the node to the
+            top level (same meaning as in TaxonomyNodeCreateRequest).
+    MoveNodeResult:
+      type: object
+      required: [node, movedNodeCount]
+      properties:
+        node:
+          $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/schemas/TaxonomyNode'
+        movedNodeCount:
+          type: integer
+          minimum: 1
+          description: The moved node plus all its descendants.

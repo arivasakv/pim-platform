@@ -2,6 +2,8 @@ package com.pim.backend.taxonomy.controller;
 
 import com.pim.backend.taxonomy.dto.AssignAttributesRequest;
 import com.pim.backend.taxonomy.dto.AssignAttributesResponse;
+import com.pim.backend.taxonomy.dto.MoveNodeRequest;
+import com.pim.backend.taxonomy.dto.MoveNodeResponse;
 import com.pim.backend.taxonomy.dto.TaxonomyNodeCollectionResponse;
 import com.pim.backend.taxonomy.dto.TaxonomyNodeCreateRequest;
 import com.pim.backend.taxonomy.dto.TaxonomyNodeResponse;
@@ -23,7 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * The product hierarchy and its attribute assignments (contract
- * specs/010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml). HTTP only: the rules are in {@link
+ * specs/010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml, v1.1.0 with feature 011's move). HTTP
+ * only: the rules are in {@link
  * TaxonomyService} (constitution III). Reading needs no permission; changes need {@code ATTRIBUTE_CREATE} (FR-017).
  */
 @RestController
@@ -73,6 +76,14 @@ public class TaxonomyNodeController {
     ResponseEntity<Void> delete(@PathVariable String nodeId, HttpServletRequest httpRequest) {
         taxonomyService.delete(nodeId, permissionsReader.permissions(httpRequest));
         return ResponseEntity.noContent().build();
+    }
+
+    /** Feature 011: moves the node with its branch; {@code parentId} null or absent means the top level. */
+    @PostMapping("/{nodeId}/move")
+    MoveNodeResponse move(
+            @PathVariable String nodeId, @Valid @RequestBody MoveNodeRequest request, HttpServletRequest httpRequest) {
+        return MoveNodeResponse.from(
+                taxonomyService.move(nodeId, request.parentId(), permissionsReader.permissions(httpRequest)));
     }
 
     @PostMapping("/{nodeId}/attributes")
