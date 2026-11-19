@@ -74,4 +74,22 @@ describe('TaxonomyTree', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ropa, 3 atributos directos' }))
     expect(onSelect).toHaveBeenCalledWith('CLS000001')
   })
+
+  it('shows a folder for nodes with children and a tag for nodes without them', () => {
+    renderTree(['CLS000001', 'CLS000002'])
+
+    const icon = (name: RegExp) =>
+      screen.getByRole('button', { name }).querySelector('[data-icon]')?.getAttribute('data-icon')
+    expect(icon(/^Ropa,/)).toBe('folder-open')
+    expect(icon(/^Ropa de hombre,/)).toBe('folder-open')
+    expect(icon(/^Camisas,/)).toBe('tag')
+  })
+
+  it('shows a closed folder for a collapsed node', () => {
+    renderTree([])
+
+    const ropa = screen.getByRole('button', { name: /^Ropa,/ })
+    expect(ropa.querySelector('[data-icon]')?.getAttribute('data-icon')).toBe('folder')
+    expect(ropa.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
+  })
 })

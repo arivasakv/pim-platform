@@ -1,7 +1,20 @@
 import type { ReactNode } from 'react'
 
 export type IconName =
-  'menu' | 'close' | 'home' | 'components' | 'search' | 'info' | 'warning' | 'error' | 'success'
+  | 'menu'
+  | 'close'
+  | 'home'
+  | 'components'
+  | 'search'
+  | 'info'
+  | 'warning'
+  | 'error'
+  | 'success'
+  | 'chevron-right'
+  | 'chevron-down'
+  | 'folder'
+  | 'folder-open'
+  | 'tag'
 
 interface IconProps {
   name: IconName
@@ -46,6 +59,19 @@ const ICON_PATHS: Record<IconName, ReactNode> = {
     <>
       <circle cx="12" cy="12" r="9" />
       <path d="M8 12.5l2.5 2.5L16 9.5" />
+    </>
+  ),
+  // Tree icons (feature 010, "Taxonomía").
+  'chevron-right': <path d="M9 6l6 6-6 6" />,
+  'chevron-down': <path d="M6 9l6 6 6-6" />,
+  folder: <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />,
+  'folder-open': (
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v1M3 7v10a2 2 0 0 0 2 2h12.5a2 2 0 0 0 1.9-1.4l1.9-5.6A1 1 0 0 0 20.3 11H8.2a2 2 0 0 0-1.9 1.4L3 19" />
+  ),
+  tag: (
+    <>
+      <path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9-9-9z" />
+      <path d="M7.5 7.5h.01" />
     </>
   ),
 }

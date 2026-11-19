@@ -22,7 +22,8 @@ and reviewers. API: [taxonomy.openapi.yaml](taxonomy.openapi.yaml).
 | Error | **No se pudo conectar con el servidor. Inténtalo de nuevo.** + **Reintentar** |
 | Empty | **Todavía no hay nodos en la jerarquía.** (+ with permission: **Crea el primer nivel con «Nuevo nodo de primer nivel».**) |
 | Node row | Expand button (only if it has children): accessible name **Mostrar hijos de {nodo}** / **Ocultar hijos de {nodo}**, `aria-expanded`; node button: name + count, accessible name **{nodo}, {n} atributo(s) directo(s)**, `aria-pressed` when chosen |
-| Count text in the row | **{n}** (secondary text) |
+| Count text in the row | **{n}** in a small rounded badge (secondary text) |
+| Row icons (follow-up of 2026-11-12, decorative, `aria-hidden`) | Expand button: chevron right (collapsed) / chevron down (expanded); before the name: closed folder (node with children, collapsed), open folder (expanded), tag (node without children); the chosen node's icon uses the primary color. Design-system icons `chevron-right`, `chevron-down`, `folder`, `folder-open`, `tag` added |
 | Expansion | Top level expanded on load; opening a node expands its ancestors; collapsing never changes the selection |
 
 ## Node card
