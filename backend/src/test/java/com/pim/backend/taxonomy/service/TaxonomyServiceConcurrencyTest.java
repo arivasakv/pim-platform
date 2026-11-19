@@ -16,7 +16,9 @@ import com.pim.backend.identifier.model.ManualIdPermissions;
 import com.pim.backend.identifier.repository.InMemoryObjectTypeConfigurationRepository;
 import com.pim.backend.identifier.repository.InMemorySystemIdRegistry;
 import com.pim.backend.identifier.service.IdentifierService;
+import com.pim.backend.taxonomy.model.NodeMoveNotAllowedException;
 import com.pim.backend.taxonomy.model.NodeNameInUseException;
+import com.pim.backend.taxonomy.model.TaxonomyErrorCode;
 import com.pim.backend.taxonomy.repository.InMemoryTaxonomyNodeRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -92,6 +94,37 @@ class TaxonomyServiceConcurrencyTest {
         runTogether(50, index -> service.addAttributes(ropa, List.of(ids.get(index), ids.get(0)), CAN_CHANGE));
 
         assertThat(service.find(ropa).node().attributeIds()).containsExactlyInAnyOrderElementsOf(ids);
+    }
+
+    /** Feature 011 SC-003: "A under B" and "B under A" at the same time never make a loop. */
+    @Test
+    void crossingSimultaneousMovesNeverMakeALoop() throws Exception {
+        for (int round = 1; round <= 25; round++) {
+            String a =
+                    service.create("A" + round, null, null, CAN_CHANGE).node().systemId();
+            String b =
+                    service.create("B" + round, null, null, CAN_CHANGE).node().systemId();
+            AtomicInteger refused = new AtomicInteger();
+
+            runTogether(2, index -> {
+                try {
+                    if (index == 0) {
+                        service.move(a, b, CAN_CHANGE);
+                    } else {
+                        service.move(b, a, CAN_CHANGE);
+                    }
+                } catch (NodeMoveNotAllowedException exception) {
+                    assertThat(exception.code()).isEqualTo(TaxonomyErrorCode.NODE_MOVE_INTO_OWN_BRANCH);
+                    refused.incrementAndGet();
+                }
+            });
+
+            assertThat(refused).as("round %d", round).hasValue(1);
+            int levels = service.find(a).level() + service.find(b).level();
+            assertThat(levels)
+                    .as("round %d: one top-level node and one child", round)
+                    .isEqualTo(3);
+        }
     }
 
     private interface IndexedTask {

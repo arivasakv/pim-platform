@@ -25,6 +25,7 @@ Features built so far:
 | 008 | Live preview of an attribute's input field |
 | 009 | Organizing attributes by attribute group |
 | 010 | Attribute inheritance through the product taxonomy |
+| 011 | Move taxonomy nodes with their branch (inheritance follows the new location) |
 
 ### Deliberate limits of the POC
 

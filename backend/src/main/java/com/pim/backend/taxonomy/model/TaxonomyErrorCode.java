@@ -12,6 +12,8 @@ public enum TaxonomyErrorCode {
     TAXONOMY_CHANGE_NOT_PERMITTED("No tienes permiso para administrar la taxonomía."),
     NODE_NOT_FOUND("No existe un nodo con el ID %s."),
     NODE_NAME_IN_USE("Ya existe un nodo «%s» en este nivel. Usa otro nombre."),
+    NODE_MOVE_INTO_OWN_BRANCH("No puedes mover «%s» dentro de sí mismo ni de uno de sus nodos descendientes."),
+    NODE_ALREADY_THERE("«%s» ya está en «%s»."),
     NODE_HAS_CHILDREN("El nodo «%s» tiene %s. Elimínalos antes de eliminar este nodo."),
     NODE_HAS_ATTRIBUTES("El nodo «%s» tiene %s. Quítalos antes de eliminar el nodo."),
     ATTRIBUTE_NOT_FOUND("No existe un atributo con el ID %s."),

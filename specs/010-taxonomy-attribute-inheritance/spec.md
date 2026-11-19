@@ -207,7 +207,8 @@ origin column of "Camisas" shows the new name.
 - **Concurrent changes** (two users): each change is applied whole or not at all; reads show the
   current state; a node deleted meanwhile answers "not found".
 - **Loops**: impossible, because a node's parent is chosen only at creation and cannot change (moving
-  nodes is out of scope, OQ-005).
+  nodes is out of scope, OQ-005). *Since feature 011, moves are checked so a loop cannot be created
+  (011 FR-005).*
 - **The backend cannot be reached**: Spanish error, nothing half-saved, "Reintentar".
 
 ## Requirements *(mandatory)*
@@ -233,6 +234,8 @@ Sources: the feature request (FRQ §n) and ERF 1.1 §3.3 (tier 2). No tier 1 doc
   [A-002]
 - **FR-005 – Edit**: An authorized user MUST be able to change a node's name (subject to FR-004) and
   description. The parent MUST NOT change (moving nodes is out of scope, OQ-005).
+  *Amended 2026-11-19 by feature 011: the parent changes only through a move
+  (specs/011-taxonomy-node-relocation, FR-001 to FR-009); editing still never changes it.*
 - **FR-006 – Delete**: A node MUST be deletable only when it has **no children and no direct
   attributes**; otherwise deletion MUST be refused with a Spanish message saying what to remove first.
   Deletion MUST ask for confirmation. [A-005]
@@ -385,7 +388,7 @@ None blocks planning; each is recorded and the feature keeps the simplest safe r
   redundant, instead of shown once with a note (FR-014)?
 - **OQ-005**: When moving nodes arrives, must a moved node immediately adopt its new branch's
   attributes (ERF «Reubicación de Nodos»)? Computing inheritance at read time (FR-015) already supports
-  it.
+  it. *Answered by feature 011 (FR-010): yes, at once.*
 - **OQ-006**: ERF: attributes marked «Únicos» inherit «solo la relación estructural». Is that only about
   values (out of scope here)?
 - **OQ-007**: Should the attribute detail ("Atributos") list the nodes an attribute is assigned to? Not

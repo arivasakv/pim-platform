@@ -144,6 +144,41 @@ function fakeBackend(initial: FakeNode[] = [], options: { failList?: boolean } =
       nodes.push(created)
       return json(201, detail(created))
     }
+    const moving = path.match(/^\/api\/v1\/taxonomy-nodes\/([^/]+)\/move$/)
+    if (moving && method === 'POST') {
+      // Feature 011 rules, as the backend applies them.
+      const moved = byId(moving[1])
+      if (!moved)
+        return problem(404, 'nodeId', 'NODE_NOT_FOUND', `No existe un nodo con el ID ${moving[1]}.`)
+      const parentId = (body.parentId as string | null) ?? null
+      const destination = parentId ? byId(parentId) : null
+      if (parentId && !destination)
+        return problem(
+          404,
+          'parentId',
+          'NODE_NOT_FOUND',
+          `No existe un nodo con el ID ${parentId}.`,
+        )
+      if (destination && chain(destination).includes(moved))
+        return problem(
+          409,
+          'parentId',
+          'NODE_MOVE_INTO_OWN_BRANCH',
+          `No puedes mover «${moved.name}» dentro de sí mismo ni de uno de sus nodos descendientes.`,
+        )
+      if ((destination?.systemId ?? null) === moved.parentId)
+        return problem(409, 'parentId', 'NODE_ALREADY_THERE', `«${moved.name}» ya está aquí.`)
+      if (siblingsHave(destination?.systemId ?? null, moved.name, moved.systemId))
+        return problem(
+          409,
+          'parentId',
+          'NODE_NAME_IN_USE',
+          `Ya existe un nodo «${moved.name}» en «${destination?.name ?? 'el primer nivel'}». Cambia el nombre de uno de los dos antes de mover.`,
+        )
+      moved.parentId = destination?.systemId ?? null
+      const movedNodeCount = nodes.filter((candidate) => chain(candidate).includes(moved)).length
+      return json(200, { node: detail(moved), movedNodeCount })
+    }
     const match = path.match(/^\/api\/v1\/taxonomy-nodes\/([^/]+)(\/attributes(?:\/([^/]+))?)?$/)
     const found = match ? byId(match[1]) : undefined
     if (!match || !found) return problem(404, 'nodeId', 'NODE_NOT_FOUND', 'No existe el nodo.')
@@ -413,6 +448,141 @@ describe('TaxonomyPage', () => {
     expect(attributeRows('Camisas').map((row) => row[0])).not.toContain('ColorATR000001')
   })
 
+  // --- Feature 011: moving nodes ---
+
+  /** Feature 011's example: feature 010's plus "Camisas formales", "Ropa de mujer" and "Calzado". */
+  function moveExample(): FakeNode[] {
+    return [
+      ...example(),
+      node('CLS000005', 'Camisas formales', 'CLS000003'),
+      node('CLS000006', 'Ropa de mujer', 'CLS000001', 'ATR000004'),
+      node('CLS000007', 'Calzado', null, 'ATR000007'),
+    ]
+  }
+
+  async function openCamisas() {
+    fireEvent.click(await tree().findByRole('button', { name: 'Mostrar hijos de Ropa de hombre' }))
+    return openNode('Camisas')
+  }
+
+  function chooseDestination(card: ReturnType<typeof within>, name: RegExp | string) {
+    fireEvent.click(card.getByRole('button', { name: 'Mover' }))
+    const panel = within(card.getByRole('group', { name: /^Mover «/ }))
+    fireEvent.click(panel.getByRole('button', { name }))
+    fireEvent.click(panel.getByRole('button', { name: 'Continuar' }))
+  }
+
+  it('moves a node with its branch and shows where it now inherits from', async () => {
+    const { nodes } = fakeBackend(moveExample())
+    render(<TaxonomyPage />)
+    const camisas = await openCamisas()
+
+    const actions = camisas
+      .getAllByRole('button')
+      .map((button) => button.textContent)
+      .filter((text) => ['Agregar nodo hijo', 'Editar', 'Mover', 'Eliminar'].includes(text ?? ''))
+    expect(actions).toEqual(['Agregar nodo hijo', 'Editar', 'Mover', 'Eliminar'])
+
+    chooseDestination(camisas, /^Calzado/)
+    expect(camisas.getByText('¿Mover «Camisas» a «Calzado»?')).toBeTruthy()
+    expect(camisas.getByText('Se moverán 2 nodos: «Camisas» y 1 descendiente.')).toBeTruthy()
+    fireEvent.click(camisas.getByRole('button', { name: 'Sí, mover nodo' }))
+
+    expect(
+      await screen.findByText('Nodo «Camisas» movido a «Calzado». Se movieron 2 nodos.'),
+    ).toBeTruthy()
+    expect(nodes.find((entry) => entry.name === 'Camisas')?.parentId).toBe('CLS000007')
+    const moved = within(await screen.findByRole('region', { name: 'Camisas' }))
+    expect(moved.getByText('CLS000003 · Nivel 2')).toBeTruthy()
+    expect(moved.getByRole('button', { name: 'Calzado' })).toBeTruthy()
+    expect(moved.queryByRole('group', { name: 'Mover «Camisas»' })).toBeNull()
+    expect(attributeRows('Camisas')).toEqual([
+      ['TemporadaATR000007', 'Texto', 'Heredado', 'Calzado'],
+      ['Largo de mangaATR000005', 'Texto', 'Directo', 'Este nodo'],
+    ])
+    // The tree reloads with the new parent expanded, showing the moved node under it.
+    expect(await tree().findByRole('button', { name: 'Ocultar hijos de Calzado' })).toBeTruthy()
+    expect(
+      tree()
+        .getByRole('button', { name: /^Camisas,/ })
+        .getAttribute('aria-pressed'),
+    ).toBe('true')
+  })
+
+  it('keeps the panel open with the backend message when a move is refused', async () => {
+    fakeBackend([...moveExample(), node('CLS000008', 'Camisas', 'CLS000006')])
+    render(<TaxonomyPage />)
+    const camisas = await openCamisas()
+
+    chooseDestination(camisas, /^Ropa de mujer/)
+    fireEvent.click(camisas.getByRole('button', { name: 'Sí, mover nodo' }))
+
+    expect(
+      await screen.findByText(
+        'Ya existe un nodo «Camisas» en «Ropa de mujer». Cambia el nombre de uno de los dos antes de mover.',
+      ),
+    ).toBeTruthy()
+    expect(camisas.getByText('¿Mover «Camisas» a «Ropa de mujer»?')).toBeTruthy()
+    fireEvent.click(camisas.getByRole('button', { name: 'Cancelar' }))
+    fireEvent.click(
+      within(camisas.getByRole('group', { name: 'Mover «Camisas»' })).getByRole('button', {
+        name: 'Cancelar',
+      }),
+    )
+    expect(camisas.getByRole('button', { name: 'Mover' })).toBeTruthy()
+  })
+
+  it('does not offer the node, its branch or its parent as destination', async () => {
+    fakeBackend(moveExample())
+    render(<TaxonomyPage />)
+    const hombre = await openNode('Ropa de hombre')
+
+    fireEvent.click(hombre.getByRole('button', { name: 'Mover' }))
+    const panel = within(hombre.getByRole('group', { name: 'Mover «Ropa de hombre»' }))
+    const options = within(panel.getByRole('list'))
+      .getAllByRole('button')
+      .map((option) => option.textContent)
+
+    expect(options).toEqual([
+      'Primer nivel (sin nodo padre)',
+      'CalzadoCalzado · CLS000007',
+      'Ropa de mujerRopa › Ropa de mujer · CLS000006',
+    ])
+  })
+
+  it('moves a node to the top level', async () => {
+    fakeBackend(moveExample())
+    render(<TaxonomyPage />)
+    const mujer = await openNode('Ropa de mujer')
+
+    chooseDestination(mujer, 'Primer nivel (sin nodo padre)')
+    expect(mujer.getByText('¿Mover «Ropa de mujer» al primer nivel?')).toBeTruthy()
+    fireEvent.click(mujer.getByRole('button', { name: 'Sí, mover nodo' }))
+
+    expect(await screen.findByText('Nodo «Ropa de mujer» movido al primer nivel.')).toBeTruthy()
+    expect(
+      within(await screen.findByRole('region', { name: 'Ropa de mujer' })).getByText(
+        'Primer nivel',
+      ),
+    ).toBeTruthy()
+  })
+
+  it('closes the panel and reloads when the node no longer exists', async () => {
+    const { nodes } = fakeBackend(moveExample())
+    render(<TaxonomyPage />)
+    const camisas = await openCamisas()
+
+    chooseDestination(camisas, /^Calzado/)
+    nodes.splice(
+      nodes.findIndex((entry) => entry.name === 'Camisas'),
+      1,
+    )
+    fireEvent.click(camisas.getByRole('button', { name: 'Sí, mover nodo' }))
+
+    expect(await screen.findByText('No existe un nodo con el ID CLS000003.')).toBeTruthy()
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Camisas' })).toBeNull())
+  })
+
   // --- States and permissions ---
 
   it('shows a load error with a retry', async () => {
@@ -437,6 +607,7 @@ describe('TaxonomyPage', () => {
     expect(screen.queryByRole('button', { name: 'Nuevo nodo de primer nivel' })).toBeNull()
     expect(ropa.queryByRole('button', { name: 'Editar' })).toBeNull()
     expect(ropa.queryByRole('button', { name: 'Eliminar' })).toBeNull()
+    expect(ropa.queryByRole('button', { name: 'Mover' })).toBeNull()
     expect(ropa.queryByRole('button', { name: 'Agregar atributos' })).toBeNull()
     expect(ropa.queryByRole('button', { name: /^Quitar/ })).toBeNull()
     expect(attributeRows('Ropa')).toHaveLength(3)

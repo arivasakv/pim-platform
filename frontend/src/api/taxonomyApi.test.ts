@@ -7,6 +7,7 @@ import {
   deleteNode,
   getNode,
   listNodes,
+  moveNode,
   removeAttribute,
   updateNode,
 } from './taxonomyApi'
@@ -90,6 +91,43 @@ describe('taxonomyApi', () => {
       url: `${NODES}/CLS000002/attributes/ATR000001`,
       method: 'DELETE',
     })
+  })
+
+  it('moves a node under another node or to the top level (feature 011)', async () => {
+    const fetchMock = stubFetch(
+      answer(200, { node: { systemId: 'CLS000003' }, movedNodeCount: 2 }),
+      answer(200, { node: { systemId: 'CLS000006' }, movedNodeCount: 1 }),
+    )
+
+    expect(await moveNode('CLS000003', 'CLS000006')).toEqual({
+      node: { systemId: 'CLS000003' },
+      movedNodeCount: 2,
+    })
+    await moveNode('CLS000006', null)
+
+    expect(call(fetchMock, 0)).toMatchObject({
+      url: `${NODES}/CLS000003/move`,
+      method: 'POST',
+      body: { parentId: 'CLS000006' },
+    })
+    expect(call(fetchMock, 0).headers['X-Pim-Permissions']).toBe('ATTRIBUTE_CREATE')
+    expect(call(fetchMock, 0).headers['Content-Type']).toBe('application/json')
+    expect(call(fetchMock, 1).body).toEqual({ parentId: null })
+  })
+
+  it('reports a refused move with its message', async () => {
+    const detail = '«Camisas» ya está en «Ropa de hombre».'
+    stubFetch(
+      answer(409, {
+        detail,
+        errors: [{ field: 'parentId', code: 'NODE_ALREADY_THERE', message: detail }],
+      }),
+    )
+
+    const error = await moveNode('CLS000003', 'CLS000002').catch((caught: unknown) => caught)
+
+    expect((error as TaxonomyApiError).kind).toBe('conflict')
+    expect((error as TaxonomyApiError).detail).toBe(detail)
   })
 
   it('turns problems into errors with the backend message', async () => {

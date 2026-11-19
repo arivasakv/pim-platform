@@ -5,6 +5,7 @@ import com.pim.backend.common.ApiProblems;
 import com.pim.backend.taxonomy.model.AttributeNotDirectException;
 import com.pim.backend.taxonomy.model.AttributeNotOnNodeException;
 import com.pim.backend.taxonomy.model.InvalidNodeException;
+import com.pim.backend.taxonomy.model.NodeMoveNotAllowedException;
 import com.pim.backend.taxonomy.model.NodeNameInUseException;
 import com.pim.backend.taxonomy.model.NodeNotEmptyException;
 import com.pim.backend.taxonomy.model.NodeNotFoundException;
@@ -89,7 +90,21 @@ public class TaxonomyExceptionHandler {
                 HttpStatus.CONFLICT,
                 "Nombre en uso",
                 exception.getMessage(),
-                List.of(error("name", TaxonomyErrorCode.NODE_NAME_IN_USE, exception.getMessage())));
+                List.of(error(exception.field(), TaxonomyErrorCode.NODE_NAME_IN_USE, exception.getMessage())));
+    }
+
+    /** Feature 011: a move into the node's own branch, or to where it already is. */
+    @ExceptionHandler(NodeMoveNotAllowedException.class)
+    ProblemDetail handleMoveNotAllowed(NodeMoveNotAllowedException exception, HttpServletRequest request) {
+        String title = exception.code() == TaxonomyErrorCode.NODE_MOVE_INTO_OWN_BRANCH
+                ? "Movimiento no válido"
+                : "Movimiento sin efecto";
+        return ApiProblems.problem(
+                request,
+                HttpStatus.CONFLICT,
+                title,
+                exception.getMessage(),
+                List.of(error("parentId", exception.code(), exception.getMessage())));
     }
 
     @ExceptionHandler(NodeNotEmptyException.class)

@@ -33,8 +33,9 @@ and reviewers. API: [taxonomy.openapi.yaml](taxonomy.openapi.yaml).
 | Card title | Node name |
 | Path line | Ancestor names as link-buttons separated by **›**, then the node (plain); top level: **Primer nivel** |
 | Facts | **{systemId} · Nivel {n}**; description or **Sin descripción** |
-| Actions (permission) | **Agregar nodo hijo**, **Editar**, **Eliminar** |
+| Actions (permission) | **Agregar nodo hijo**, **Editar**, **Mover** (feature 011), **Eliminar** |
 | Children | Heading (h3) **Nodos hijos**; list of link-buttons; none: **Este nodo no tiene nodos hijos.** |
+| Mover nodo (feature 011, 2026-11-19) | **Mover** action between **Editar** and **Eliminar**; panel, confirmation and texts in [taxonomy-move-ui.md](../../011-taxonomy-node-relocation/contracts/taxonomy-move-ui.md) |
 
 ### Create / edit form (inline card, like "Grupo de Atributos")
 

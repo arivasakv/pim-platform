@@ -61,6 +61,32 @@ class TaxonomyNodeTest {
     }
 
     @Test
+    void movingChangesOnlyTheParentAndTheModificationDate() {
+        TaxonomyNode node = TaxonomyNode.create("CLS000003", NodeName.of("Camisas"), "Formales", "CLS000002", CREATED)
+                .withAttributes(List.of("ATR000005"), CREATED);
+
+        TaxonomyNode moved = node.movedTo("cls000005", LATER);
+
+        assertThat(moved.parentId()).contains("CLS000005");
+        assertThat(moved.updatedAt()).contains(LATER);
+        assertThat(moved.systemId()).isEqualTo("CLS000003");
+        assertThat(moved.name()).isEqualTo(node.name());
+        assertThat(moved.description()).contains("Formales");
+        assertThat(moved.attributeIds()).containsExactly("ATR000005");
+        assertThat(moved.createdAt()).isEqualTo(CREATED);
+    }
+
+    @Test
+    void movingToTheTopLevelRemovesTheParent() {
+        TaxonomyNode node = TaxonomyNode.create("CLS000006", NodeName.of("Ropa de mujer"), null, "CLS000001", CREATED);
+
+        TaxonomyNode moved = node.movedTo(null, LATER);
+
+        assertThat(moved.parentId()).isEmpty();
+        assertThat(moved.updatedAt()).contains(LATER);
+    }
+
+    @Test
     void refusesALongDescription() {
         assertThatThrownBy(() -> TaxonomyNode.create("CLS000001", NodeName.of("Ropa"), "x".repeat(501), null, CREATED))
                 .isInstanceOfSatisfying(InvalidNodeException.class, exception -> {
