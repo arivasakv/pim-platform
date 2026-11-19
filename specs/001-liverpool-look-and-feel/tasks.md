@@ -392,6 +392,54 @@ scenarios 1, 7 and 10), and the follow-up feature for dropdowns, selection contr
 
 ---
 
+## Phase 9: Side navigation sections and icons (amendment of 2026-11-19, FR-019, FR-020)
+
+**Purpose**: Group the side navigation into "General" and "Administración de catálogo" and give each
+entry its own icon (spec, Clarifications Session 2026-11-19).
+
+**Order note**: this change did not follow the constitution order. The code and its tests were
+written first, at the project owner's request, and committed in `feb2260`; the spec, data model and
+contracts were amended afterwards (`7792414`, and A-002 with this task list). The tasks below record
+the work as done. Only T059 is still open.
+
+- [X] T052 [US1] Amend the planning documents (no code):
+  - `spec.md`: Clarifications Session 2026-11-19, User Story 1 scenario 5, FR-019, FR-020, Key
+    Entities (Navigation entry, Navigation section), Sources Consulted, A-002;
+  - `data-model.md`: `section` field of Navigation Entry, current entries table, Navigation Section;
+  - `contracts\ui-components.md`: full `IconName` list, `sections` in `AppShellProps` and
+    `SideNavigationProps`, section label and divider styling
+- [X] T053 [P] [US1] Add the icons `list`, `tags`, `folder-tree` and `network` to `IconName` and
+  `ICON_PATHS` in `frontend\src\components\ui\Icon.tsx`: outline drawings on the 24×24 grid, same
+  stroke as the existing icons (FR-004, FR-020, research R-05). No icon library (TD-003)
+- [X] T054 [US1] In `frontend\src\navigation.ts`: add the `NavigationSection` type and
+  `NAVIGATION_SECTIONS` (`general` = "General", `catalogo` = "Administración de catálogo"), add the
+  optional `section` field to `NavigationEntry`, and assign each entry its section and icon per
+  data-model (current entries table). Paths, labels and order unchanged (FR-019, FR-020)
+- [X] T055 [US1] Group the entries by section in
+  `frontend\src\components\layout\SideNavigation.tsx`: one `<ul aria-labelledby>` per section with its
+  name above it, entries without a known section first and unnamed, empty sections hidden, focus on
+  the first link when the drawer opens. Add the optional `sections` prop to
+  `frontend\src\components\layout\AppShell.tsx` and pass `NAVIGATION_SECTIONS` from
+  `frontend\src\App.tsx` (contracts, AppShell and SideNavigation)
+- [X] T056 [P] [US1] Style the sections in `frontend\src\App.css`: `.app-nav__section-label`
+  (`--color-text-muted`, `--text-xs`, semibold, uppercase, aligned with the link icons) and spacing
+  plus a `--color-border-subtle` divider between consecutive sections. Add the token
+  `--tracking-label` to `frontend\src\styles\tokens.css` (FR-003, FR-019)
+- [X] T057 [US1] Add tests (written together with T053–T056, not before them; see the order note):
+  - `frontend\src\navigation.test.ts`: section names and order, the entries of each section, one
+    distinct icon per entry;
+  - `frontend\src\components\layout\AppShell.test.tsx`: each section's list is named by its section
+    and holds its entries; links and `aria-current` inside sections; drawer focus on the first entry
+    of the first section
+- [X] T058 [US1] Verify (2026-11-19): `npm run lint`, `npm run format:check`, `npm test` (303
+  passed) and `npm run build` pass. In the browser at desktop width, each of the six entries opens
+  its page and is the only one marked active; at 390 px the drawer shows both sections and moves
+  focus to "Inicio". `git status --short -- backend/` prints nothing (FR-016)
+- [ ] T059 [US1] Owner browser check: the project owner reviews the side navigation at desktop and
+  tablet widths (User Story 1 scenario 5) and confirms the section names, divider and icons
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase dependencies
@@ -403,6 +451,9 @@ scenarios 1, 7 and 10), and the follow-up feature for dropdowns, selection contr
 - **US3 (5)**: after US1 (reuses Card, PageHeader, Notification, routing). Independent of US4.
 - **US2 (6)**: after US3, so the documentation and contrast check cover all components.
 - **Polish (7)**: last.
+- **Analysis remediation (8)**: after Polish.
+- **Navigation sections amendment (9)**: after all earlier phases and features 002–010; T052 →
+  T053–T056 → T057 → T058 → T059 (T053 and T056 in parallel).
 
 ### Task dependencies
 
@@ -461,5 +512,7 @@ user asks.
   | FR-018 | T012, T016, T027 |
   | SC-001–SC-006, SC-008 | T029, T034, T042, T043–T046 |
   | SC-007 | after implementation |
+  | FR-019 | T052, T054–T059 |
+  | FR-020 | T052–T054, T057–T059 |
 
 - [P] tasks touch different files and do not depend on unfinished tasks.

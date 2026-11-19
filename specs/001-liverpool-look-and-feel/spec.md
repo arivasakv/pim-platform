@@ -334,9 +334,12 @@ These items come from tier 3 evidence. They are not requirements and are listed 
   `docs/source-of-truth/` or the reference repository. Palette and typography will therefore be
   proposed as design choices compatible with the Liverpool digital look (FR-005) until official
   assets are supplied.
-- **A-002**: The side navigation will contain only non-business entries for now: a home page
-  (showing the result of the existing backend connection check) and the component reference page. Business
-  entries are added by the specifications that introduce those sections.
+- **A-002**: This feature adds only non-business navigation entries: the home page (showing the
+  result of the existing backend connection check) and, until its removal on 2026-11-11 (FR-012),
+  the component reference page. Business entries are added by the specifications that introduce
+  those sections; by 2026-11-19 features 002–010 had added Buscar Producto, Lista de Valores,
+  Atributos, Grupo de Atributos and Taxonomía. Every entry is listed under a section (FR-019).
+  *(Updated 2026-11-19.)*
 - **A-003**: The header shows the application name as text and reserves space for an official logo
   to be added later (FR-007).
 - **A-004**: Supported targets are current desktop browsers and tablets at 768 px width or more.
