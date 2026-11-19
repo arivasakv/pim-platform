@@ -400,7 +400,7 @@ entry its own icon (spec, Clarifications Session 2026-11-19).
 **Order note**: this change did not follow the constitution order. The code and its tests were
 written first, at the project owner's request, and committed in `feb2260`; the spec, data model and
 contracts were amended afterwards (`7792414`, and A-002 with this task list). The tasks below record
-the work as done. Only T059 is still open.
+the work as done.
 
 - [X] T052 [US1] Amend the planning documents (no code):
   - `spec.md`: Clarifications Session 2026-11-19, User Story 1 scenario 5, FR-019, FR-020, Key
@@ -435,8 +435,9 @@ the work as done. Only T059 is still open.
   passed) and `npm run build` pass. In the browser at desktop width, each of the six entries opens
   its page and is the only one marked active; at 390 px the drawer shows both sections and moves
   focus to "Inicio". `git status --short -- backend/` prints nothing (FR-016)
-- [ ] T059 [US1] Owner browser check: the project owner reviews the side navigation at desktop and
-  tablet widths (User Story 1 scenario 5) and confirms the section names, divider and icons
+- [X] T059 [US1] Owner browser check: the project owner reviews the side navigation at desktop and
+  tablet widths (User Story 1 scenario 5) and confirms the section names, divider and icons.
+  Confirmed by the project owner on 2026-11-19
 
 ---
 
