@@ -12,18 +12,21 @@ import java.util.Objects;
  * @param path ancestors from the top level down to the parent
  * @param children direct children sorted by name ignoring letter case
  * @param attributes effective attributes in the order of FR-016
+ * @param listAttributes the effective list-of-values attributes with their allowed values (feature 012 FR-013)
  */
 public record NodeDetails(
         TaxonomyNode node,
         int level,
         List<NodeReference> path,
         List<NodeReference> children,
-        List<NodeAttribute> attributes) {
+        List<NodeAttribute> attributes,
+        List<ListAttributeSummary> listAttributes) {
 
     public NodeDetails {
         Objects.requireNonNull(node, "node");
         path = List.copyOf(path);
         children = List.copyOf(children);
         attributes = List.copyOf(attributes);
+        listAttributes = List.copyOf(listAttributes);
     }
 }

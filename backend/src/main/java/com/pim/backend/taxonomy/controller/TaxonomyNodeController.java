@@ -8,6 +8,8 @@ import com.pim.backend.taxonomy.dto.TaxonomyNodeCollectionResponse;
 import com.pim.backend.taxonomy.dto.TaxonomyNodeCreateRequest;
 import com.pim.backend.taxonomy.dto.TaxonomyNodeResponse;
 import com.pim.backend.taxonomy.dto.TaxonomyNodeUpdateRequest;
+import com.pim.backend.taxonomy.dto.ValueFilterRequest;
+import com.pim.backend.taxonomy.dto.ValueFilterResponse;
 import com.pim.backend.taxonomy.model.NodeDetails;
 import com.pim.backend.taxonomy.service.TaxonomyService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -84,6 +86,31 @@ public class TaxonomyNodeController {
             @PathVariable String nodeId, @Valid @RequestBody MoveNodeRequest request, HttpServletRequest httpRequest) {
         return MoveNodeResponse.from(
                 taxonomyService.move(nodeId, request.parentId(), permissionsReader.permissions(httpRequest)));
+    }
+
+    /** Feature 012: a list attribute's values at the node and its filters. */
+    @GetMapping("/{nodeId}/value-filters/{attributeId}")
+    ValueFilterResponse findFilter(@PathVariable String nodeId, @PathVariable String attributeId) {
+        return ValueFilterResponse.from(taxonomyService.findFilter(nodeId, attributeId));
+    }
+
+    /** Feature 012: defines or replaces the node's filter for the attribute. */
+    @PutMapping("/{nodeId}/value-filters/{attributeId}")
+    ValueFilterResponse saveFilter(
+            @PathVariable String nodeId,
+            @PathVariable String attributeId,
+            @Valid @RequestBody ValueFilterRequest request,
+            HttpServletRequest httpRequest) {
+        return ValueFilterResponse.from(taxonomyService.saveFilter(
+                nodeId, attributeId, request.valueIds(), permissionsReader.permissions(httpRequest)));
+    }
+
+    /** Feature 012: removes the node's filter for the attribute. */
+    @DeleteMapping("/{nodeId}/value-filters/{attributeId}")
+    ResponseEntity<Void> removeFilter(
+            @PathVariable String nodeId, @PathVariable String attributeId, HttpServletRequest httpRequest) {
+        taxonomyService.removeFilter(nodeId, attributeId, permissionsReader.permissions(httpRequest));
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{nodeId}/attributes")

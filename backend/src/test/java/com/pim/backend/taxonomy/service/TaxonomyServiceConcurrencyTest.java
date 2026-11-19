@@ -16,10 +16,13 @@ import com.pim.backend.identifier.model.ManualIdPermissions;
 import com.pim.backend.identifier.repository.InMemoryObjectTypeConfigurationRepository;
 import com.pim.backend.identifier.repository.InMemorySystemIdRegistry;
 import com.pim.backend.identifier.service.IdentifierService;
+import com.pim.backend.lov.repository.InMemoryListOfValuesRepository;
+import com.pim.backend.lov.service.ListOfValuesLookup;
 import com.pim.backend.taxonomy.model.NodeMoveNotAllowedException;
 import com.pim.backend.taxonomy.model.NodeNameInUseException;
 import com.pim.backend.taxonomy.model.TaxonomyErrorCode;
 import com.pim.backend.taxonomy.repository.InMemoryTaxonomyNodeRepository;
+import com.pim.backend.taxonomy.repository.InMemoryValueFilterRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -57,7 +60,13 @@ class TaxonomyServiceConcurrencyTest {
                 new NoTaxonomyAssignments(),
                 identifierService,
                 clock);
-        service = new TaxonomyService(nodes, attributeService, identifierService, clock);
+        service = new TaxonomyService(
+                nodes,
+                new InMemoryValueFilterRepository(),
+                attributeService,
+                new ListOfValuesLookup(new InMemoryListOfValuesRepository()),
+                identifierService,
+                clock);
     }
 
     private Attribute createAttribute(String name) {

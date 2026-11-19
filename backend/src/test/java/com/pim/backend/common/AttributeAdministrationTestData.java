@@ -22,7 +22,8 @@ public final class AttributeAdministrationTestData {
             "attribute_groups",
             "lists_of_values",
             "lov_changes",
-            "taxonomy_nodes");
+            "taxonomy_nodes",
+            "taxonomy_value_filters");
 
     private AttributeAdministrationTestData() {}
 

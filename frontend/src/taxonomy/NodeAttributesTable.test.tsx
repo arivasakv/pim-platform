@@ -26,6 +26,7 @@ function camisas(effectiveAttributes: EffectiveAttribute[], level = 3): Taxonomy
     directAttributeCount: effectiveAttributes.filter((entry) => entry.assignment === 'DIRECT')
       .length,
     effectiveAttributes,
+    listAttributes: [],
     createdAt: '2026-11-12T10:00:00Z',
   }
 }

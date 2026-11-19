@@ -6,9 +6,12 @@ import {
   createNode,
   deleteNode,
   getNode,
+  getValueFilter,
   listNodes,
   moveNode,
   removeAttribute,
+  removeValueFilter,
+  saveValueFilter,
   updateNode,
 } from './taxonomyApi'
 
@@ -113,6 +116,43 @@ describe('taxonomyApi', () => {
     expect(call(fetchMock, 0).headers['X-Pim-Permissions']).toBe('ATTRIBUTE_CREATE')
     expect(call(fetchMock, 0).headers['Content-Type']).toBe('application/json')
     expect(call(fetchMock, 1).body).toEqual({ parentId: null })
+  })
+
+  it('reads, saves and removes list-value filters (feature 012)', async () => {
+    const detail = { node: { systemId: 'CLS000002', name: 'Ropa de hombre' }, allowedValues: [] }
+    const fetchMock = stubFetch(answer(200, detail), answer(200, detail), answer(204))
+
+    expect(await getValueFilter('CLS000002', 'ATR000001')).toEqual(detail)
+    await saveValueFilter('CLS000002', 'ATR000001', ['0002', '0004'])
+    await removeValueFilter('CLS000002', 'ATR000001')
+
+    const path = `${NODES}/CLS000002/value-filters/ATR000001`
+    expect(call(fetchMock, 0)).toMatchObject({ url: path, method: 'GET' })
+    expect(call(fetchMock, 1)).toMatchObject({
+      url: path,
+      method: 'PUT',
+      body: { valueIds: ['0002', '0004'] },
+    })
+    expect(call(fetchMock, 1).headers['X-Pim-Permissions']).toBe('ATTRIBUTE_CREATE')
+    expect(call(fetchMock, 2)).toMatchObject({ url: path, method: 'DELETE' })
+  })
+
+  it('reports a refused filter with its message', async () => {
+    const detail =
+      'El valor «Verde» (0003) no está permitido por el filtro de «Ropa de hombre». Solo puedes incluir valores permitidos arriba.'
+    stubFetch(
+      answer(409, {
+        detail,
+        errors: [{ field: 'valueIds', code: 'VALUE_EXCLUDED_ABOVE', message: detail }],
+      }),
+    )
+
+    const error = await saveValueFilter('CLS000003', 'ATR000001', ['0003']).catch(
+      (caught: unknown) => caught,
+    )
+
+    expect((error as TaxonomyApiError).kind).toBe('conflict')
+    expect((error as TaxonomyApiError).detail).toBe(detail)
   })
 
   it('reports a refused move with its message', async () => {

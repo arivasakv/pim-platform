@@ -1,0 +1,210 @@
+openapi: 3.1.0
+info:
+  title: PIM Platform – List-value filters on taxonomy nodes (feature 012)
+  version: 1.2.0
+  description: >
+    Feature 012 (specs/012-taxonomy-list-value-filters). Reviewed delta, merged into the canonical taxonomy
+    contract specs/010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml as version 1.2.0
+    (plan, research R-09). It adds the `listAttributes` field to TaxonomyNode and three operations on
+    `/api/v1/taxonomy-nodes/{nodeId}/value-filters/{attributeId}`. A filter is the set of a
+    list-of-values attribute's value IDs included (allowed) at a node; it applies to the node and every
+    descendant; the values allowed at a node are those included in every filter on the node and its
+    ancestors (ERF 1.1 §3.2.3, §3.3; HU2.3, HU3). Changes need ATTRIBUTE_CREATE (header
+    X-Pim-Permissions); reading needs none. Messages are in Spanish; errors are RFC 9457 problems with
+    `errors[]` entries {field, code, message} (ADR 0001).
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: taxonomy-nodes
+paths:
+  /api/v1/taxonomy-nodes/{nodeId}/value-filters/{attributeId}:
+    parameters:
+      - $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/parameters/NodeId'
+      - name: attributeId
+        in: path
+        required: true
+        description: System ID of a list-of-values attribute that applies to the node, compared ignoring letter case.
+        schema: { type: string, maxLength: 40 }
+    get:
+      operationId: getValueFilter
+      summary: The list attribute's values at this node, its own filter and the filters above (FR-008 to FR-013)
+      tags: [taxonomy-nodes]
+      responses:
+        '200':
+          description: The filter detail (also when the node has no filter of its own).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValueFilterDetail' }
+        '404':
+          description: Node (`NODE_NOT_FOUND`), attribute (`ATTRIBUTE_NOT_FOUND`) or attribute not applying to the node (`ATTRIBUTE_NOT_ON_NODE`).
+          content:
+            application/problem+json:
+              schema: { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/schemas/Problem' }
+        '422':
+          description: The attribute is not a list of values (`ATTRIBUTE_NOT_LIST`).
+          content:
+            application/problem+json:
+              schema: { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/schemas/Problem' }
+    put:
+      operationId: saveValueFilter
+      summary: Define or replace the node's filter for the attribute (FR-001 to FR-004, FR-009)
+      tags: [taxonomy-nodes]
+      parameters:
+        - $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/parameters/Permissions'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ValueFilterRequest' }
+            example: { valueIds: ['0002', '0004', '0005', '0001'] }
+      responses:
+        '200':
+          description: Saved; the detail after the change.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValueFilterDetail' }
+        '400':
+          description: No value ID or more than 50,000 (`INVALID_FILTER_VALUES`, field valueIds), or no `valueIds` field (`REQUIRED`, as the other taxonomy requests). Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/schemas/Problem' }
+              example:
+                title: Solicitud no válida
+                status: 400
+                detail: La solicitud tiene datos no válidos.
+                errors:
+                  - { field: valueIds, code: INVALID_FILTER_VALUES, message: Incluye de 1 a 50000 valores en el filtro. Para permitir todos los valores, quita el filtro. }
+        '403': { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/responses/NotPermitted' }
+        '404':
+          description: Node, attribute, or attribute not applying to the node (as GET). Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/schemas/Problem' }
+        '409':
+          description: A value is excluded by a filter above (`VALUE_EXCLUDED_ABOVE`, field valueIds); the message names the value and the node. Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/schemas/Problem' }
+              example:
+                title: Valor excluido arriba
+                status: 409
+                detail: El valor «Verde» (0003) no está permitido por el filtro de «Ropa de hombre». Solo puedes incluir valores permitidos arriba.
+                errors:
+                  - { field: valueIds, code: VALUE_EXCLUDED_ABOVE, message: El valor «Verde» (0003) no está permitido por el filtro de «Ropa de hombre». Solo puedes incluir valores permitidos arriba. }
+        '422':
+          description: The attribute is not a list (`ATTRIBUTE_NOT_LIST`, field attributeId) or a value ID is not in its list (`VALUE_NOT_IN_LIST`, field valueIds). Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/schemas/Problem' }
+              examples:
+                notList:
+                  value:
+                    title: Atributo sin lista de valores
+                    status: 422
+                    detail: El atributo «Largo de manga» no es de tipo lista de valores; solo esos atributos se filtran.
+                    errors:
+                      - { field: attributeId, code: ATTRIBUTE_NOT_LIST, message: El atributo «Largo de manga» no es de tipo lista de valores; solo esos atributos se filtran. }
+                notInList:
+                  value:
+                    title: Valor no encontrado
+                    status: 422
+                    detail: La lista «Colores» no tiene un valor con el ID 9999.
+                    errors:
+                      - { field: valueIds, code: VALUE_NOT_IN_LIST, message: La lista «Colores» no tiene un valor con el ID 9999. }
+    delete:
+      operationId: removeValueFilter
+      summary: Remove the node's filter; the node allows the values inherited from above (FR-005)
+      tags: [taxonomy-nodes]
+      parameters:
+        - $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/parameters/Permissions'
+      responses:
+        '204': { description: Removed. }
+        '403': { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/responses/NotPermitted' }
+        '404':
+          description: Node or attribute not found, or the node has no filter for the attribute (`FILTER_NOT_FOUND`, field attributeId).
+          content:
+            application/problem+json:
+              schema: { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/schemas/Problem' }
+components:
+  schemas:
+    ValueFilterRequest:
+      type: object
+      required: [valueIds]
+      properties:
+        valueIds:
+          type: array
+          minItems: 1
+          maxItems: 50000
+          items: { type: string, maxLength: 40 }
+          description: Value IDs of the attribute's list to include, compared ignoring letter case; repeats are ignored.
+    ListValue:
+      type: object
+      required: [id, label]
+      properties:
+        id: { type: string, example: '0002' }
+        label: { type: string, example: Azul }
+    FilterOnPath:
+      type: object
+      required: [node, includedCount]
+      properties:
+        node: { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/schemas/NodeReference' }
+        includedCount: { type: integer, minimum: 1, description: Values included in that filter (still in the list) }
+    ExcludedValue:
+      type: object
+      required: [id, label, excludedBy]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        excludedBy: { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/schemas/NodeReference' }
+    ListAttribute:
+      type: object
+      description: One list-of-values attribute that applies to the node (added to TaxonomyNode as `listAttributes`).
+      required: [systemId, displayName, listOfValuesId, listName, selectionMode, totalValues, allowedCount, hasOwnFilter, filters]
+      properties:
+        systemId: { type: string, example: ATR000001 }
+        displayName: { type: string, example: Color }
+        listOfValuesId: { type: string, example: LOV000001 }
+        listName: { type: string, example: Colores }
+        selectionMode: { type: string, enum: [SINGLE, MULTIPLE] }
+        totalValues: { type: integer, minimum: 0 }
+        allowedCount: { type: integer, minimum: 0 }
+        hasOwnFilter: { type: boolean }
+        filters:
+          type: array
+          description: Filters on the node and its ancestors for this attribute, from the top level down; empty when none.
+          items: { $ref: '#/components/schemas/FilterOnPath' }
+    ValueFilterDetail:
+      type: object
+      required: [node, attribute, totalValues, availableValues, excludedAboveValues, allowedValues, filters]
+      properties:
+        node: { $ref: '../../010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml#/components/schemas/NodeReference' }
+        attribute: { $ref: '#/components/schemas/ListAttribute' }
+        totalValues: { type: integer, minimum: 0 }
+        availableValues:
+          type: array
+          description: Values allowed by the filters above this node (what its own filter may include), in list order.
+          items: { $ref: '#/components/schemas/ListValue' }
+        includedValueIds:
+          type: [array, 'null']
+          description: The node's own filter, in list order; null when it has none.
+          items: { type: string }
+        excludedAboveValues:
+          type: array
+          description: Values of the node's own filter that a filter above no longer allows (FR-010).
+          items: { $ref: '#/components/schemas/ExcludedValue' }
+        allowedValues:
+          type: array
+          description: Values allowed at this node, in list order (FR-008). Empty with filters present means no value is allowed (FR-011).
+          items: { $ref: '#/components/schemas/ListValue' }
+        filters:
+          type: array
+          items: { $ref: '#/components/schemas/FilterOnPath' }
+    TaxonomyNodeListAttributes:
+      description: Field added to TaxonomyNode (v1.2.0).
+      type: object
+      properties:
+        listAttributes:
+          type: array
+          description: Every effective list-of-values attribute of the node, in effective-attribute order (FR-013).
+          items: { $ref: '#/components/schemas/ListAttribute' }

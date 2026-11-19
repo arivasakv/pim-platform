@@ -18,7 +18,15 @@ public enum TaxonomyErrorCode {
     NODE_HAS_ATTRIBUTES("El nodo «%s» tiene %s. Quítalos antes de eliminar el nodo."),
     ATTRIBUTE_NOT_FOUND("No existe un atributo con el ID %s."),
     ATTRIBUTE_NOT_DIRECT("El atributo «%s» se hereda de «%s». Quítalo en ese nodo."),
-    ATTRIBUTE_NOT_ON_NODE("El atributo %s no está asignado a este nodo ni lo hereda.");
+    ATTRIBUTE_NOT_ON_NODE("El atributo %s no está asignado a este nodo ni lo hereda."),
+    INVALID_FILTER_VALUES(
+            "Incluye de 1 a 50000 valores en el filtro. Para permitir todos los valores, quita el filtro."),
+    ATTRIBUTE_NOT_LIST("El atributo «%s» no es de tipo lista de valores; solo esos atributos se filtran."),
+    VALUE_NOT_IN_LIST("La lista «%s» no tiene un valor con el ID %s."),
+    VALUE_EXCLUDED_ABOVE(
+            "El valor «%s» (%s) no está permitido por el filtro de «%s». Solo puedes incluir valores permitidos"
+                    + " arriba."),
+    FILTER_NOT_FOUND("El nodo «%s» no tiene un filtro para el atributo «%s».");
 
     private final String template;
 

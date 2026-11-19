@@ -1,8 +1,8 @@
 import { buildApiUrl } from './apiConfig'
 import { permissionHeaders, readProblem, type ApiFieldError } from './attributesApi'
 
-// Shapes from specs/010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml (v1.1.0,
-// including feature 011's move).
+// Shapes from specs/010-taxonomy-attribute-inheritance/contracts/taxonomy.openapi.yaml (v1.2.0,
+// including feature 011's move and feature 012's list-value filters).
 export type NodeReference = { systemId: string; name: string }
 
 export type TaxonomyNodeSummary = {
@@ -28,6 +28,44 @@ export type EffectiveAttribute = {
   alsoInheritedFrom?: NodeReference | null
 }
 
+/** Feature 012: one value of a list. */
+export type ListValue = { id: string; label: string }
+
+/** Feature 012: a filter on the node or an ancestor, with how many of its values are still in the list. */
+export type FilterOnPath = { node: NodeReference; includedCount: number }
+
+/** Feature 012: a list-of-values attribute that applies to the node. */
+export type ListAttribute = {
+  systemId: string
+  displayName: string
+  listOfValuesId: string
+  listName: string
+  selectionMode: 'SINGLE' | 'MULTIPLE'
+  totalValues: number
+  allowedCount: number
+  hasOwnFilter: boolean
+  /** Filters on the node and its ancestors, from the top level down. */
+  filters: FilterOnPath[]
+}
+
+/** Feature 012: a value of the node's own filter that a filter above no longer allows. */
+export type ExcludedValue = ListValue & { excludedBy: NodeReference }
+
+/** Feature 012: everything about one list attribute at one node (`GET …/value-filters/{id}`). */
+export type ValueFilterDetail = {
+  node: NodeReference
+  attribute: ListAttribute
+  totalValues: number
+  /** Values allowed by the filters above: what the node's own filter may include. */
+  availableValues: ListValue[]
+  /** The node's own filter, in list order; null when it has none. */
+  includedValueIds: string[] | null
+  excludedAboveValues: ExcludedValue[]
+  /** Values allowed at the node, in list order. */
+  allowedValues: ListValue[]
+  filters: FilterOnPath[]
+}
+
 export type TaxonomyNode = {
   systemId: string
   name: string
@@ -40,6 +78,8 @@ export type TaxonomyNode = {
   directAttributeCount: number
   /** Inherited first (from the top down), then direct; each attribute once. */
   effectiveAttributes: EffectiveAttribute[]
+  /** Feature 012: the effective list-of-values attributes with their allowed values. */
+  listAttributes: ListAttribute[]
   createdAt: string
   updatedAt?: string | null
 }
@@ -178,6 +218,34 @@ export async function deleteNode(nodeId: string): Promise<void> {
 export async function moveNode(nodeId: string, parentId: string | null): Promise<MoveNodeResult> {
   const response = await request(`${nodePath(nodeId)}/move`, change('POST', { parentId }))
   return (await response.json()) as MoveNodeResult
+}
+
+function filterPath(nodeId: string, attributeId: string): string {
+  return `${nodePath(nodeId)}/value-filters/${encodeURIComponent(attributeId)}`
+}
+
+/** Feature 012: a list attribute's values at the node and its filters. */
+export async function getValueFilter(
+  nodeId: string,
+  attributeId: string,
+): Promise<ValueFilterDetail> {
+  const response = await request(filterPath(nodeId, attributeId), READ)
+  return (await response.json()) as ValueFilterDetail
+}
+
+/** Feature 012: defines or replaces the node's filter (`PUT …/value-filters/{attributeId}`). */
+export async function saveValueFilter(
+  nodeId: string,
+  attributeId: string,
+  valueIds: string[],
+): Promise<ValueFilterDetail> {
+  const response = await request(filterPath(nodeId, attributeId), change('PUT', { valueIds }))
+  return (await response.json()) as ValueFilterDetail
+}
+
+/** Feature 012: removes the node's filter (`DELETE …/value-filters/{attributeId}`). */
+export async function removeValueFilter(nodeId: string, attributeId: string): Promise<void> {
+  await request(filterPath(nodeId, attributeId), change('DELETE'))
 }
 
 /** Assigns existing attributes directly to the node, all or nothing (`POST …/{nodeId}/attributes`). */
