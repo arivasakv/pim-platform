@@ -23,7 +23,9 @@ No REST endpoints are added or changed, so there is no OpenAPI contract (constit
 
 ```ts
 type IconName = 'menu' | 'close' | 'home' | 'components' | 'search'
-  | 'info' | 'warning' | 'error' | 'success';
+  | 'info' | 'warning' | 'error' | 'success'
+  | 'chevron-right' | 'chevron-down' | 'folder' | 'folder-open' | 'tag'   // feature 010 (taxonomy tree)
+  | 'list' | 'tags' | 'folder-tree' | 'network';                         // navigation icons, FR-020 (2026-11-19)
 interface IconProps { name: IconName; size?: 16 | 20 | 24; label?: string }
 ```
 - Default size 20. Without `label`: `aria-hidden="true"`. With `label`: `role="img"` +
@@ -38,6 +40,7 @@ The layout components are styled by the existing `src/App.css` (app frame), not 
 ```ts
 interface AppShellProps {
   entries: NavigationEntry[];   // see data-model
+  sections?: NavigationSection[]; // see data-model; default [] (FR-019, 2026-11-19)
   activePath: string;
   children: ReactNode;          // current page
 }
@@ -62,10 +65,15 @@ interface AppHeaderProps {
 ```ts
 interface SideNavigationProps {
   id: string; entries: NavigationEntry[]; activePath: string;
+  sections: NavigationSection[]; // display order of the section groups (FR-019)
   isOpen: boolean;              // only meaningful below 1024 px
   onClose: () => void;
 }
 ```
+- Entries are grouped by section (data-model, Navigation Section rules). Each group is a `<ul>`
+  labelled by its section name through `aria-labelledby`; the name is a muted, `--text-xs`,
+  semibold, uppercase label with `--tracking-label` letter spacing. Consecutive groups are separated
+  by `--space-3` spacing and a `--color-border-subtle` divider (FR-019, added 2026-11-19).
 - `<nav aria-label="Navegación principal" data-open={isOpen}>` with links `href="#<path>"`. The
   active link has `aria-current="page"`, a `--color-primary-subtle` background and a primary left
   marker (FR-009).

@@ -41,6 +41,7 @@ Defined in `frontend/src/navigation.ts`.
 | path | string | Hash path starting with `/`, unique (`/`, `/componentes`) |
 | label | string | Spanish (es-MX), shown in side navigation and used as page title |
 | icon | IconName | One of the icon set names ([contracts](./contracts/ui-components.md#icon)) |
+| section | string, optional | `id` of the Navigation Section the entry is listed under (spec FR-019, added 2026-11-19) |
 
 **Initial entries** (spec A-002):
 
@@ -53,6 +54,37 @@ Defined in `frontend/src/navigation.ts`.
 - Exactly one entry is active: the one whose `path` equals the current hash path. Unknown or empty
   hashes resolve to `/` (R-06).
 - Entries for PIM business sections MUST NOT be added by this feature (FR-017).
+
+**Current entries** (2026-11-19, after features 002–010 and the FR-019/FR-020 amendment; the
+`/componentes` entry was removed on 2026-11-11 with FR-012):
+
+| Section | path | label | icon |
+|---|---|---|---|
+| `general` | `/` | Inicio | `home` |
+| `general` | `/buscar-producto` | Buscar Producto | `search` |
+| `catalogo` | `/listas-de-valores` | Lista de Valores | `list` |
+| `catalogo` | `/atributos` | Atributos | `tags` |
+| `catalogo` | `/grupos-de-atributos` | Grupo de Atributos | `folder-tree` |
+| `catalogo` | `/taxonomia` | Taxonomía | `network` |
+
+## Navigation Section
+
+Added 2026-11-19 (spec FR-019). Defined in `frontend/src/navigation.ts` as `NAVIGATION_SECTIONS`.
+
+| Field | Type | Rules |
+|---|---|---|
+| id | string | Unique; referenced by `NavigationEntry.section` |
+| label | string | Spanish (es-MX); displayed in uppercase above the section's entries |
+
+| id | label |
+|---|---|
+| `general` | General |
+| `catalogo` | Administración de catálogo |
+
+**Rules**
+- Sections are shown in array order; entries keep their array order within a section.
+- An entry without a section, or with an unknown one, is listed first, without a section name.
+- A section with no entries is not shown.
 
 ## Backend Connection Status (home page view state)
 

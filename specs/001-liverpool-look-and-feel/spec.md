@@ -28,6 +28,24 @@
   tables, which the feature request §3 lists, are **deferred to a follow-up feature** (see Deferred
   Scope).
 
+### Session 2026-11-19
+
+Amendment requested by the project owner after features 002–010 added business entries to the side
+navigation.
+
+- Q: How should the side navigation be organized now that it lists six entries? → A: In two named
+  sections, in this order: **General** (Inicio, Buscar Producto) and **Administración de catálogo**
+  (Lista de Valores, Atributos, Grupo de Atributos, Taxonomía). Section names are subtle uppercase
+  labels, visually secondary to the entries, and the sections are separated by spacing and a subtle
+  divider (FR-019).
+- Q: Which icons should the entries use? → A: Each entry gets its own icon that represents its
+  function: Inicio = house, Buscar Producto = search, Lista de Valores = list, Atributos = tags,
+  Grupo de Atributos = folder tree, Taxonomía = network. The icons are added to the existing icon
+  set; no icon library is introduced (FR-004, FR-020, TD-003).
+- Q: What must stay unchanged? → A: Routes, page behavior, header, palette, sidebar width, active,
+  hover and focus styles, the tablet drawer and the Spanish texts. Frontend only; the backend is not
+  changed (FR-016).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Consistent application shell (Priority: P1)
@@ -56,6 +74,10 @@ page.
 4. **Given** the backend is not running, **When** the user opens the home page, **Then** the shell
    still renders and a Spanish "could not connect" message is shown, styled as a status
    notification.
+5. **Given** the application is open at any supported width, **When** the user looks at the side
+   navigation, **Then** the entries are listed under the section names "GENERAL" and
+   "ADMINISTRACIÓN DE CATÁLOGO" (FR-019), each entry shows its own icon (FR-020), and selecting any
+   entry still opens its page and marks it as active. *(Added 2026-11-19.)*
 
 ---
 
@@ -187,6 +209,19 @@ of 2026-11-08 and are cited as `[Source: feature request §<section>]`.
   area, shared by all pages. [Source: feature request §2]
 - **FR-009**: The side navigation MUST show which entry is active, and MUST be operable by mouse,
   touch and keyboard. [Source: feature request §2, §4]
+- **FR-019**: The side navigation MUST group its entries into named sections, shown in this order:
+  1. **General**: Inicio, Buscar Producto;
+  2. **Administración de catálogo**: Lista de Valores, Atributos, Grupo de Atributos, Taxonomía.
+
+  Each section name MUST be shown above its entries as a small uppercase label that is visually
+  secondary to the entries, and consecutive sections MUST be separated by spacing and a subtle
+  divider. Each section's list MUST be announced with its section name to assistive technology.
+  Entry order, routes and the active, hover and focus styles MUST NOT change. Entries added by later
+  features MUST be assigned to a section. [Source: project owner request, 2026-11-19; see
+  Clarifications, Session 2026-11-19]
+- **FR-020**: Each navigation entry MUST have its own icon that represents its function (house,
+  search, list, tags, folder tree, network for the six entries in FR-019). The icons MUST belong to
+  the project's icon set and follow FR-004. [Source: project owner request, 2026-11-19]
 
 #### Reusable components
 
@@ -266,7 +301,10 @@ These items come from tier 3 evidence. They are not requirements and are listed 
 - **Design token**: a named visual value (color, font size, font weight, spacing step, radius,
   shadow, breakpoint) with its value and its origin (official Liverpool specification with source,
   or project design choice).
-- **Navigation entry**: a label, an icon and a target page shown in the side navigation.
+- **Navigation entry**: a label, an icon, a target page and the section it is listed under in the
+  side navigation.
+- **Navigation section**: a named group of navigation entries, shown in a fixed order (FR-019).
+  *(Added 2026-11-19.)*
 
 ## Success Criteria *(mandatory)*
 
@@ -327,6 +365,7 @@ They will reuse this feature's tokens, form-field styles and component patterns.
 | Source | Tier | Result |
 |---|---|---|
 | Feature request (user, 2026-11-08) | Request | Basis of all requirements |
+| Project owner request (2026-11-19) | Request | Navigation sections and icons (FR-019, FR-020) |
 | `.specify/memory/constitution.md` (v2.0.0) | Governance | Principles II, IV, V, IX, XI applied |
 | `docs/source-of-truth/README.md`; all `docs/source-of-truth/*` subfolders | 1 | Subfolders are empty; no UI or brand requirements |
 | `p360:requerimientos-funcionales/`, `p360:docs/`, `p360:diagramas-to-be/` (search: look and feel, palette, visual identity, style guide, design system, typography, side menu, responsive, tablet) | 2 | No documented UI or brand requirements |
