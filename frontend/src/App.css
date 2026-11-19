@@ -103,6 +103,25 @@
   display: none;
 }
 
+/* Sections: a subtle divider and spacing between consecutive groups. */
+.app-nav__section + .app-nav__section {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--border-width) solid var(--color-border-subtle);
+}
+
+/* Section name: small, muted and uppercase so it stays secondary to the links. */
+.app-nav__section-label {
+  display: block;
+  /* Aligned with the link icons: link padding plus the active-state border. */
+  padding: var(--space-1) var(--space-4) var(--space-2) calc(var(--space-4) + var(--space-1));
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
 .app-nav__list {
   margin: 0;
   padding: 0;

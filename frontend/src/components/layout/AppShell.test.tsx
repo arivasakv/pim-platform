@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { NavigationEntry } from '../../navigation'
+import type { NavigationEntry, NavigationSection } from '../../navigation'
 import { AppShell } from './AppShell'
 
 const ENTRIES: NavigationEntry[] = [
@@ -51,6 +51,63 @@ describe('AppShell', () => {
   it('contains no shopping elements', () => {
     renderShell()
     expect(screen.queryByText(/carrito|precio|comprar/i)).toBeNull()
+  })
+})
+
+describe('AppShell navigation sections', () => {
+  const SECTIONS: NavigationSection[] = [
+    { id: 'general', label: 'General' },
+    { id: 'catalogo', label: 'Administración de catálogo' },
+  ]
+  const SECTIONED_ENTRIES: NavigationEntry[] = [
+    { path: '/', label: 'Inicio', icon: 'home', section: 'general' },
+    { path: '/atributos', label: 'Atributos', icon: 'tags', section: 'catalogo' },
+    { path: '/taxonomia', label: 'Taxonomía', icon: 'network', section: 'catalogo' },
+  ]
+
+  function renderSectionedShell(activePath = '/') {
+    render(
+      <AppShell entries={SECTIONED_ENTRIES} sections={SECTIONS} activePath={activePath}>
+        <p>Contenido de prueba</p>
+      </AppShell>,
+    )
+    return screen.getByRole('navigation', { name: 'Navegación principal' })
+  }
+
+  it('lists each entry under its named section', () => {
+    const navigation = renderSectionedShell()
+
+    const general = within(navigation).getByRole('list', { name: 'General' })
+    expect(
+      within(general)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Inicio'])
+
+    const catalog = within(navigation).getByRole('list', { name: 'Administración de catálogo' })
+    expect(
+      within(catalog)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Atributos', 'Taxonomía'])
+  })
+
+  it('keeps the links and marks the active entry inside a section', () => {
+    const navigation = renderSectionedShell('/taxonomia')
+
+    const taxonomy = within(navigation).getByRole('link', { name: 'Taxonomía' })
+    expect(taxonomy.getAttribute('href')).toBe('#/taxonomia')
+    expect(taxonomy.getAttribute('aria-current')).toBe('page')
+    expect(
+      within(navigation).getByRole('link', { name: 'Inicio' }).getAttribute('aria-current'),
+    ).toBeNull()
+  })
+
+  it('moves focus to the first entry of the first section when the drawer opens', () => {
+    const navigation = renderSectionedShell()
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menú de navegación' }))
+
+    expect(document.activeElement).toBe(within(navigation).getByRole('link', { name: 'Inicio' }))
   })
 })
 

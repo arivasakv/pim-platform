@@ -52,6 +52,8 @@
   --weight-bold: 700;
   --leading-body: 1.5;
   --leading-heading: 1.25;
+  /* Letter spacing for small uppercase labels, such as the side navigation section names. */
+  --tracking-label: 0.06em;
 
   /* Spacing (4 px base) */
   --space-1: 4px;

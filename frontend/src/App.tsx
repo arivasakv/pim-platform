@@ -1,6 +1,6 @@
 import './App.css'
 import { AppShell } from './components/layout/AppShell'
-import { NAVIGATION_ENTRIES, useCurrentPath } from './navigation'
+import { NAVIGATION_ENTRIES, NAVIGATION_SECTIONS, useCurrentPath } from './navigation'
 import { AttributeGroupsPage } from './pages/AttributeGroupsPage'
 import { AttributesPage } from './pages/AttributesPage'
 import { HomePage } from './pages/HomePage'
@@ -30,7 +30,7 @@ function App() {
   const path = useCurrentPath()
 
   return (
-    <AppShell entries={NAVIGATION_ENTRIES} activePath={path}>
+    <AppShell entries={NAVIGATION_ENTRIES} sections={NAVIGATION_SECTIONS} activePath={path}>
       {renderPage(path)}
     </AppShell>
   )

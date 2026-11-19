@@ -15,6 +15,10 @@ export type IconName =
   | 'folder'
   | 'folder-open'
   | 'tag'
+  | 'list'
+  | 'tags'
+  | 'folder-tree'
+  | 'network'
 
 interface IconProps {
   name: IconName
@@ -72,6 +76,31 @@ const ICON_PATHS: Record<IconName, ReactNode> = {
     <>
       <path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9-9-9z" />
       <path d="M7.5 7.5h.01" />
+    </>
+  ),
+  // Side navigation icons for the catalog administration pages.
+  list: <path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />,
+  tags: (
+    <>
+      <path d="M2 11V4a1 1 0 0 1 1-1h7l8.5 8.5-7.5 7.5L2 11z" />
+      <path d="M14 3l8.5 8.5-7.5 7.5" />
+      <path d="M6.5 7h.01" />
+    </>
+  ),
+  'folder-tree': (
+    <>
+      <path d="M3 4a1 1 0 0 1 1-1h3l1.5 1.5H13a1 1 0 0 1 1 1V8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4z" />
+      <path d="M6 9v10h6M6 13h6" />
+      <rect x="12" y="11" width="9" height="4" rx="1" />
+      <rect x="12" y="17" width="9" height="4" rx="1" />
+    </>
+  ),
+  network: (
+    <>
+      <rect x="9" y="3" width="6" height="5" rx="1" />
+      <rect x="3" y="16" width="6" height="5" rx="1" />
+      <rect x="15" y="16" width="6" height="5" rx="1" />
+      <path d="M12 8v4M6 16v-4h12v4" />
     </>
   ),
 }

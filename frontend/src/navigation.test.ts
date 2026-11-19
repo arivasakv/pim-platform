@@ -1,6 +1,11 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
-import { NAVIGATION_ENTRIES, getPathFromHash, useCurrentPath } from './navigation'
+import {
+  NAVIGATION_ENTRIES,
+  NAVIGATION_SECTIONS,
+  getPathFromHash,
+  useCurrentPath,
+} from './navigation'
 
 describe('getPathFromHash', () => {
   it('returns the home path for an empty hash', () => {
@@ -60,6 +65,39 @@ describe('navigation for the lists of values page (feature 006)', () => {
 describe('navigation for the taxonomy page (feature 010)', () => {
   it('returns the taxonomy path for "#/taxonomia"', () => {
     expect(getPathFromHash('#/taxonomia')).toBe('/taxonomia')
+  })
+})
+
+describe('side navigation sections', () => {
+  function labelsIn(sectionId: string) {
+    return NAVIGATION_ENTRIES.filter((entry) => entry.section === sectionId).map(
+      (entry) => entry.label,
+    )
+  }
+
+  it('defines "General" and "Administración de catálogo" in that order', () => {
+    expect(NAVIGATION_SECTIONS.map((section) => section.label)).toEqual([
+      'General',
+      'Administración de catálogo',
+    ])
+  })
+
+  it('lists home and product search under "General"', () => {
+    expect(labelsIn('general')).toEqual(['Inicio', 'Buscar Producto'])
+  })
+
+  it('lists the catalog administration pages under "Administración de catálogo"', () => {
+    expect(labelsIn('catalogo')).toEqual([
+      'Lista de Valores',
+      'Atributos',
+      'Grupo de Atributos',
+      'Taxonomía',
+    ])
+  })
+
+  it('gives each entry its own icon', () => {
+    const icons = NAVIGATION_ENTRIES.map((entry) => entry.icon)
+    expect(new Set(icons).size).toBe(icons.length)
   })
 })
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import type { NavigationEntry } from '../../navigation'
+import type { NavigationEntry, NavigationSection } from '../../navigation'
 import { AppHeader } from './AppHeader'
 import { SideNavigation } from './SideNavigation'
 
@@ -7,6 +7,8 @@ const NAVIGATION_ID = 'navegacion-principal'
 
 interface AppShellProps {
   entries: NavigationEntry[]
+  /** Side navigation sections; entries are grouped under them. */
+  sections?: NavigationSection[]
   activePath: string
   /** The current page. */
   children: ReactNode
@@ -16,7 +18,7 @@ interface AppShellProps {
  * Frame shared by every page: header, side navigation and main content area (FR-008).
  * Below 1024px the navigation is a drawer opened from the header (FR-013, FR-014).
  */
-export function AppShell({ entries, activePath, children }: AppShellProps) {
+export function AppShell({ entries, sections = [], activePath, children }: AppShellProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -53,6 +55,7 @@ export function AppShell({ entries, activePath, children }: AppShellProps) {
       <SideNavigation
         id={NAVIGATION_ID}
         entries={entries}
+        sections={sections}
         activePath={activePath}
         isOpen={isMenuOpen}
         onClose={closeMenu}
