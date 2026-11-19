@@ -12,11 +12,16 @@ import {
   createNode,
   deleteNode,
   getNode,
+  getValueFilter,
   listNodes,
   moveNode,
   removeAttribute,
+  removeValueFilter,
+  saveValueFilter,
   updateNode,
   type EffectiveAttribute,
+  type ListAttribute,
+  type ValueFilterDetail,
   type TaxonomyNode,
   type TaxonomyNodeSummary,
 } from '../api/taxonomyApi'
@@ -32,6 +37,9 @@ import {
 } from '../components/ui'
 import { MoveNodePanel } from '../taxonomy/MoveNodePanel'
 import { NodeAttributesTable } from '../taxonomy/NodeAttributesTable'
+import { NodeListAttributes } from '../taxonomy/NodeListAttributes'
+import { NodeListFieldPreview } from '../taxonomy/NodeListFieldPreview'
+import { ValueFilterPanel } from '../taxonomy/ValueFilterPanel'
 import { TaxonomyTree } from '../taxonomy/TaxonomyTree'
 import { buildTree } from '../taxonomy/nodeTree'
 import styles from './TaxonomyPage.module.css'
@@ -93,6 +101,9 @@ export function TaxonomyPage() {
   const [picker, setPicker] = useState<Picker | null>(null)
   /** Feature 011: the move panel of the chosen node is open. */
   const [moving, setMoving] = useState(false)
+  /** Feature 012: the filter panel or the preview of one list attribute of the chosen node. */
+  const [filtering, setFiltering] = useState<ValueFilterDetail | null>(null)
+  const [previewing, setPreviewing] = useState<ValueFilterDetail | null>(null)
 
   // Loads the nodes; a reload increments listRequest. The first load expands the top level.
   useEffect(() => {
@@ -156,6 +167,8 @@ export function TaxonomyPage() {
     setRemoving(null)
     setPicker(null)
     setMoving(false)
+    setFiltering(null)
+    setPreviewing(null)
   }
 
   /** Shows a node in the detail and expands its ancestors in the tree. */
@@ -272,6 +285,64 @@ export function TaxonomyPage() {
         setPanel('none')
         reloadList()
       }
+      setPanelError(messageOf(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** Feature 012: loads one list attribute's values at the node for the filter panel or preview. */
+  async function loadFilter(node: TaxonomyNode, attribute: ListAttribute, forPreview: boolean) {
+    setPanelError(undefined)
+    setConfirmation(undefined)
+    setBusy(true)
+    try {
+      const detail = await getValueFilter(node.systemId, attribute.systemId)
+      setPicker(null)
+      setRemoving(null)
+      if (forPreview) {
+        setFiltering(null)
+        setPreviewing(detail)
+      } else {
+        setPreviewing(null)
+        setFiltering(detail)
+      }
+    } catch (error) {
+      setPanelError(messageOf(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** Feature 012: saves the node's filter; the panel stays open on a refusal. */
+  async function saveFilter(node: TaxonomyNode, detail: ValueFilterDetail, valueIds: string[]) {
+    setPanelError(undefined)
+    setBusy(true)
+    try {
+      const saved = await saveValueFilter(node.systemId, detail.attribute.systemId, valueIds)
+      setFiltering(null)
+      setSelected(await getNode(node.systemId))
+      setConfirmation(
+        `Filtro de «${saved.attribute.displayName}» guardado en «${node.name}»: ` +
+          `${saved.attribute.allowedCount} de ${saved.totalValues} valores permitidos.`,
+      )
+    } catch (error) {
+      setPanelError(messageOf(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** Feature 012: removes the node's filter after the panel's confirmation. */
+  async function removeFilter(node: TaxonomyNode, detail: ValueFilterDetail) {
+    setPanelError(undefined)
+    setBusy(true)
+    try {
+      await removeValueFilter(node.systemId, detail.attribute.systemId)
+      setFiltering(null)
+      setSelected(await getNode(node.systemId))
+      setConfirmation(`Filtro de «${detail.attribute.displayName}» quitado de «${node.name}».`)
+    } catch (error) {
       setPanelError(messageOf(error))
     } finally {
       setBusy(false)
@@ -573,6 +644,33 @@ export function TaxonomyPage() {
                     setRemoving(attribute)
                   }}
                 />
+
+                <NodeListAttributes
+                  node={selected}
+                  canChange={canChange}
+                  busy={busy}
+                  onOpenNode={(nodeId) => void openNode(nodeId)}
+                  onFilter={(attribute) => void loadFilter(selected, attribute, false)}
+                  onPreview={(attribute) => void loadFilter(selected, attribute, true)}
+                />
+
+                {canChange && filtering && (
+                  <ValueFilterPanel
+                    key={`${filtering.node.systemId}:${filtering.attribute.systemId}`}
+                    detail={filtering}
+                    busy={busy}
+                    onCancel={() => {
+                      setPanelError(undefined)
+                      setFiltering(null)
+                    }}
+                    onSave={(valueIds) => void saveFilter(selected, filtering, valueIds)}
+                    onRemove={() => void removeFilter(selected, filtering)}
+                  />
+                )}
+
+                {previewing && (
+                  <NodeListFieldPreview detail={previewing} onClose={() => setPreviewing(null)} />
+                )}
 
                 {removing && (
                   <Notification variant="warning">

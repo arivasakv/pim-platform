@@ -3,16 +3,26 @@ package com.pim.backend.taxonomy.service;
 import com.pim.backend.attribute.model.Attribute;
 import com.pim.backend.attribute.model.AttributeNotFoundException;
 import com.pim.backend.attribute.model.AttributePermissions;
+import com.pim.backend.attribute.model.ListOfValuesProperties;
 import com.pim.backend.attribute.service.AttributeService;
 import com.pim.backend.identifier.model.AssignmentResult;
 import com.pim.backend.identifier.model.ManualIdPermissions;
 import com.pim.backend.identifier.model.ObjectType;
 import com.pim.backend.identifier.service.IdentifierService;
+import com.pim.backend.lov.model.ListOfValues;
+import com.pim.backend.lov.service.ListOfValuesLookup;
 import com.pim.backend.taxonomy.model.AddAttributesOutcome;
+import com.pim.backend.taxonomy.model.AllowedValues;
 import com.pim.backend.taxonomy.model.AttributeNotDirectException;
+import com.pim.backend.taxonomy.model.AttributeNotListException;
 import com.pim.backend.taxonomy.model.AttributeNotOnNodeException;
 import com.pim.backend.taxonomy.model.EffectiveAttribute;
 import com.pim.backend.taxonomy.model.EffectiveAttributes;
+import com.pim.backend.taxonomy.model.FilterAttributeNotFoundException;
+import com.pim.backend.taxonomy.model.FilterNotFoundException;
+import com.pim.backend.taxonomy.model.InvalidFilterException;
+import com.pim.backend.taxonomy.model.ListAttributeSummary;
+import com.pim.backend.taxonomy.model.ListValueOption;
 import com.pim.backend.taxonomy.model.MoveOutcome;
 import com.pim.backend.taxonomy.model.NodeAttribute;
 import com.pim.backend.taxonomy.model.NodeDetails;
@@ -26,7 +36,12 @@ import com.pim.backend.taxonomy.model.NodeSummary;
 import com.pim.backend.taxonomy.model.TaxonomyChangeNotPermittedException;
 import com.pim.backend.taxonomy.model.TaxonomyNode;
 import com.pim.backend.taxonomy.model.UnknownAttributeException;
+import com.pim.backend.taxonomy.model.ValueExcludedAboveException;
+import com.pim.backend.taxonomy.model.ValueFilter;
+import com.pim.backend.taxonomy.model.ValueFilterDetails;
+import com.pim.backend.taxonomy.model.ValueNotInListException;
 import com.pim.backend.taxonomy.repository.TaxonomyNodeRepository;
+import com.pim.backend.taxonomy.repository.ValueFilterRepository;
 import java.time.Clock;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -50,8 +65,12 @@ import org.springframework.stereotype.Service;
  * {@link IdentifierService} (constitution III). Effective attributes are computed on every read from the current
  * tree (D-4), so ancestor changes reach every descendant at once (FR-015).
  *
+ * <p>Feature 012 adds list-value filters ({@link #findFilter}, {@link #saveFilter}, {@link #removeFilter}): the values
+ * allowed at a node are computed on every read from the chain's filters ({@link AllowedValues}). List values are read
+ * through the lov domain's lock-free {@link ListOfValuesLookup} (feature 012 research R-04).
+ *
  * <p>Every change and read runs under one lock. Lock order (research R-05): group → taxonomy → attribute; this
- * service never calls the attribute group service.
+ * service never calls the attribute group service, and the lov lookup takes no lock.
  */
 @Service
 public class TaxonomyService {
@@ -61,18 +80,24 @@ public class TaxonomyService {
     private static final ManualIdPermissions NO_MANUAL_IDS = new ManualIdPermissions(Set.of());
 
     private final TaxonomyNodeRepository nodes;
+    private final ValueFilterRepository filters;
     private final AttributeService attributeService;
+    private final ListOfValuesLookup lists;
     private final IdentifierService identifierService;
     private final Clock clock;
     private final Object lock = new Object();
 
     public TaxonomyService(
             TaxonomyNodeRepository nodes,
+            ValueFilterRepository filters,
             AttributeService attributeService,
+            ListOfValuesLookup lists,
             IdentifierService identifierService,
             Clock clock) {
         this.nodes = nodes;
+        this.filters = filters;
         this.attributeService = attributeService;
+        this.lists = lists;
         this.identifierService = identifierService;
         this.clock = clock;
     }
@@ -178,6 +203,97 @@ public class TaxonomyService {
                 throw NodeNotEmptyException.withAttributes(node);
             }
             nodes.delete(node.id());
+            // Feature 012 plan D-6: the node's filters go with it. If this fails, the filters of a missing node are
+            // ignored on every read, because no chain reaches them.
+            filters.deleteByNode(node.id());
+        }
+    }
+
+    /**
+     * A list attribute's values at a node: allowed values, the values its own filter may include, its own filter and
+     * the filters above (feature 012 FR-008 to FR-014). Needs no permission.
+     *
+     * @throws NodeNotFoundException if the node does not exist
+     * @throws FilterAttributeNotFoundException if the attribute does not exist
+     * @throws AttributeNotOnNodeException if the attribute neither is assigned to nor inherited by the node
+     * @throws AttributeNotListException if the attribute is not a list of values
+     */
+    public ValueFilterDetails findFilter(String nodeId, String attributeId) {
+        synchronized (lock) {
+            FilterContext context = filterContext(nodeId, attributeId);
+            return context.details(context.filtersOnChain());
+        }
+    }
+
+    /**
+     * Defines or replaces the node's filter for a list attribute (feature 012 FR-001 to FR-004, FR-009). The checks
+     * run in data-model order; the first failure stops it and nothing is written.
+     *
+     * @throws TaxonomyChangeNotPermittedException without {@code ATTRIBUTE_CREATE}
+     * @throws InvalidFilterException with no value or more than 50,000
+     * @throws ValueNotInListException naming the first ID that is not in the attribute's list
+     * @throws ValueExcludedAboveException naming the first value a filter above does not allow
+     */
+    public ValueFilterDetails saveFilter(
+            String nodeId, String attributeId, List<String> valueIds, AttributePermissions permissions) {
+        checkPermission(permissions);
+        ValueFilter.checkCount(valueIds);
+        synchronized (lock) {
+            FilterContext context = filterContext(nodeId, attributeId);
+            Map<String, ValueFilter> chainFilters = context.filtersOnChain();
+            Map<String, ListValueOption> byKey = new HashMap<>();
+            context.values().forEach(value -> byKey.put(value.key(), value));
+            Map<String, ValueFilter> above = new HashMap<>(chainFilters);
+            above.remove(context.node().id());
+            Set<String> allowedAboveKeys =
+                    AllowedValues.of(context.chain(), context.values(), above).availableAboveKeys();
+            Set<String> requested = new LinkedHashSet<>();
+            for (String valueId : valueIds) {
+                if (valueId == null || valueId.isBlank()) {
+                    continue;
+                }
+                ListValueOption value = byKey.get(ValueFilter.valueKey(valueId));
+                if (value == null) {
+                    throw new ValueNotInListException(context.listName(), valueId.strip());
+                }
+                if (!allowedAboveKeys.contains(value.key())) {
+                    throw new ValueExcludedAboveException(
+                            value, AllowedValues.excludedBy(context.chain(), value.key(), above));
+                }
+                requested.add(value.key());
+            }
+            List<String> inListOrder = context.values().stream()
+                    .filter(value -> requested.contains(value.key()))
+                    .map(ListValueOption::id)
+                    .toList();
+            ValueFilter saved = filters.find(
+                            context.node().id(), context.attribute().systemId())
+                    .map(existing -> existing.withValues(inListOrder, clock.instant()))
+                    .orElseGet(() -> ValueFilter.create(
+                            context.node().id(), context.attribute().systemId(), inListOrder, clock.instant()));
+            filters.save(saved);
+            chainFilters.put(context.node().id(), saved);
+            return context.details(chainFilters);
+        }
+    }
+
+    /**
+     * Removes the node's own filter; the node and its descendants then allow the values inherited from above (feature
+     * 012 FR-005).
+     *
+     * @throws TaxonomyChangeNotPermittedException without {@code ATTRIBUTE_CREATE}
+     * @throws FilterNotFoundException if the node has no filter for the attribute
+     */
+    public void removeFilter(String nodeId, String attributeId, AttributePermissions permissions) {
+        checkPermission(permissions);
+        synchronized (lock) {
+            TaxonomyNode node = existing(nodeId, "nodeId");
+            Attribute attribute = filterAttribute(attributeId);
+            if (filters.find(node.id(), attribute.systemId()).isEmpty()) {
+                throw new FilterNotFoundException(
+                        node.name().value(), attribute.displayName().value());
+            }
+            filters.delete(node.id(), attribute.systemId());
         }
     }
 
@@ -388,6 +504,7 @@ public class TaxonomyService {
                 .collect(Collectors.toMap(
                         attribute -> TaxonomyNode.key(attribute.systemId()), Function.identity(), (a, b) -> a));
         List<NodeAttribute> effective = new ArrayList<>();
+        List<Attribute> listAttributes = new ArrayList<>();
         for (EffectiveAttribute entry : EffectiveAttributes.of(node, byId)) {
             Attribute attribute = attributes.get(entry.attributeId());
             if (attribute == null) {
@@ -400,7 +517,116 @@ public class TaxonomyService {
                     attribute.systemId(),
                     attribute.displayName().value(),
                     attribute.dataType().name()));
+            if (attribute.properties() instanceof ListOfValuesProperties) {
+                listAttributes.add(attribute);
+            }
         }
-        return new NodeDetails(node, chain.size(), path, children, effective);
+        List<ListAttributeSummary> summaries = new ArrayList<>();
+        if (!listAttributes.isEmpty()) {
+            List<ValueFilter> chainFilters =
+                    filters.findByNodeIds(chain.stream().map(TaxonomyNode::id).toList());
+            for (Attribute attribute : listAttributes) {
+                ListOfValuesProperties properties = (ListOfValuesProperties) attribute.properties();
+                Optional<ListOfValues> list = lists.find(properties.listOfValuesId());
+                List<ListValueOption> values = optionsOf(list);
+                AllowedValues allowed = AllowedValues.of(chain, values, filtersFor(chainFilters, attribute));
+                summaries.add(summary(attribute, properties, list, values, allowed));
+            }
+        }
+        return new NodeDetails(node, chain.size(), path, children, effective, summaries);
+    }
+
+    /** Everything a filter operation needs, read once under the lock (feature 012). */
+    private record FilterContext(
+            TaxonomyNode node,
+            List<TaxonomyNode> chain,
+            Attribute attribute,
+            ListOfValuesProperties properties,
+            Optional<ListOfValues> list,
+            List<ListValueOption> values,
+            ValueFilterRepository repository) {
+
+        String listName() {
+            return list.map(found -> found.name().value()).orElse(properties.listOfValuesId());
+        }
+
+        /** The attribute's filters on the chain, keyed by node storage key. */
+        Map<String, ValueFilter> filtersOnChain() {
+            return filtersFor(
+                    repository.findByNodeIds(
+                            chain.stream().map(TaxonomyNode::id).toList()),
+                    attribute);
+        }
+
+        ValueFilterDetails details(Map<String, ValueFilter> chainFilters) {
+            AllowedValues allowed = AllowedValues.of(chain, values, chainFilters);
+            return new ValueFilterDetails(
+                    node.reference(), summary(attribute, properties, list, values, allowed), allowed);
+        }
+    }
+
+    /**
+     * Reads the node, the attribute and its list, and checks that the attribute is a list that applies to the node
+     * (feature 012 data-model rules 3 to 6).
+     */
+    private FilterContext filterContext(String nodeId, String attributeId) {
+        TaxonomyNode node = existing(nodeId, "nodeId");
+        Attribute attribute = filterAttribute(attributeId);
+        Map<String, TaxonomyNode> byId = byId(nodes.findAll());
+        byId.put(node.id(), node);
+        String key = TaxonomyNode.key(attribute.systemId());
+        boolean applies = EffectiveAttributes.of(node, byId).stream()
+                .anyMatch(entry -> entry.attributeId().equals(key));
+        if (!applies) {
+            throw new AttributeNotOnNodeException(attribute.systemId());
+        }
+        if (!(attribute.properties() instanceof ListOfValuesProperties properties)) {
+            throw new AttributeNotListException(attribute.displayName().value());
+        }
+        Optional<ListOfValues> list = lists.find(properties.listOfValuesId());
+        return new FilterContext(
+                node, EffectiveAttributes.chain(node, byId), attribute, properties, list, optionsOf(list), filters);
+    }
+
+    private Attribute filterAttribute(String attributeId) {
+        try {
+            return attributeService.find(attributeId);
+        } catch (AttributeNotFoundException exception) {
+            throw new FilterAttributeNotFoundException(attributeId);
+        }
+    }
+
+    private static List<ListValueOption> optionsOf(Optional<ListOfValues> list) {
+        return list.map(found -> found.values().stream()
+                        .map(value -> new ListValueOption(value.id().value(), value.label()))
+                        .toList())
+                .orElse(List.of());
+    }
+
+    private static Map<String, ValueFilter> filtersFor(List<ValueFilter> all, Attribute attribute) {
+        String key = TaxonomyNode.key(attribute.systemId());
+        Map<String, ValueFilter> byNode = new HashMap<>();
+        all.stream()
+                .filter(filter -> filter.attributeId().equals(key))
+                .forEach(filter -> byNode.put(filter.nodeId(), filter));
+        return byNode;
+    }
+
+    private static ListAttributeSummary summary(
+            Attribute attribute,
+            ListOfValuesProperties properties,
+            Optional<ListOfValues> list,
+            List<ListValueOption> values,
+            AllowedValues allowed) {
+        return new ListAttributeSummary(
+                attribute.systemId(),
+                attribute.displayName().value(),
+                list.map(ListOfValues::systemId).orElse(properties.listOfValuesId()),
+                list.map(found -> found.name().value()).orElse(properties.listOfValuesId()),
+                properties.selectionMode().name(),
+                values.size(),
+                allowed.allowed().size(),
+                allowed.ownFilter().isPresent(),
+                allowed.involved());
     }
 }

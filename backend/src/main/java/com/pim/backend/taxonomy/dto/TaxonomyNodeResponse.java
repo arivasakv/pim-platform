@@ -16,6 +16,7 @@ public record TaxonomyNodeResponse(
         List<NodeReferenceResponse> children,
         int directAttributeCount,
         List<EffectiveAttributeResponse> effectiveAttributes,
+        List<ListAttributeResponse> listAttributes,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -32,6 +33,9 @@ public record TaxonomyNodeResponse(
                 node.attributeIds().size(),
                 details.attributes().stream()
                         .map(EffectiveAttributeResponse::from)
+                        .toList(),
+                details.listAttributes().stream()
+                        .map(ListAttributeResponse::from)
                         .toList(),
                 node.createdAt(),
                 node.updatedAt().orElse(null));

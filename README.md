@@ -26,6 +26,7 @@ Features built so far:
 | 009 | Organizing attributes by attribute group |
 | 010 | Attribute inheritance through the product taxonomy |
 | 011 | Move taxonomy nodes with their branch (inheritance follows the new location) |
+| 012 | List-value filters per taxonomy level (restrict list values on a node; inherited and only narrowed below) |
 
 ### Deliberate limits of the POC
 
@@ -33,7 +34,8 @@ Defined in the project constitution ([`.specify/memory/constitution.md`](.specif
 Principle IX):
 
 - MongoDB is used only for the product catalog and for attribute administration data
-  (attributes, groups, identifiers, lists of values, taxonomy). Everything else is in-memory mock data.
+  (attributes, groups, identifiers, lists of values, taxonomy and its list-value filters). Everything
+  else is in-memory mock data.
 - No SQL databases, no integrations with commerce platforms, ERPs, DAMs or messaging, and no
   AI-powered features.
 - No login. User permissions are simulated with frontend environment variables (see below).

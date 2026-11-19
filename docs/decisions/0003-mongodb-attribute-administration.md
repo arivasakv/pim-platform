@@ -17,6 +17,12 @@
   attribute system IDs and receive `CLASSIFICATION` system IDs
   ([010 plan](../../specs/010-taxonomy-attribute-inheritance/plan.md) D-2, D-3). Row
   `taxonomy_nodes` was added to the collections table.
+- **Amended 2026-11-19** (constitution 2.6.0, feature 012): list-value filters on taxonomy nodes (the
+  list values included per node and list-of-values attribute) are stored with the other attribute
+  administration data, because they reference taxonomy nodes, list-of-values attributes and list
+  values ([012 plan](../../specs/012-taxonomy-list-value-filters/plan.md) D-1, D-2). Row
+  `taxonomy_value_filters` was added to the collections table; filters are not embedded in
+  `taxonomy_nodes` because one filter can hold up to 50,000 value IDs.
 
 ## Context
 
@@ -45,6 +51,7 @@ where their data lives.
    | `lists_of_values` | `lov` (006) | `{ _id: <list system ID upper-cased>, systemId, name, nameKey, equivalencesEnabled, nextGeneratedNumber, values: [ { id, idKey, label, equivalence } ], createdAt, updatedAt }`; values embedded so each change is one atomic document update (006 research R-02; at most 50,000 values) | `_id`; unique `lov_name_unique` on `nameKey` (006 FR-003) |
    | `lov_changes` | `lov` (006) | `{ _id: <UUID>, at, user, operation, listId, listName, valueIds, added, updated }` (006 FR-019, research R-11) | `_id`; `{ listId: 1, at: -1 }` |
    | `taxonomy_nodes` | `taxonomy` (010) | `{ _id: <node system ID upper-cased>, systemId, name, nameKey, parentId, description, attributeIds, createdAt, updatedAt }`; direct attribute IDs embedded in assignment order (010 research R-03) | `_id`; unique `taxonomy_node_sibling_name_unique` on `{ parentId: 1, nameKey: 1 }` (010 FR-004); `taxonomy_node_attribute_ids` on `attributeIds` (010 FR-021) |
+   | `taxonomy_value_filters` | `taxonomy` (012) | `{ _id: "<nodeId>:<attributeId>" (both upper-cased), nodeId, attributeId, valueIds, createdAt, updatedAt }`; `valueIds` holds 1–50,000 IDs of the attribute's list, in list order (012 research R-02) | `_id`; unique `taxonomy_value_filter_unique` on `{ nodeId: 1, attributeId: 1 }` (012 FR-002) |
 
    `*Key` fields hold the value lower-cased with `Locale.ROOT`, so uniqueness ignoring letter case is
    also enforced by the database.

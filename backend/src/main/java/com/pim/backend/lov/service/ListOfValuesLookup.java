@@ -1,7 +1,9 @@
 package com.pim.backend.lov.service;
 
+import com.pim.backend.lov.model.ListOfValues;
 import com.pim.backend.lov.repository.ListOfValuesRepository;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 /**
@@ -30,5 +32,14 @@ public class ListOfValuesLookup {
     /** Every list's name keyed by its system ID upper-cased (feature 007 research R-03). */
     public Map<String, String> namesById() {
         return lists.namesById();
+    }
+
+    /**
+     * The list with this system ID, compared ignoring letter case, with its values in list order (feature 012 research
+     * R-04). Like the other methods it takes no lock, so the taxonomy service can call it while holding its own lock
+     * without adding a lock order.
+     */
+    public Optional<ListOfValues> find(String listOfValuesId) {
+        return listOfValuesId == null ? Optional.empty() : lists.findById(listOfValuesId.strip());
     }
 }

@@ -29,6 +29,7 @@ function detail(systemId: string, name: string, path: [string, string][]): Taxon
     children: [],
     directAttributeCount: 0,
     effectiveAttributes: [],
+    listAttributes: [],
     createdAt: '2026-11-19T10:00:00Z',
   }
 }

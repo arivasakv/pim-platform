@@ -238,7 +238,8 @@ Sources: the feature request (FRQ §n) and ERF 1.1 §3.3 (tier 2). No tier 1 doc
   (specs/011-taxonomy-node-relocation, FR-001 to FR-009); editing still never changes it.*
 - **FR-006 – Delete**: A node MUST be deletable only when it has **no children and no direct
   attributes**; otherwise deletion MUST be refused with a Spanish message saying what to remove first.
-  Deletion MUST ask for confirmation. [A-005]
+  Deletion MUST ask for confirmation. [A-005] *Since feature 012 (2026-11-19), deleting a node also
+  deletes its list-value filters (specs/012-taxonomy-list-value-filters, plan D-6).*
 - **FR-007 – Level and path**: The application MUST show each node's **level** (1 for top-level nodes)
   and its **path** of ancestors from the top. [ERF §3.3 «Niveles»]
 
@@ -283,6 +284,8 @@ Sources: the feature request (FRQ §n) and ERF 1.1 §3.3 (tier 2). No tier 1 doc
 - **FR-018 – Page**: A page "Taxonomía", reachable from the side navigation, MUST show the hierarchy as
   an expandable tree (each node with its name and number of direct attributes) and, for the chosen
   node, its detail: name, system ID, level, path, description, children, and its effective attributes.
+  *Since feature 012 (2026-11-19), the detail also lists its list-of-values attributes with their
+  allowed values and filters (specs/012-taxonomy-list-value-filters, FR-013).*
   It MUST follow the design system and the layout and interaction patterns of "Lista de Valores" and
   "Atributos" (cards, list buttons, inline confirmations, notifications, loading/empty/error states),
   in Spanish (es-MX), usable from 768 px without horizontal scroll. [FRQ §2; constitution; feature 001]

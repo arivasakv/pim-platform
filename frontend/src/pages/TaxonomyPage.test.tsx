@@ -33,6 +33,19 @@ const ATTRIBUTES: FakeAttribute[] = [
   ['ATR000007', 'Temporada'],
 ].map(([systemId, displayName]) => ({ systemId, displayName, dataType: 'TEXT' }))
 
+/** Feature 012: a list-of-values attribute and its list «Colores». */
+const TONO = 'ATR000008'
+ATTRIBUTES.push({ systemId: TONO, displayName: 'Tono', dataType: 'LIST_OF_VALUES' })
+const COLORES = [
+  ['0001', 'Rojo'],
+  ['0002', 'Azul'],
+  ['0003', 'Verde'],
+  ['0004', 'Negro'],
+  ['0005', 'Blanco'],
+  ['0006', 'Amarillo'],
+  ['0007', 'Rosa'],
+].map(([id, label]) => ({ id, label }))
+
 /** The feature request's example (spec US3). */
 function example(): FakeNode[] {
   return [
@@ -51,8 +64,13 @@ function node(systemId: string, name: string, parentId: string | null, ...attrib
  * An in-memory stand-in for the taxonomy endpoints, computing effective attributes with the rules
  * of data-model.md, so the page is driven through real request sequences.
  */
-function fakeBackend(initial: FakeNode[] = [], options: { failList?: boolean } = {}) {
+function fakeBackend(
+  initial: FakeNode[] = [],
+  options: { failList?: boolean; filters?: Record<string, string[]>; refuseSave?: string } = {},
+) {
   const nodes = initial.map((entry) => ({ ...entry, attributeIds: [...entry.attributeIds] }))
+  /** Feature 012: own filters of TONO keyed by node ID. */
+  const filters = new Map<string, string[]>(Object.entries(options.filters ?? {}))
   let next = nodes.length + 1
   const byId = (id: string) => nodes.find((entry) => entry.systemId === id.toUpperCase())
   const chain = (start: FakeNode) => {
@@ -88,6 +106,7 @@ function fakeBackend(initial: FakeNode[] = [], options: { failList?: boolean } =
       })
       .sort((a, b) => a.order - b.order)
       .map((entry) => entry.value)
+    const hasTono = effective.some((attribute) => attribute.systemId === TONO)
     return {
       ...entry,
       level: nodesUp.length,
@@ -95,7 +114,50 @@ function fakeBackend(initial: FakeNode[] = [], options: { failList?: boolean } =
       children: sorted(nodes.filter((candidate) => candidate.parentId === entry.systemId)).map(ref),
       directAttributeCount: entry.attributeIds.length,
       effectiveAttributes: effective,
+      listAttributes: hasTono ? [filterDetail(entry).attribute] : [],
       createdAt: '2026-11-12T10:00:00Z',
+    }
+  }
+  /** Feature 012 rules, as the backend applies them (intersection of the chain's filters). */
+  const filterDetail = (entry: FakeNode) => {
+    const nodesUp = chain(entry)
+    const above = nodesUp.slice(0, -1).filter((step) => filters.has(step.systemId))
+    const availableValues = COLORES.filter((value) =>
+      above.every((step) => filters.get(step.systemId)!.includes(value.id)),
+    )
+    const own = filters.get(entry.systemId) ?? null
+    const allowedValues = availableValues.filter((value) => !own || own.includes(value.id))
+    const involved = nodesUp
+      .filter((step) => filters.has(step.systemId))
+      .map((step) => ({ node: ref(step), includedCount: filters.get(step.systemId)!.length }))
+    const excludedAboveValues = (own ?? [])
+      .filter((id) => !availableValues.some((value) => value.id === id))
+      .map((id) => {
+        const value = COLORES.find((candidate) => candidate.id === id)!
+        const by = [...above].reverse().find((step) => !filters.get(step.systemId)!.includes(id))!
+        return { ...value, excludedBy: ref(by) }
+      })
+    return {
+      node: ref(entry),
+      attribute: {
+        systemId: TONO,
+        displayName: 'Tono',
+        listOfValuesId: 'LOV000001',
+        listName: 'Colores',
+        selectionMode: 'SINGLE',
+        totalValues: COLORES.length,
+        allowedCount: allowedValues.length,
+        hasOwnFilter: own !== null,
+        filters: involved,
+      },
+      totalValues: COLORES.length,
+      availableValues,
+      includedValueIds: own
+        ? COLORES.filter((value) => own.includes(value.id)).map((v) => v.id)
+        : null,
+      excludedAboveValues,
+      allowedValues,
+      filters: involved,
     }
   }
   const siblingsHave = (parentId: string | null, name: string, except?: string) =>
@@ -143,6 +205,22 @@ function fakeBackend(initial: FakeNode[] = [], options: { failList?: boolean } =
       }
       nodes.push(created)
       return json(201, detail(created))
+    }
+    const filtering = path.match(/^\/api\/v1\/taxonomy-nodes\/([^/]+)\/value-filters\/([^/]+)$/)
+    if (filtering) {
+      const target = byId(filtering[1])
+      if (!target) return problem(404, 'nodeId', 'NODE_NOT_FOUND', 'No existe el nodo.')
+      if (method === 'GET') return json(200, filterDetail(target))
+      if (method === 'PUT') {
+        if (options.refuseSave)
+          return problem(409, 'valueIds', 'VALUE_EXCLUDED_ABOVE', options.refuseSave)
+        filters.set(target.systemId, body.valueIds as string[])
+        return json(200, filterDetail(target))
+      }
+      if (method === 'DELETE') {
+        filters.delete(target.systemId)
+        return json(204)
+      }
     }
     const moving = path.match(/^\/api\/v1\/taxonomy-nodes\/([^/]+)\/move$/)
     if (moving && method === 'POST') {
@@ -215,7 +293,7 @@ function fakeBackend(initial: FakeNode[] = [], options: { failList?: boolean } =
     return Promise.resolve(handle(init?.method ?? 'GET', path, body))
   })
   vi.stubGlobal('fetch', fetchMock)
-  return { fetchMock, nodes }
+  return { fetchMock, nodes, filters }
 }
 
 function tree() {
@@ -581,6 +659,129 @@ describe('TaxonomyPage', () => {
 
     expect(await screen.findByText('No existe un nodo con el ID CLS000003.')).toBeTruthy()
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Camisas' })).toBeNull())
+  })
+
+  // --- Feature 012: list-value filters ---
+
+  /** Ropa (Tono) › Ropa de hombre › Camisas. */
+  function filterExample(): FakeNode[] {
+    return [
+      node('CLS000001', 'Ropa', null, TONO),
+      node('CLS000002', 'Ropa de hombre', 'CLS000001'),
+      node('CLS000003', 'Camisas', 'CLS000002'),
+    ]
+  }
+
+  function listRow() {
+    const table = screen.getByRole('table', { name: /^Listas de valores de «/ })
+    return within(within(table).getAllByRole('row')[1])
+  }
+
+  it('saves a filter on a node and shows its allowed values', async () => {
+    const { filters } = fakeBackend(filterExample())
+    render(<TaxonomyPage />)
+    const hombre = await openNode('Ropa de hombre')
+
+    expect(hombre.getByRole('heading', { name: 'Listas de valores en este nodo' })).toBeTruthy()
+    expect(listRow().getByText('7 de 7')).toBeTruthy()
+    expect(listRow().getByText('Sin filtro')).toBeTruthy()
+
+    fireEvent.click(hombre.getByRole('button', { name: 'Filtrar valores de Tono' }))
+    const panel = within(
+      await screen.findByRole('group', { name: 'Filtrar «Tono» en «Ropa de hombre»' }),
+    )
+    for (const label of ['Azul', 'Negro', 'Blanco', 'Rojo']) {
+      fireEvent.click(panel.getByRole('button', { name: `Incluir ${label}` }))
+    }
+    fireEvent.click(panel.getByRole('button', { name: 'Guardar filtro' }))
+
+    expect(
+      await screen.findByText(
+        'Filtro de «Tono» guardado en «Ropa de hombre»: 4 de 7 valores permitidos.',
+      ),
+    ).toBeTruthy()
+    expect(filters.get('CLS000002')).toEqual(['0001', '0002', '0004', '0005'])
+    await waitFor(() => expect(listRow().getByText('4 de 7')).toBeTruthy())
+    expect(listRow().getByText('Filtro en este nodo')).toBeTruthy()
+    expect(screen.queryByRole('group', { name: /^Filtrar «Tono»/ })).toBeNull()
+  })
+
+  it('shows inherited filters, offers only values allowed above and keeps the panel on a refusal', async () => {
+    fakeBackend(filterExample(), {
+      filters: { CLS000002: ['0001', '0002', '0004', '0005'] },
+      refuseSave: 'El valor «Verde» (0003) no está permitido por el filtro de «Ropa de hombre».',
+    })
+    render(<TaxonomyPage />)
+    fireEvent.click(await tree().findByRole('button', { name: 'Mostrar hijos de Ropa de hombre' }))
+    const camisas = await openNode('Camisas')
+
+    expect(listRow().getByText('4 de 7')).toBeTruthy()
+    expect(
+      listRow().getByText(
+        (_, element) =>
+          element?.tagName === 'SPAN' &&
+          element.textContent === 'Filtro heredado de «Ropa de hombre»',
+      ),
+    ).toBeTruthy()
+
+    fireEvent.click(camisas.getByRole('button', { name: 'Filtrar valores de Tono' }))
+    const panel = within(await screen.findByRole('group', { name: 'Filtrar «Tono» en «Camisas»' }))
+    expect(
+      panel.getByText('Arriba se permiten 4 de 7 valores (filtro de «Ropa de hombre»).'),
+    ).toBeTruthy()
+    expect(panel.queryByRole('button', { name: 'Incluir Verde' })).toBeNull()
+    fireEvent.click(panel.getByRole('button', { name: 'Incluir Azul' }))
+    fireEvent.click(panel.getByRole('button', { name: 'Guardar filtro' }))
+
+    expect(
+      await screen.findByText(
+        'El valor «Verde» (0003) no está permitido por el filtro de «Ropa de hombre».',
+      ),
+    ).toBeTruthy()
+    expect(screen.getByRole('group', { name: 'Filtrar «Tono» en «Camisas»' })).toBeTruthy()
+  })
+
+  it('removes a filter after confirming', async () => {
+    const { filters } = fakeBackend(filterExample(), {
+      filters: { CLS000002: ['0001', '0002', '0004', '0005'], CLS000003: ['0002'] },
+    })
+    render(<TaxonomyPage />)
+    fireEvent.click(await tree().findByRole('button', { name: 'Mostrar hijos de Ropa de hombre' }))
+    const camisas = await openNode('Camisas')
+    expect(listRow().getByText('1 de 7')).toBeTruthy()
+
+    fireEvent.click(camisas.getByRole('button', { name: 'Filtrar valores de Tono' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Quitar filtro' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sí, quitar filtro' }))
+
+    expect(await screen.findByText('Filtro de «Tono» quitado de «Camisas».')).toBeTruthy()
+    expect(filters.has('CLS000003')).toBe(false)
+    await waitFor(() => expect(listRow().getByText('4 de 7')).toBeTruthy())
+  })
+
+  it('previews the field with only the allowed values', async () => {
+    fakeBackend(filterExample(), { filters: { CLS000002: ['0002', '0005'] } })
+    render(<TaxonomyPage />)
+    const hombre = await openNode('Ropa de hombre')
+
+    fireEvent.click(hombre.getByRole('button', { name: 'Vista previa de Tono' }))
+    expect(await screen.findByText('Vista previa de «Tono» en «Ropa de hombre»')).toBeTruthy()
+    const options = within(screen.getByLabelText('Tono'))
+      .getAllByRole('option')
+      .map((option) => option.textContent)
+    expect(options).toEqual(['Selecciona una opción', 'Azul', 'Blanco'])
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar vista previa' }))
+    expect(screen.queryByText('Vista previa de «Tono» en «Ropa de hombre»')).toBeNull()
+  })
+
+  it('offers no filter control without the permission', async () => {
+    vi.stubEnv('VITE_DEV_PERMISSIONS', '')
+    fakeBackend(filterExample())
+    render(<TaxonomyPage />)
+    const ropa = await openNode('Ropa')
+
+    expect(ropa.queryByRole('button', { name: 'Filtrar valores de Tono' })).toBeNull()
+    expect(ropa.getByRole('button', { name: 'Vista previa de Tono' })).toBeTruthy()
   })
 
   // --- States and permissions ---
