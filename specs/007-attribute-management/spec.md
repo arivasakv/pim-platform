@@ -266,6 +266,11 @@ document in `docs/source-of-truth/` covers this feature.
 - *Amended 2026-11-20 (feature 004 FR-003 amendment): attributes have no description any more; the
   detail (FR-006) no longer shows one and editing (FR-008) no longer changes one. The mentions of a
   description in User Stories 1–2, FR-006 and FR-008 no longer apply.*
+- *Amended 2026-11-20 (feature 004 FR-007 amendment, option B): the data type is shown as one of eight
+  choices, Numérico being split into «Numérico Entero (Integer)» and «Numérico Decimal (Float)». When
+  editing a numeric attribute, the «Tipo de dato» dropdown stays available with only those two choices,
+  so switching between integer and decimal (a format change, FR-008) is still possible; every other
+  type stays locked (FR-010). The detail (FR-006) shows the choice label and no separate format row.*
 - **FR-008 – What can change**: The display name, the description and the type-specific properties
   MAY change. The display name MUST stay unique ignoring letter case and surrounding spaces among the
   *other* attributes (feature 004 FR-023); keeping the own name, or changing only its letter case, is

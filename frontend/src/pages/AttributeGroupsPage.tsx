@@ -14,6 +14,7 @@ import {
   type AttributeGroupSummary,
 } from '../api/attributeGroupsApi'
 import { matchesFilters } from '../attributes/attributeBrowsing'
+import { DATA_TYPE_LABELS } from '../attributes/dataTypeChoices'
 import {
   Button,
   Card,
@@ -29,17 +30,6 @@ const CONNECTION_ERROR = 'No se pudo conectar con el servidor. Inténtalo de nue
 const NAME_REQUIRED = 'Escribe el nombre del grupo.'
 /** Attributes shown at a time in "Agregar atributos" (feature 009 FR-015). */
 const PICKER_PAGE_SIZE = 50
-
-/** Spanish labels of feature 004's data types, for the member list. */
-const DATA_TYPE_LABELS: Record<string, string> = {
-  TEXT: 'Texto',
-  NUMERIC: 'Numérico',
-  BOOLEAN: 'Booleano',
-  LIST_OF_VALUES: 'Lista de valores',
-  DATE_TIME: 'Fecha y hora',
-  CURRENCY: 'Moneda',
-  REFERENCE: 'Referencia',
-}
 
 type ListState =
   { status: 'loading' } | { status: 'error' } | { status: 'ready'; groups: AttributeGroupSummary[] }

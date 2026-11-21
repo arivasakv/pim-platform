@@ -322,6 +322,21 @@ Sources: the feature request and `p360:ERF - HUs/ERF 1.1 Plantillas.docx`, cited
   **Numérico (Integer / Float)**, **Booleano (Sí / No)**, **Lista de valores (LOV)**, **Fecha y hora
   (Date/Time)**, **Moneda (Currency)**, **Referencia (Reference / Relationship)**. An attribute
   without a data type MUST NOT be saved. [3.2.1 introduction and type list]
+  *Amended 2026-11-20 by the project owner (option B):* the «Tipo de Dato» dropdown MUST offer eight
+  choices, in this order and with these labels, as in the owner's requirement of 2026-11-20 («Tipo de
+  Dato: Desplegable con opciones Texto (String), Numérico Entero (Integer), Numérico Decimal (Float),
+  Booleano (Sí/No), Lista de Valores (LOV), Fecha y Hora (Date/Time), Moneda (Currency) y Referencias /
+  Relaciones»): **Texto (String)**, **Numérico Entero (Integer)**, **Numérico Decimal (Float)**,
+  **Booleano (Sí/No)**, **Lista de Valores (LOV)**, **Fecha y Hora (Date/Time)**, **Moneda (Currency)**,
+  **Referencias / Relaciones**. The two numeric choices are a presentation of the single stored type
+  Numérico with its FR-010 format (Entero → `NUMERIC` + `INTEGER`, Decimal → `NUMERIC` + `DECIMAL`):
+  choosing one sets the format, so the form no longer asks for it separately. The stored data and the
+  API shapes do not change; the type labels returned by the API change to the ones above, and the
+  stored type Numérico is labelled «Numérico (Integer / Float)» where its format is not known (attribute
+  group members, taxonomy assignments). Where the full attribute is known (list, detail, filters), a
+  numeric attribute shows the label of its choice. ERF 1.1 §3.2.1 lists one «Numéricos (Integer /
+  Float)» type; the owner's split is a presentation decision on top of it. The owner's requirement text
+  was not found in the reference repository (open question: source document).
 
 **Type-specific properties** (set at creation; properties that do not apply to the chosen type are
 not stored, A-004)

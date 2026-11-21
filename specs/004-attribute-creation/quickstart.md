@@ -50,7 +50,7 @@ Use `X-Pim-Permissions: ATTRIBUTE_CREATE` unless the scenario says otherwise.
 
 | # | Steps | Expected |
 |---|---|---|
-| U1 | Open "Atributos" from the side navigation and choose "Nuevo atributo" (feature 007 replaced the "Crear Atributos" entry) | Form with display name, optional ID, data type (7 options from the backend) |
+| U1 | Open "Atributos" from the side navigation and choose "Nuevo atributo" (feature 007 replaced the "Crear Atributos" entry) | Form with display name, optional ID, data type (8 choices: the 7 backend types, with Numérico shown as «Numérico Entero (Integer)» and «Numérico Decimal (Float)», FR-007 amendment of 2026-11-20) |
 | U2 | Choose each type in turn | Only that type's fields appear; Booleano shows none |
 | U3 | Create "Peso neto", Numérico, Decimal, 2 decimals, 0–999.99 | Spanish confirmation showing the new ID; form ready for another attribute |
 | U4 | Create a second "peso neto" | Spanish message that the name is already used; entered data kept |

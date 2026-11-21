@@ -236,6 +236,9 @@ Grupos") and §3.2.2 ("Es recomendable poder agrupar los atributos para facilita
 - **FR-005 – Combined filters**: Search by display name or system ID and the data type filter (feature
   007 FR-005, unchanged rules) MUST apply within the chosen entry. Changing the entry MUST keep the
   search text and type filter and restart the "Mostrar más" paging. [Feature request §4.C]
+- *Amended 2026-11-20 (feature 004 FR-007 amendment, option B): the data type filter offers the same
+  eight choices as the creation form; «Numérico Entero (Integer)» and «Numérico Decimal (Float)» each
+  match only the numeric attributes of that format.*
 - **FR-006 – Matches elsewhere**: When the search or type filter matches nothing in the chosen group or
   in "Sin grupo" but matches other attributes, the page MUST say how many match elsewhere and offer
   "Buscar en todos los atributos", which chooses "Todos los atributos" and keeps the filters.

@@ -26,6 +26,7 @@ import {
 } from '../attributes/attributeBrowsing'
 import { AttributeFieldPreview } from '../attributes/AttributeFieldPreview'
 import { fromAttribute } from '../attributes/attributeForm'
+import { attributeTypeLabel, typeChoices } from '../attributes/dataTypeChoices'
 import { Button, Card, Notification, PageHeader, SelectField, TextField } from '../components/ui'
 import styles from './AttributesPage.module.css'
 
@@ -223,7 +224,6 @@ export function AttributesPage() {
   const shownLabel = entryLabel(shownEntry, groupsState, attributes)
   const { visible, elsewhere } = browse(attributes, shownEntry, search, typeFilter)
   const filtering = search.trim() !== '' || typeFilter !== ALL_TYPES
-  const typeLabel = (code: string) => types.find((type) => type.code === code)?.label ?? code
 
   return (
     <>
@@ -292,7 +292,7 @@ export function AttributesPage() {
                   id="filtrar-tipo"
                   label="Tipo de dato"
                   placeholder="Todos"
-                  options={types}
+                  options={typeChoices(types)}
                   value={typeFilter}
                   onChange={(code) => {
                     setTypeFilter(code)
@@ -322,7 +322,7 @@ export function AttributesPage() {
                         >
                           <span className={styles.listName}>{attribute.displayName}</span>
                           <span className={styles.systemId}>
-                            {attribute.systemId} · {typeLabel(attribute.dataType)}
+                            {attribute.systemId} · {attributeTypeLabel(attribute, types)}
                           </span>
                           <span className={styles.counts}>
                             {attribute.groups && attribute.groups.length > 0
@@ -543,7 +543,7 @@ function AttributeDetail({ attribute, types }: AttributeDetailProps) {
       ? undefined
       : (type?.options[property]?.find((candidate) => candidate.code === code)?.label ?? code)
   const rows: Array<[string, ReactNode]> = [
-    ['Tipo de dato', type?.label ?? attribute.dataType],
+    ['Tipo de dato', attributeTypeLabel(attribute, types)],
     ['Alcance', 'Global'],
   ]
   const add = (label: string, value: ReactNode | undefined) => {
@@ -560,7 +560,6 @@ function AttributeDetail({ attribute, types }: AttributeDetailProps) {
   }
   const numeric = attribute.numericProperties
   if (numeric) {
-    add('Formato', option('numberFormat', numeric.numberFormat))
     add('Decimales', numeric.precision)
     add('Valor mínimo', numeric.minimum)
     add('Valor máximo', numeric.maximum)

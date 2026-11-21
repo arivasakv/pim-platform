@@ -10,7 +10,7 @@ const TYPES = {
   items: [
     {
       code: 'TEXT',
-      label: 'Texto',
+      label: 'Texto (String)',
       options: {
         caseFormat: [
           { code: 'UPPERCASE', label: 'Mayúsculas' },
@@ -21,7 +21,7 @@ const TYPES = {
     },
     {
       code: 'NUMERIC',
-      label: 'Numérico',
+      label: 'Numérico (Integer / Float)',
       options: {
         numberFormat: [
           { code: 'INTEGER', label: 'Entero' },
@@ -29,10 +29,10 @@ const TYPES = {
         ],
       },
     },
-    { code: 'BOOLEAN', label: 'Booleano', options: {} },
+    { code: 'BOOLEAN', label: 'Booleano (Sí/No)', options: {} },
     {
       code: 'LIST_OF_VALUES',
-      label: 'Lista de valores',
+      label: 'Lista de Valores (LOV)',
       options: {
         selectionMode: [
           { code: 'SINGLE', label: 'Selección única' },
@@ -42,13 +42,13 @@ const TYPES = {
     },
     {
       code: 'DATE_TIME',
-      label: 'Fecha y hora',
+      label: 'Fecha y Hora (Date/Time)',
       options: { dateFormat: [{ code: 'DD/MM/AAAA', label: 'DD/MM/AAAA' }] },
     },
-    { code: 'CURRENCY', label: 'Moneda', options: {} },
+    { code: 'CURRENCY', label: 'Moneda (Currency)', options: {} },
     {
       code: 'REFERENCE',
-      label: 'Referencia',
+      label: 'Referencias / Relaciones',
       options: {
         targetObjectType: [{ code: 'PRODUCT', label: 'Producto' }],
         cardinality: [
@@ -151,13 +151,14 @@ describe('AttributeEditor (create mode, feature 004)', () => {
     const typeSelect = await screen.findByLabelText<HTMLSelectElement>('Tipo de dato')
     expect(Array.from(typeSelect.options).map((option) => option.textContent)).toEqual([
       'Elige un tipo de dato',
-      'Texto',
-      'Numérico',
-      'Booleano',
-      'Lista de valores',
-      'Fecha y hora',
-      'Moneda',
-      'Referencia',
+      'Texto (String)',
+      'Numérico Entero (Integer)',
+      'Numérico Decimal (Float)',
+      'Booleano (Sí/No)',
+      'Lista de Valores (LOV)',
+      'Fecha y Hora (Date/Time)',
+      'Moneda (Currency)',
+      'Referencias / Relaciones',
     ])
     expect(screen.getByLabelText('Nombre')).toBeTruthy()
     expect(screen.queryByLabelText('Descripción')).toBeNull()
@@ -354,10 +355,10 @@ describe('AttributeEditor (create mode, feature 004)', () => {
     await renderReadyPage()
 
     type('Nombre', 'Peso')
-    type('Tipo de dato', 'NUMERIC')
-    type('Formato', 'INTEGER')
+    type('Tipo de dato', 'NUMERIC_INTEGER')
+    expect(screen.queryByLabelText('Formato')).toBeNull()
     expect(screen.queryByLabelText('Decimales')).toBeNull()
-    type('Formato', 'DECIMAL')
+    type('Tipo de dato', 'NUMERIC_DECIMAL')
     expect(screen.getByLabelText('Decimales')).toBeTruthy()
     type('Valor mínimo', '5')
     type('Valor máximo', '1')
@@ -367,6 +368,24 @@ describe('AttributeEditor (create mode, feature 004)', () => {
       await screen.findByText('El valor mínimo no puede ser mayor que el valor máximo.'),
     ).toBeTruthy()
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('creates an integer number from the "Numérico Entero (Integer)" choice', async () => {
+    const fetchMock = stubBackend(() =>
+      Promise.resolve(response(201, { systemId: 'ATR000001', displayName: 'Piezas' })),
+    )
+    await renderReadyPage()
+
+    type('Nombre', 'Piezas')
+    type('Tipo de dato', 'NUMERIC_INTEGER')
+    save()
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    expect(lastRequestBody(fetchMock)).toEqual({
+      displayName: 'Piezas',
+      dataType: 'NUMERIC',
+      numericProperties: { numberFormat: 'INTEGER' },
+    })
   })
 
   it('shows the date and currency fields', async () => {
@@ -508,7 +527,7 @@ describe('AttributeEditor (edit mode, feature 007)', () => {
     vi.unstubAllGlobals()
   })
 
-  it('fills the form, shows the ID read-only and does not let the type change', async () => {
+  it('fills the form, shows the ID read-only and only lets a number switch integer/decimal', async () => {
     stubBackend()
     render(<AttributeEditor mode="edit" attribute={PESO} />)
     await screen.findByLabelText('Tipo de dato')
@@ -517,7 +536,14 @@ describe('AttributeEditor (edit mode, feature 007)', () => {
     const id = screen.getByLabelText<HTMLInputElement>('ID')
     expect(id.value).toBe('ATR000001')
     expect(id.readOnly).toBe(true)
-    expect(screen.getByLabelText<HTMLSelectElement>('Tipo de dato').disabled).toBe(true)
+    const typeSelect = screen.getByLabelText<HTMLSelectElement>('Tipo de dato')
+    expect(typeSelect.disabled).toBe(false)
+    expect(typeSelect.value).toBe('NUMERIC_DECIMAL')
+    expect(Array.from(typeSelect.options).map((option) => option.textContent)).toEqual([
+      'Elige un tipo de dato',
+      'Numérico Entero (Integer)',
+      'Numérico Decimal (Float)',
+    ])
     expect(screen.getByLabelText<HTMLInputElement>('Nombre').value).toBe('Peso')
     expect(screen.queryByLabelText('Descripción')).toBeNull()
     expect(screen.getByLabelText<HTMLInputElement>('Decimales').value).toBe('2')
@@ -543,6 +569,39 @@ describe('AttributeEditor (edit mode, feature 007)', () => {
       dataType: 'NUMERIC',
       numericProperties: { numberFormat: 'DECIMAL', precision: 2, minimum: 0 },
     })
+  })
+
+  it('switches a number from decimal to integer and sends no decimals', async () => {
+    const fetchMock = stubBackend(() => Promise.resolve(response(200, PESO)))
+    render(<AttributeEditor mode="edit" attribute={PESO} onSaved={vi.fn()} />)
+    await screen.findByLabelText('Tipo de dato')
+
+    type('Tipo de dato', 'NUMERIC_INTEGER')
+    expect(screen.queryByLabelText('Decimales')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    expect(lastRequestBody(fetchMock)).toMatchObject({
+      dataType: 'NUMERIC',
+      numericProperties: { numberFormat: 'INTEGER', minimum: 0 },
+    })
+    expect(lastRequestBody(fetchMock)).not.toHaveProperty('numericProperties.precision')
+  })
+
+  it('keeps every other data type locked while editing', async () => {
+    stubBackend()
+    const activo = {
+      systemId: 'ATR000002',
+      displayName: 'Activo',
+      dataType: 'BOOLEAN' as const,
+      scope: 'GLOBAL' as const,
+      groups: [],
+    }
+    render(<AttributeEditor mode="edit" attribute={activo} />)
+
+    const typeSelect = await screen.findByLabelText<HTMLSelectElement>('Tipo de dato')
+    expect(typeSelect.disabled).toBe(true)
+    expect(typeSelect.value).toBe('BOOLEAN')
   })
 
   it('shows a duplicate name next to the name field', async () => {
@@ -594,7 +653,7 @@ describe('AttributeEditor with the field preview (feature 008)', () => {
     expect(within(panel).getByText('Elige un tipo de dato para ver el campo.')).toBeTruthy()
 
     type('Nombre', 'Peso')
-    type('Tipo de dato', 'NUMERIC')
+    type('Tipo de dato', 'NUMERIC_INTEGER')
     const field = await within(panel).findByLabelText<HTMLInputElement>('Peso (opcional)')
     expect(field.type).toBe('number')
   })

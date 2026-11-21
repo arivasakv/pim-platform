@@ -9,6 +9,7 @@ import {
   type AttributeType,
   type DataType,
 } from '../api/attributesApi'
+import { choiceOf, fromChoice, numericChoices, typeChoices } from './dataTypeChoices'
 import { listLists, type ListOfValuesSummary } from '../api/listsOfValuesApi'
 import { Button, Card, CheckboxField, Notification, SelectField, TextField } from '../components/ui'
 import {
@@ -114,6 +115,22 @@ export function AttributeEditor({
     setForm((current) => ({ ...current, ...changes }))
   }
 
+  /**
+   * One of the eight «Tipo de dato» choices (feature 004 FR-007, amended 2026-11-20): a numeric
+   * choice sets the data type Numérico and its format together.
+   */
+  function chooseType(choice: string) {
+    const { dataType, numberFormat } = fromChoice(choice)
+    setForm((current) => ({
+      ...current,
+      dataType,
+      numeric: numberFormat === undefined ? current.numeric : { ...current.numeric, numberFormat },
+    }))
+  }
+
+  /** While editing, only a numeric attribute may change its choice, between integer and decimal. */
+  const numericEdit = editing && form.dataType === 'NUMERIC'
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const formErrors = validateForm(form)
@@ -212,11 +229,12 @@ export function AttributeEditor({
             id="dataType"
             label="Tipo de dato"
             placeholder="Elige un tipo de dato"
-            options={typesState.types}
-            value={form.dataType}
-            onChange={(code) => update({ dataType: code as DataType | '' })}
-            error={errors.dataType}
-            disabled={editing}
+            options={numericEdit ? numericChoices() : typeChoices(typesState.types)}
+            value={choiceOf(form.dataType, form.numeric.numberFormat)}
+            onChange={chooseType}
+            error={errors.dataType ?? errors['numericProperties.numberFormat']}
+            hint={numericEdit ? 'Puedes cambiar entre entero y decimal.' : undefined}
+            disabled={editing && !numericEdit}
           />
 
           <TypeFields
@@ -269,7 +287,6 @@ const FORM_FIELDS = new Set([
   'textProperties.maxLength',
   'textProperties.caseFormat',
   'textProperties.captureMask',
-  'numericProperties.numberFormat',
   'numericProperties.precision',
   'numericProperties.minimum',
   'numericProperties.maximum',
@@ -354,15 +371,6 @@ function TypeFields({ form, errors, options, listsState, onChange }: TypeFieldsP
       return (
         <fieldset className={styles.typeFields}>
           <legend className={styles.legend}>Propiedades numéricas</legend>
-          <SelectField
-            id="numeric-numberFormat"
-            label="Formato"
-            placeholder="Elige un formato"
-            options={options.numberFormat ?? []}
-            value={form.numeric.numberFormat}
-            onChange={(code) => set({ numberFormat: code })}
-            error={errors['numericProperties.numberFormat']}
-          />
           {form.numeric.numberFormat === 'DECIMAL' && (
             <TextField
               id="numeric-precision"

@@ -11,7 +11,7 @@ const TYPES = {
   items: [
     {
       code: 'NUMERIC',
-      label: 'Numérico',
+      label: 'Numérico (Integer / Float)',
       options: {
         numberFormat: [
           { code: 'INTEGER', label: 'Entero' },
@@ -331,8 +331,8 @@ describe('AttributesPage', () => {
     const detail = screen.getByRole('region', { name: 'Peso logístico' })
     expect(within(detail).getByText('ATR000001')).toBeTruthy()
     expect(within(detail).queryByText('Descripción')).toBeNull()
-    expect(within(detail).getByText('Numérico')).toBeTruthy()
-    expect(within(detail).getByText('Decimal')).toBeTruthy()
+    expect(within(detail).getByText('Numérico Decimal (Float)')).toBeTruthy()
+    expect(within(detail).queryByText('Formato')).toBeNull()
     expect(within(detail).getByText('Logísticos')).toBeTruthy()
     expect(within(detail).getByText('Creado')).toBeTruthy()
     expect(within(detail).queryByText('Modificado')).toBeNull()
@@ -741,7 +741,9 @@ describe('AttributesPage', () => {
     render(<AttributesPage />)
     await screen.findByText('3 atributos')
 
-    fireEvent.change(screen.getByLabelText('Tipo de dato'), { target: { value: 'NUMERIC' } })
+    fireEvent.change(screen.getByLabelText('Tipo de dato'), {
+      target: { value: 'NUMERIC_DECIMAL' },
+    })
     await choose(/^Sin grupo/)
     expect(screen.getByText('Ningún atributo sin grupo coincide con la búsqueda.')).toBeTruthy()
     expect(screen.getByText('2 coincidencias en otros grupos.')).toBeTruthy()

@@ -233,7 +233,7 @@ describe('AttributeGroupsPage', () => {
 
     expect(await panel.findByText('Volumen')).toBeTruthy()
     expect(panel.getByText('Peso')).toBeTruthy()
-    expect(panel.getAllByText('Numérico')).toHaveLength(2)
+    expect(panel.getAllByText('Numérico (Integer / Float)')).toHaveLength(2)
     expect(panel.getByText('ATR000001')).toBeTruthy()
     expect(await groupList().findByText('2 atributos')).toBeTruthy()
     expect(panel.queryByLabelText(/Peso \(ATR000001\)/)).toBeNull()

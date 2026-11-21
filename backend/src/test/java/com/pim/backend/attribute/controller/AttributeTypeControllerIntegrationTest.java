@@ -36,13 +36,13 @@ class AttributeTypeControllerIntegrationTest {
                                 "TEXT", "NUMERIC", "BOOLEAN", "LIST_OF_VALUES", "DATE_TIME", "CURRENCY", "REFERENCE")))
                 .andExpect(jsonPath("$.items[*].label")
                         .value(contains(
-                                "Texto",
-                                "Numérico",
-                                "Booleano",
-                                "Lista de valores",
-                                "Fecha y hora",
-                                "Moneda",
-                                "Referencia")))
+                                "Texto (String)",
+                                "Numérico (Integer / Float)",
+                                "Booleano (Sí/No)",
+                                "Lista de Valores (LOV)",
+                                "Fecha y Hora (Date/Time)",
+                                "Moneda (Currency)",
+                                "Referencias / Relaciones")))
                 .andExpect(jsonPath("$.items[0].options.caseFormat", hasSize(3)))
                 .andExpect(jsonPath("$.items[0].options.caseFormat[0].code").value("UPPERCASE"))
                 .andExpect(jsonPath("$.items[0].options.caseFormat[0].label").value("Mayúsculas"))

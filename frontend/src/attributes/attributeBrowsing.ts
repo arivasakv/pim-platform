@@ -1,5 +1,6 @@
 import type { Attribute } from '../api/attributesApi'
 import type { AttributeGroupSummary } from '../api/attributeGroupsApi'
+import { matchesChoice } from './dataTypeChoices'
 
 /**
  * What the "Atributos" page lists (feature 009): every attribute, those in no group, or the
@@ -23,9 +24,12 @@ export function normalized(text: string): string {
   return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
 
-/** Feature 007's search rule: type equal (or all), and name or system ID contains the search. */
+/**
+ * Feature 007's search rule: the type choice matches (or all), and name or system ID contains the
+ * search. The type is one of the eight choices of feature 004 FR-007 (amended 2026-11-20).
+ */
 export function matchesFilters(attribute: Attribute, search: string, dataType: string): boolean {
-  if (dataType !== ALL_TYPES && attribute.dataType !== dataType) return false
+  if (dataType !== ALL_TYPES && !matchesChoice(attribute, dataType)) return false
   const wanted = normalized(search.trim())
   if (wanted === '') return true
   return (
