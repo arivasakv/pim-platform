@@ -92,7 +92,7 @@ class AttributeGroupDirectoryAdapterTest {
     private String createAttribute(String name) {
         return attributeService
                 .create(
-                        new AttributeDraft(null, name, null, AttributeDataType.BOOLEAN, null),
+                        new AttributeDraft(null, name, AttributeDataType.BOOLEAN, null),
                         CAN_CHANGE,
                         ManualIdPermissions.fromCodes(null))
                 .systemId();

@@ -63,6 +63,7 @@ describe('attributesApi', () => {
 
   it('omits the permission headers when they are not configured', async () => {
     vi.stubEnv('VITE_DEV_PERMISSIONS', '')
+    vi.stubEnv('VITE_DEV_MANUAL_ID_PERMISSIONS', '')
     const fetchMock = stubFetch(() => Promise.resolve(response(201, {})))
 
     await createAttribute(BOOLEAN_REQUEST)

@@ -68,7 +68,7 @@ class AttributeControllerIntegrationTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.systemId").value("ATR000001"))
                 .andExpect(jsonPath("$.displayName").value("Apto para regalo"))
-                .andExpect(jsonPath("$.description").isEmpty())
+                .andExpect(jsonPath("$.description").doesNotExist())
                 .andExpect(jsonPath("$.dataType").value("BOOLEAN"))
                 .andExpect(jsonPath("$.scope").value("GLOBAL"))
                 .andExpect(jsonPath("$.createdAt", notNullValue()))
@@ -103,6 +103,14 @@ class AttributeControllerIntegrationTest {
     }
 
     @Test
+    void ignoresADescriptionSentByAnOldClient() throws Exception {
+        // Attributes have no description since 2026-11-20 (feature 004 FR-003, contract v2.0.0).
+        create("{\"displayName\":\"Peso\",\"description\":\"" + "d".repeat(1001) + "\",\"dataType\":\"BOOLEAN\"}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.description").doesNotExist());
+    }
+
+    @Test
     void validatesTheCommonFields() throws Exception {
         create("{\"dataType\":\"BOOLEAN\"}")
                 .andExpect(status().isBadRequest())
@@ -114,10 +122,6 @@ class AttributeControllerIntegrationTest {
         create("{\"displayName\":\"" + "x".repeat(121) + "\",\"dataType\":\"BOOLEAN\"}")
                 .andExpect(status().isBadRequest())
                 .andExpect(error("displayName", "INVALID_DISPLAY_NAME"));
-        create("{\"displayName\":\"Peso\",\"description\":\"" + "d".repeat(1001) + "\",\"dataType\":\"BOOLEAN\"}")
-                .andExpect(status().isBadRequest())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(error("description", "INVALID_DESCRIPTION"));
         create("{\"displayName\":\"Color\",\"dataType\":\"COLOR\"}")
                 .andExpect(status().isBadRequest())
                 .andExpect(error("dataType", "UNKNOWN_DATA_TYPE"));

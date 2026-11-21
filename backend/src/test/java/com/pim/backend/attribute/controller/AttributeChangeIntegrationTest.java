@@ -105,7 +105,7 @@ class AttributeChangeIntegrationTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.systemId").value(peso))
                 .andExpect(jsonPath("$.displayName").value("Peso neto"))
-                .andExpect(jsonPath("$.description").value("Sin empaque"))
+                .andExpect(jsonPath("$.description").doesNotExist())
                 .andExpect(jsonPath("$.dataType").value("NUMERIC"))
                 .andExpect(jsonPath("$.scope").value("GLOBAL"))
                 .andExpect(jsonPath("$.numericProperties.precision").value(3))

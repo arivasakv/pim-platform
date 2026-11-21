@@ -10,15 +10,7 @@ import {
   type DataType,
 } from '../api/attributesApi'
 import { listLists, type ListOfValuesSummary } from '../api/listsOfValuesApi'
-import {
-  Button,
-  Card,
-  CheckboxField,
-  Notification,
-  SelectField,
-  TextAreaField,
-  TextField,
-} from '../components/ui'
+import { Button, Card, CheckboxField, Notification, SelectField, TextField } from '../components/ui'
 import {
   emptyForm,
   fromAttribute,
@@ -216,15 +208,6 @@ export function AttributeEditor({
             onChange={(event) => update({ displayName: event.target.value })}
             error={errors.displayName}
           />
-          <TextAreaField
-            id="description"
-            label="Descripción"
-            maxLength={1000}
-            hint="Opcional."
-            value={form.description}
-            onChange={(event) => update({ description: event.target.value })}
-            error={errors.description}
-          />
           <SelectField
             id="dataType"
             label="Tipo de dato"
@@ -280,7 +263,6 @@ export function AttributeEditor({
 /** Request fields that have an input on this page; other errors are shown as a notification. */
 const FORM_FIELDS = new Set([
   'displayName',
-  'description',
   'systemId',
   'dataType',
   'textProperties.minLength',

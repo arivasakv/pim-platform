@@ -15,7 +15,7 @@ shows, so tests and reviewers share one reference. Texts are exact (Spanish, es-
 - Heading (h3): **Vista previa del campo**
 - Note: **Así se verá el campo en un formulario de producto. Lo que escribas aquí no se guarda.**
 - Label of the field: **{nombre} (opcional)**; empty name: **Nombre del atributo (opcional)**.
-- Help text: the description, then the rule texts below, joined with " · ".
+- Help text: the rule texts below, joined with " · " (attributes have no description since 2026-11-20, spec FR-004 amendment).
 - Configuration notes, when any: an info notification **Vista previa con ajustes:** followed by one
   line per note.
 

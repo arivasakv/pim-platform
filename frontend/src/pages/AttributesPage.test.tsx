@@ -44,7 +44,6 @@ function peso(): Attribute {
   return {
     systemId: 'ATR000001',
     displayName: 'Peso logístico',
-    description: 'Peso bruto',
     dataType: 'NUMERIC',
     scope: 'GLOBAL',
     numericProperties: { numberFormat: 'DECIMAL', precision: 2 },
@@ -255,7 +254,6 @@ function organized(): Attribute[] {
       ...peso(),
       systemId: 'ATR000004',
       displayName: 'Volumen',
-      description: undefined,
       groups: [LOGISTICOS],
     },
     activo(),
@@ -332,7 +330,7 @@ describe('AttributesPage', () => {
 
     const detail = screen.getByRole('region', { name: 'Peso logístico' })
     expect(within(detail).getByText('ATR000001')).toBeTruthy()
-    expect(within(detail).getByText('Peso bruto')).toBeTruthy()
+    expect(within(detail).queryByText('Descripción')).toBeNull()
     expect(within(detail).getByText('Numérico')).toBeTruthy()
     expect(within(detail).getByText('Decimal')).toBeTruthy()
     expect(within(detail).getByText('Logísticos')).toBeTruthy()

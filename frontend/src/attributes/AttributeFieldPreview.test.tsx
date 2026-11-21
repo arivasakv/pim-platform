@@ -82,7 +82,6 @@ describe('AttributeFieldPreview', () => {
       <AttributeFieldPreview
         form={form({
           dataType: 'TEXT',
-          description: 'Código interno',
           text: {
             ...emptyForm().text,
             minLength: '2',
@@ -97,9 +96,7 @@ describe('AttributeFieldPreview', () => {
 
     const input = field()
     expect(input.maxLength).toBe(5)
-    expect(
-      screen.getByText('Código interno · Entre 2 y 5 caracteres · Se escribe en mayúsculas.'),
-    ).toBeTruthy()
+    expect(screen.getByText('Entre 2 y 5 caracteres · Se escribe en mayúsculas.')).toBeTruthy()
     fireEvent.change(input, { target: { value: 'ab1' } })
     expect(input.value).toBe('AB1')
     expect(screen.getByText('No cumple la máscara de captura.')).toBeTruthy()

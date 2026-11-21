@@ -4,7 +4,6 @@ import type { Attribute, AttributeCreationRequest, DataType } from '../api/attri
 export type AttributeForm = {
   systemId: string
   displayName: string
-  description: string
   dataType: DataType | ''
   text: {
     minLength: string
@@ -28,7 +27,6 @@ export function emptyForm(): AttributeForm {
   return {
     systemId: '',
     displayName: '',
-    description: '',
     dataType: '',
     text: { minLength: '', maxLength: '', caseFormat: '', captureMask: '', richText: false },
     numeric: { numberFormat: '', precision: '', minimum: '', maximum: '' },
@@ -58,7 +56,6 @@ export function fromAttribute(attribute: Attribute): AttributeForm {
     ...form,
     systemId: attribute.systemId,
     displayName: attribute.displayName,
-    description: attribute.description ?? '',
     dataType: attribute.dataType,
     text: text
       ? {
@@ -168,7 +165,6 @@ export function toRequest(form: AttributeForm): AttributeCreationRequest {
   const dataType = form.dataType as DataType
   const request: AttributeCreationRequest = {
     displayName: form.displayName.trim(),
-    description: text(form.description) ?? null,
     dataType,
   }
   const systemId = text(form.systemId)

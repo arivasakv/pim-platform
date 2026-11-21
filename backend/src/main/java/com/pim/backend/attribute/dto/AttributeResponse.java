@@ -16,12 +16,11 @@ import java.util.List;
 /**
  * An attribute as returned by the API (contract {@code Attribute}). Only the properties object of its data type is
  * present; {@code BOOLEAN} has none. Feature 007 (contract v1.2.0) adds {@code groups}, {@code updatedAt} (absent
- * until the first edit) and the linked list's name.
+ * until the first edit) and the linked list's name. Contract v2.0.0 removes {@code description}.
  */
 public record AttributeResponse(
         String systemId,
         String displayName,
-        String description,
         String dataType,
         String scope,
         @JsonInclude(JsonInclude.Include.NON_NULL) TextPropertiesDto textProperties,
@@ -40,7 +39,6 @@ public record AttributeResponse(
         return new AttributeResponse(
                 attribute.systemId(),
                 attribute.displayName().value(),
-                attribute.description().orElse(null),
                 attribute.dataType().name(),
                 attribute.scope().name(),
                 properties instanceof TextProperties text ? text(text) : null,

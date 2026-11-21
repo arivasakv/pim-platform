@@ -84,7 +84,7 @@ class TaxonomyServiceTest {
 
     private Attribute createAttribute(String name) {
         return attributeService.create(
-                new AttributeDraft(null, name, null, AttributeDataType.BOOLEAN, null),
+                new AttributeDraft(null, name, AttributeDataType.BOOLEAN, null),
                 CAN_CHANGE,
                 ManualIdPermissions.fromCodes(null));
     }
@@ -348,7 +348,7 @@ class TaxonomyServiceTest {
         service.addAttributes(ropa, List.of(color.systemId()), CAN_CHANGE);
         attributeService.update(
                 color.systemId(),
-                new AttributeDraft(color.systemId(), "Color principal", null, AttributeDataType.BOOLEAN, null),
+                new AttributeDraft(color.systemId(), "Color principal", AttributeDataType.BOOLEAN, null),
                 CAN_CHANGE);
 
         assertThat(names(service.find(ropa))).containsExactly("Color principal");

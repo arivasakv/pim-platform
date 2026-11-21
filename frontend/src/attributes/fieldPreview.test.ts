@@ -38,9 +38,8 @@ describe('describePreview: core (FR-004, FR-010, FR-011)', () => {
     )
   })
 
-  it('starts the help text with the description', () => {
-    const preview = describePreview(form({ dataType: 'BOOLEAN', description: ' Peso bruto ' }), {})
-    expect(preview.hintParts).toEqual(['Peso bruto'])
+  it('has no help text for a field without rules (attributes have no description)', () => {
+    expect(describePreview(form({ dataType: 'BOOLEAN' }), {}).hintParts).toEqual([])
   })
 
   it('asks for a data type before showing a field', () => {

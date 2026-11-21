@@ -25,7 +25,7 @@ export type PreviewKind =
 export type FieldPreview = {
   kind: PreviewKind
   label: string
-  /** Help text parts: the description first, then the rules; joined with " · ". */
+  /** Help text parts: the rules, joined with " · " (attributes have no description since 2026-11-20). */
   hintParts: string[]
   /** Settings the preview cannot use, in plain Spanish (FR-010). */
   notes: string[]
@@ -132,8 +132,6 @@ export function describePreview(
 ): FieldPreview {
   const notes: string[] = []
   const hintParts: string[] = []
-  const description = form.description.trim()
-  if (description) hintParts.push(description)
   const preview: FieldPreview = {
     kind: 'none',
     label: `${form.displayName.trim() || UNNAMED} (opcional)`,

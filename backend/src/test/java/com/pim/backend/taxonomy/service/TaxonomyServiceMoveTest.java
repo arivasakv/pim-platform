@@ -117,7 +117,7 @@ class TaxonomyServiceMoveTest {
         return attributes.computeIfAbsent(
                 name,
                 key -> attributeService.create(
-                        new AttributeDraft(null, key, null, AttributeDataType.BOOLEAN, null),
+                        new AttributeDraft(null, key, AttributeDataType.BOOLEAN, null),
                         CAN_CHANGE,
                         ManualIdPermissions.fromCodes(null)));
     }

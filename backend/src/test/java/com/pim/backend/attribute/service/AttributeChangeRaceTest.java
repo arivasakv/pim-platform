@@ -80,7 +80,7 @@ class AttributeChangeRaceTest {
             for (int round = 0; round < ROUNDS; round++) {
                 String attributeId = attributeService
                         .create(
-                                new AttributeDraft(null, "Atributo " + round, null, AttributeDataType.BOOLEAN, null),
+                                new AttributeDraft(null, "Atributo " + round, AttributeDataType.BOOLEAN, null),
                                 CAN_CHANGE,
                                 NO_MANUAL_IDS)
                         .systemId();
@@ -178,10 +178,6 @@ class AttributeChangeRaceTest {
 
     private static AttributeDraft listDraft(String name, String listId) {
         return new AttributeDraft(
-                null,
-                name,
-                null,
-                AttributeDataType.LIST_OF_VALUES,
-                new ListOfValuesProperties(SelectionMode.SINGLE, listId));
+                null, name, AttributeDataType.LIST_OF_VALUES, new ListOfValuesProperties(SelectionMode.SINGLE, listId));
     }
 }

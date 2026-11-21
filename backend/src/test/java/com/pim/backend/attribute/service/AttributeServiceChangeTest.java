@@ -107,19 +107,18 @@ class AttributeServiceChangeTest {
     // --- User Story 2: edit ---
 
     @Test
-    void editsTheNameDescriptionAndPropertiesAndKeepsEverythingElse() {
+    void editsTheNameAndPropertiesAndKeepsEverythingElse() {
         Attribute peso = createNumeric("Peso", 2);
         groups.put(peso.systemId(), LOGISTICOS);
 
         AttributeDetails edited = service.update(
                 peso.systemId(),
-                new AttributeDraft(null, " Peso neto ", "Sin empaque", AttributeDataType.NUMERIC, numeric(3)),
+                new AttributeDraft(null, " Peso neto ", AttributeDataType.NUMERIC, numeric(3)),
                 CAN_CHANGE);
 
         Attribute saved = edited.attribute();
         assertThat(saved.systemId()).isEqualTo(peso.systemId());
         assertThat(saved.displayName().value()).isEqualTo("Peso neto");
-        assertThat(saved.description()).contains("Sin empaque");
         assertThat(saved.properties()).isEqualTo(numeric(3));
         assertThat(saved.dataType()).isEqualTo(AttributeDataType.NUMERIC);
         assertThat(saved.scope()).isEqualTo(AttributeScope.GLOBAL);
@@ -152,15 +151,13 @@ class AttributeServiceChangeTest {
 
         assertThatThrownBy(() -> service.update(
                         peso.systemId(),
-                        new AttributeDraft("OTRO1", "Peso", null, AttributeDataType.NUMERIC, numeric(2)),
+                        new AttributeDraft("OTRO1", "Peso", AttributeDataType.NUMERIC, numeric(2)),
                         CAN_CHANGE))
                 .isInstanceOfSatisfying(
                         ImmutableFieldException.class,
                         exception -> assertThat(exception.code()).isEqualTo(AttributeErrorCode.SYSTEM_ID_IMMUTABLE));
         assertThatThrownBy(() -> service.update(
-                        peso.systemId(),
-                        new AttributeDraft(null, "Peso", null, AttributeDataType.BOOLEAN, null),
-                        CAN_CHANGE))
+                        peso.systemId(), new AttributeDraft(null, "Peso", AttributeDataType.BOOLEAN, null), CAN_CHANGE))
                 .isInstanceOfSatisfying(
                         ImmutableFieldException.class,
                         exception -> assertThat(exception.code()).isEqualTo(AttributeErrorCode.DATA_TYPE_IMMUTABLE));
@@ -168,7 +165,7 @@ class AttributeServiceChangeTest {
 
         // The attribute's own ID, in any letter case, is accepted.
         AttributeDraft ownId =
-                new AttributeDraft(peso.systemId().toLowerCase(), "Peso", null, AttributeDataType.NUMERIC, numeric(4));
+                new AttributeDraft(peso.systemId().toLowerCase(), "Peso", AttributeDataType.NUMERIC, numeric(4));
         assertThat(service.update(peso.systemId(), ownId, CAN_CHANGE)
                         .attribute()
                         .properties())
@@ -193,20 +190,13 @@ class AttributeServiceChangeTest {
     }
 
     @Test
-    void validatesTheDisplayNameAndDescriptionAsCreationDoes() {
+    void validatesTheDisplayNameAsCreationDoes() {
         Attribute peso = createNumeric("Peso", 2);
 
         assertThatThrownBy(() -> service.update(peso.systemId(), numericDraft("  ", 2), CAN_CHANGE))
                 .isInstanceOfSatisfying(
                         InvalidAttributeException.class,
                         exception -> assertThat(exception.code()).isEqualTo(AttributeErrorCode.INVALID_DISPLAY_NAME));
-        assertThatThrownBy(() -> service.update(
-                        peso.systemId(),
-                        new AttributeDraft(null, "Peso", "d".repeat(1001), AttributeDataType.NUMERIC, numeric(2)),
-                        CAN_CHANGE))
-                .isInstanceOfSatisfying(
-                        InvalidAttributeException.class,
-                        exception -> assertThat(exception.code()).isEqualTo(AttributeErrorCode.INVALID_DESCRIPTION));
     }
 
     @Test
@@ -244,12 +234,12 @@ class AttributeServiceChangeTest {
                 .isInstanceOf(AttributeChangeNotPermittedException.class);
         // Not found before immutable fields.
         assertThatThrownBy(() -> service.update(
-                        "ATR999", new AttributeDraft(null, "Peso", null, AttributeDataType.BOOLEAN, null), CAN_CHANGE))
+                        "ATR999", new AttributeDraft(null, "Peso", AttributeDataType.BOOLEAN, null), CAN_CHANGE))
                 .isInstanceOf(AttributeNotFoundException.class);
         // Immutable fields before the display name check.
         assertThatThrownBy(() -> service.update(
                         peso.systemId(),
-                        new AttributeDraft(null, "Color", null, AttributeDataType.BOOLEAN, null),
+                        new AttributeDraft(null, "Color", AttributeDataType.BOOLEAN, null),
                         CAN_CHANGE))
                 .isInstanceOf(ImmutableFieldException.class);
     }
@@ -350,7 +340,7 @@ class AttributeServiceChangeTest {
 
         assertThat(createBoolean("Nuevo").systemId()).isNotEqualTo(first.systemId());
         assertThatThrownBy(() -> service.create(
-                        new AttributeDraft(first.systemId(), "Manual", null, AttributeDataType.BOOLEAN, null),
+                        new AttributeDraft(first.systemId(), "Manual", AttributeDataType.BOOLEAN, null),
                         CAN_CHANGE,
                         MANUAL_ATTRIBUTE_IDS))
                 .isInstanceOf(SystemIdInUseException.class);
@@ -362,7 +352,7 @@ class AttributeServiceChangeTest {
 
     private Attribute createBoolean(String name) {
         return service.create(
-                new AttributeDraft(null, name, null, AttributeDataType.BOOLEAN, null), CAN_CHANGE, NO_MANUAL_IDS);
+                new AttributeDraft(null, name, AttributeDataType.BOOLEAN, null), CAN_CHANGE, NO_MANUAL_IDS);
     }
 
     private Attribute createListOfValues(String name, SelectionMode mode, String listId) {
@@ -370,12 +360,12 @@ class AttributeServiceChangeTest {
     }
 
     private static AttributeDraft numericDraft(String name, int precision) {
-        return new AttributeDraft(null, name, null, AttributeDataType.NUMERIC, numeric(precision));
+        return new AttributeDraft(null, name, AttributeDataType.NUMERIC, numeric(precision));
     }
 
     private static AttributeDraft listDraft(String name, SelectionMode mode, String listId) {
         return new AttributeDraft(
-                null, name, null, AttributeDataType.LIST_OF_VALUES, new ListOfValuesProperties(mode, listId));
+                null, name, AttributeDataType.LIST_OF_VALUES, new ListOfValuesProperties(mode, listId));
     }
 
     private static NumericProperties numeric(int precision) {

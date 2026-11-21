@@ -221,10 +221,6 @@ public class AttributeExceptionHandler {
             return error(
                     field, AttributeErrorCode.INVALID_DISPLAY_NAME, AttributeErrorCode.INVALID_DISPLAY_NAME.message());
         }
-        if ("Size".equals(constraint) && "description".equals(field)) {
-            return error(
-                    field, AttributeErrorCode.INVALID_DESCRIPTION, AttributeErrorCode.INVALID_DESCRIPTION.message());
-        }
         if ("Size".equals(constraint) && "systemId".equals(field)) {
             return new ApiFieldError(field, INVALID_SYSTEM_ID, INVALID_SYSTEM_ID_MESSAGE);
         }

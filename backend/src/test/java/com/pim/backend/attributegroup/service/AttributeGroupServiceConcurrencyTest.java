@@ -75,7 +75,7 @@ class AttributeGroupServiceConcurrencyTest {
         List<String> ids = IntStream.rangeClosed(1, 50)
                 .mapToObj(number -> attributeService
                         .create(
-                                new AttributeDraft(null, "Atributo " + number, null, AttributeDataType.BOOLEAN, null),
+                                new AttributeDraft(null, "Atributo " + number, AttributeDataType.BOOLEAN, null),
                                 CAN_CHANGE,
                                 ManualIdPermissions.fromCodes(null))
                         .systemId())

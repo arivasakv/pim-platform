@@ -12,7 +12,7 @@ Spring, HTTP or DTO type (constitution XII).
 |---|---|---|
 | `systemId` | text | From feature 003 (FR-004); identity |
 | `displayName` | text | Required; trimmed; 1–120 characters; unique among attributes ignoring letter case (FR-003, FR-023, R-08) |
-| `description` | text, optional | Trimmed; up to 1,000 characters; blank = absent (R-08) |
+| ~~`description`~~ | removed 2026-11-20 | Attributes have no description (spec FR-003 amendment, contract v2.0.0); a stored value is ignored |
 | `dataType` | AttributeDataType | Required; fixed at creation (FR-007) |
 | `scope` | `GLOBAL` | Always `GLOBAL` in this feature (FR-018) |
 | `properties` | one of the property types below | Only the type matching `dataType`; none for `BOOLEAN` (A-004, R-15) |
@@ -103,7 +103,7 @@ request + headers
   ├─ Bean Validation (required fields, sizes)              → 400 (before the controller runs)
   ├─ data type known; properties of that type valid         → 400 (codes below)
   ├─ no ATTRIBUTE_CREATE permission                        → 403 ATTRIBUTE_CREATE_NOT_PERMITTED
-  ├─ display name and description                          → 400
+  ├─ display name                                          → 400
   ├─ LOV: no lists at all                                  → 422 LIST_OF_VALUES_NOT_AVAILABLE
   │       selection mode or list ID missing                → 400 REQUIRED
   │       list ID unknown                                  → 422 LIST_OF_VALUES_NOT_FOUND
@@ -115,7 +115,7 @@ request + headers
 
 ## Error codes (400 unless stated)
 
-`REQUIRED`, `INVALID_DISPLAY_NAME`, `INVALID_DESCRIPTION`, `UNKNOWN_DATA_TYPE`, `INVALID_LENGTH`,
+`REQUIRED`, `INVALID_DISPLAY_NAME`, `UNKNOWN_DATA_TYPE`, `INVALID_LENGTH`,
 `INVALID_LENGTH_RANGE`, `UNKNOWN_CASE_FORMAT`, `INVALID_CAPTURE_MASK`, `UNKNOWN_NUMBER_FORMAT`,
 `INVALID_PRECISION`, `INVALID_NUMBER`, `INVALID_VALUE_RANGE`, `UNKNOWN_SELECTION_MODE`,
 `UNKNOWN_DATE_FORMAT`, `UNKNOWN_CURRENCY`, `INVALID_DECIMALS`, `UNKNOWN_TARGET_OBJECT_TYPE`,

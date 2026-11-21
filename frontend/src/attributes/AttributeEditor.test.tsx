@@ -160,7 +160,7 @@ describe('AttributeEditor (create mode, feature 004)', () => {
       'Referencia',
     ])
     expect(screen.getByLabelText('Nombre')).toBeTruthy()
-    expect(screen.getByLabelText('Descripción')).toBeTruthy()
+    expect(screen.queryByLabelText('Descripción')).toBeNull()
     expect(screen.getByLabelText('ID (opcional)')).toBeTruthy()
   })
 
@@ -173,7 +173,7 @@ describe('AttributeEditor (create mode, feature 004)', () => {
     const fieldIds = Array.from(form?.querySelectorAll('input, textarea, select') ?? []).map(
       (field) => field.id,
     )
-    expect(fieldIds.slice(0, 4)).toEqual(['systemId', 'displayName', 'description', 'dataType'])
+    expect(fieldIds.slice(0, 3)).toEqual(['systemId', 'displayName', 'dataType'])
   })
 
   it('offers a retry when the data types cannot be loaded', async () => {
@@ -209,7 +209,6 @@ describe('AttributeEditor (create mode, feature 004)', () => {
     expect(await screen.findByText('Atributo global creado con el ID ATR000001.')).toBeTruthy()
     expect(lastRequestBody(fetchMock)).toEqual({
       displayName: 'Apto para regalo',
-      description: null,
       dataType: 'BOOLEAN',
     })
     expect(screen.getByLabelText<HTMLInputElement>('Nombre').value).toBe('')
@@ -493,7 +492,6 @@ describe('AttributeEditor (edit mode, feature 007)', () => {
   const PESO = {
     systemId: 'ATR000001',
     displayName: 'Peso',
-    description: 'Peso bruto',
     dataType: 'NUMERIC' as const,
     scope: 'GLOBAL' as const,
     numericProperties: { numberFormat: 'DECIMAL', precision: 2, minimum: 0 },
@@ -521,7 +519,7 @@ describe('AttributeEditor (edit mode, feature 007)', () => {
     expect(id.readOnly).toBe(true)
     expect(screen.getByLabelText<HTMLSelectElement>('Tipo de dato').disabled).toBe(true)
     expect(screen.getByLabelText<HTMLInputElement>('Nombre').value).toBe('Peso')
-    expect(screen.getByLabelText<HTMLTextAreaElement>('Descripción').value).toBe('Peso bruto')
+    expect(screen.queryByLabelText('Descripción')).toBeNull()
     expect(screen.getByLabelText<HTMLInputElement>('Decimales').value).toBe('2')
   })
 
@@ -621,7 +619,6 @@ describe('AttributeEditor with the field preview (feature 008)', () => {
     expect(lastRequestBody(fetchMock)).toEqual({
       systemId: 'ATR000001',
       displayName: 'Activo',
-      description: null,
       dataType: 'BOOLEAN',
     })
   })

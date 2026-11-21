@@ -38,7 +38,7 @@ class InMemoryAttributeRepositoryTest {
     }
 
     private static Attribute attribute(String systemId, String name) {
-        return Attribute.create(systemId, DisplayName.of(name), null, AttributeDataType.BOOLEAN, null, Instant.EPOCH);
+        return Attribute.create(systemId, DisplayName.of(name), AttributeDataType.BOOLEAN, null, Instant.EPOCH);
     }
 
     @Test
@@ -51,11 +51,11 @@ class InMemoryAttributeRepositoryTest {
                 .isFalse();
         assertThat(repository.existsWithDisplayName(DisplayName.of("color"), "ATR1"))
                 .isTrue();
-        Attribute edited = peso.updated(DisplayName.of("Peso neto"), null, null, Instant.EPOCH);
+        Attribute edited = peso.updated(DisplayName.of("Peso neto"), null, Instant.EPOCH);
         repository.update(edited);
         assertThat(repository.findBySystemId("atr1")).contains(edited);
         assertThat(repository.existsWithDisplayName(DisplayName.of("Peso"))).isFalse();
-        assertThatThrownBy(() -> repository.update(edited.updated(DisplayName.of("Color"), null, null, Instant.EPOCH)))
+        assertThatThrownBy(() -> repository.update(edited.updated(DisplayName.of("Color"), null, Instant.EPOCH)))
                 .isInstanceOf(IllegalStateException.class);
 
         repository.delete("ATR1");

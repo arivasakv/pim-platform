@@ -96,12 +96,9 @@ class AttributeServiceTest {
     }
 
     @Test
-    void validatesTheDisplayNameAndTheDescription() {
+    void validatesTheDisplayName() {
         assertRejected(draft(null, "   "), AttributeErrorCode.INVALID_DISPLAY_NAME);
         assertRejected(draft(null, "x".repeat(121)), AttributeErrorCode.INVALID_DISPLAY_NAME);
-        assertRejected(
-                new AttributeDraft(null, "Peso", "d".repeat(1001), AttributeDataType.BOOLEAN, null),
-                AttributeErrorCode.INVALID_DESCRIPTION);
         assertThat(systemIds.count()).isZero();
     }
 
@@ -245,7 +242,7 @@ class AttributeServiceTest {
 
     private Attribute createListOfValues(String name, ListOfValuesProperties properties) {
         return service.create(
-                new AttributeDraft(null, name, null, AttributeDataType.LIST_OF_VALUES, properties),
+                new AttributeDraft(null, name, AttributeDataType.LIST_OF_VALUES, properties),
                 CAN_CREATE,
                 NO_MANUAL_IDS);
     }
@@ -255,7 +252,7 @@ class AttributeServiceTest {
     }
 
     private static AttributeDraft draft(String systemId, String name) {
-        return new AttributeDraft(systemId, name, null, AttributeDataType.BOOLEAN, null);
+        return new AttributeDraft(systemId, name, AttributeDataType.BOOLEAN, null);
     }
 
     private void assertRejected(AttributeDraft draft, AttributeErrorCode code) {

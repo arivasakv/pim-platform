@@ -111,13 +111,12 @@ class TaxonomyServiceFilterTest {
                 new AttributeDraft(
                         null,
                         "Color",
-                        null,
                         AttributeDataType.LIST_OF_VALUES,
                         new ListOfValuesProperties(SelectionMode.SINGLE, "LOV000001")),
                 CAN_CHANGE,
                 ManualIdPermissions.fromCodes(null));
         largo = attributeService.create(
-                new AttributeDraft(null, "Largo de manga", null, AttributeDataType.BOOLEAN, null),
+                new AttributeDraft(null, "Largo de manga", AttributeDataType.BOOLEAN, null),
                 CAN_CHANGE,
                 ManualIdPermissions.fromCodes(null));
         node("Ropa", null, color);

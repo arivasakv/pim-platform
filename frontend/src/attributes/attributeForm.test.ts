@@ -56,24 +56,20 @@ describe('validateForm (instant feedback only; the backend decides)', () => {
 })
 
 describe('toRequest', () => {
-  it('trims the common fields and leaves out an empty ID and description', () => {
-    expect(
-      toRequest(
-        form({ displayName: ' Color ', description: '  ', systemId: ' ', dataType: 'BOOLEAN' }),
-      ),
-    ).toEqual({ displayName: 'Color', description: null, dataType: 'BOOLEAN' })
+  it('trims the common fields and leaves out an empty ID', () => {
+    expect(toRequest(form({ displayName: ' Color ', systemId: ' ', dataType: 'BOOLEAN' }))).toEqual(
+      { displayName: 'Color', dataType: 'BOOLEAN' },
+    )
     expect(
       toRequest(
         form({
           displayName: 'Color',
-          description: ' Tono ',
           systemId: ' ATR-COLOR ',
           dataType: 'BOOLEAN',
         }),
       ),
     ).toEqual({
       displayName: 'Color',
-      description: 'Tono',
       systemId: 'ATR-COLOR',
       dataType: 'BOOLEAN',
     })
@@ -95,7 +91,6 @@ describe('toRequest', () => {
 
     expect(toRequest(text)).toEqual({
       displayName: 'Código',
-      description: null,
       dataType: 'TEXT',
       textProperties: {
         minLength: 2,
@@ -107,7 +102,7 @@ describe('toRequest', () => {
   })
 
   it('builds the properties of every other type', () => {
-    const base = { displayName: 'X', description: '' }
+    const base = { displayName: 'X' }
     expect(
       toRequest(
         form({
@@ -151,7 +146,6 @@ describe('toRequest', () => {
     ).toEqual({ targetObjectType: 'PRODUCT', cardinality: 'MULTIPLE' })
     expect(toRequest(form({ ...base, dataType: 'BOOLEAN' }))).toEqual({
       displayName: 'X',
-      description: null,
       dataType: 'BOOLEAN',
     })
   })
@@ -161,14 +155,12 @@ describe('fromAttribute (feature 007)', () => {
   const common = { systemId: 'ATR000001', scope: 'GLOBAL' as const, displayName: 'X' }
 
   it('fills the common fields and keeps other types empty', () => {
-    const form = fromAttribute({ ...common, dataType: 'BOOLEAN', description: 'Desc' })
+    const form = fromAttribute({ ...common, dataType: 'BOOLEAN' })
 
     expect(form.systemId).toBe('ATR000001')
     expect(form.displayName).toBe('X')
-    expect(form.description).toBe('Desc')
     expect(form.dataType).toBe('BOOLEAN')
     expect(form.text).toEqual(emptyForm().text)
-    expect(fromAttribute({ ...common, dataType: 'BOOLEAN' }).description).toBe('')
   })
 
   it('turns every type back into form text that rebuilds the same request', () => {

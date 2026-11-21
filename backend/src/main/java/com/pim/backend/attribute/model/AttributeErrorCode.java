@@ -7,7 +7,6 @@ package com.pim.backend.attribute.model;
 public enum AttributeErrorCode {
     REQUIRED("Este dato es obligatorio."),
     INVALID_DISPLAY_NAME("El nombre debe tener de 1 a 120 caracteres."),
-    INVALID_DESCRIPTION("La descripción puede tener hasta 1000 caracteres."),
     UNKNOWN_DATA_TYPE("El tipo de dato %s no existe."),
     INVALID_LENGTH("La longitud debe ser un número entero entre %s y 100000."),
     INVALID_LENGTH_RANGE("La longitud mínima no puede ser mayor que la longitud máxima."),

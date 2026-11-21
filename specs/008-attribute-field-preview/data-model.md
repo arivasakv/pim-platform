@@ -21,7 +21,7 @@ Computed by `fieldPreview.ts` from the inputs on every render; never stored.
 |---|---|
 | `kind` | `none`, `text`, `textarea`, `number`, `checkbox`, `select`, `checkboxes`, `date`, `reference` |
 | `label` | "{name} (opcional)" or "Nombre del atributo (opcional)" |
-| `hint` | description plus limits/format/currency text |
+| `hint` | limits/format/currency text (no description since 2026-11-20) |
 | `maxLength`, `minLength` | text limits that are usable |
 | `min`, `max`, `step` | number limits and step |
 | `caseFormat` | `UPPERCASE`, `LOWERCASE` or none |

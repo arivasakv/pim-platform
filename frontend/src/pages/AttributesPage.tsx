@@ -543,7 +543,6 @@ function AttributeDetail({ attribute, types }: AttributeDetailProps) {
       ? undefined
       : (type?.options[property]?.find((candidate) => candidate.code === code)?.label ?? code)
   const rows: Array<[string, ReactNode]> = [
-    ['Descripción', attribute.description || 'Sin descripción'],
     ['Tipo de dato', type?.label ?? attribute.dataType],
     ['Alcance', 'Global'],
   ]

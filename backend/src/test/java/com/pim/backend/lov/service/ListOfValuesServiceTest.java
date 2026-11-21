@@ -327,7 +327,7 @@ class ListOfValuesServiceTest {
     private void createLinkedAttribute(String name, SelectionMode mode, String listId) {
         attributeService.create(
                 new AttributeDraft(
-                        null, name, null, AttributeDataType.LIST_OF_VALUES, new ListOfValuesProperties(mode, listId)),
+                        null, name, AttributeDataType.LIST_OF_VALUES, new ListOfValuesProperties(mode, listId)),
                 CAN_CHANGE,
                 NO_MANUAL_IDS);
     }

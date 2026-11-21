@@ -250,7 +250,9 @@ properties and their options. No ERF section asks for a preview; the feature req
   (from its saved configuration, FR-016). [Feature request req. 9; amendment 2026-11-12]
 - **FR-004 – Label and state**: The field MUST be labelled with the attribute name ("Nombre del
   atributo" while empty) and marked "Opcional"; the attribute description, when present, MUST be shown
-  as the field's help text. [Decision 1; feature request req. 4]
+  as the field's help text. [Decision 1; feature request req. 4] *Amended 2026-11-20 (feature 004
+  FR-003 amendment): attributes have no description any more, so the help text holds only the rules
+  (length, range, format, …).*
 
 **Field per data type** (feature request req. 3 and 4; properties from feature 004 FR-008–FR-015)
 

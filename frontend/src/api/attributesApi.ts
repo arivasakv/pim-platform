@@ -43,7 +43,6 @@ export type ReferenceProperties = { targetObjectType: string; cardinality?: stri
 export type AttributeCreationRequest = {
   systemId?: string
   displayName: string
-  description?: string | null
   dataType: DataType
   textProperties?: TextProperties
   numericProperties?: NumericProperties

@@ -83,7 +83,7 @@ class AttributeServiceConcurrencyTest {
     }
 
     private static AttributeDraft draft(String name) {
-        return new AttributeDraft(null, name, null, AttributeDataType.BOOLEAN, null);
+        return new AttributeDraft(null, name, AttributeDataType.BOOLEAN, null);
     }
 
     /** Runs {@code count} tasks released at the same moment and returns their results. */

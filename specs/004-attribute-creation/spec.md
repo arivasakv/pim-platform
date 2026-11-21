@@ -282,6 +282,14 @@ Sources: the feature request and `p360:ERF - HUs/ERF 1.1 Plantillas.docx`, cited
   type** (FR-007); a **description** is optional. An attribute with an empty or blank display name
   MUST NOT be saved. [Clarification 2026-11-09 (OQ-001); the only source hint is the HU2.8 load
   layout «ID, friendlyName»; §3.2.8 «(definir campos mínimos)»]
+  *Amended 2026-11-20 by the project owner:* an attribute has **no description**. Its general
+  properties are only the display name («Nombre del Atributo») and the data type («Tipo de Dato»), as in
+  the owner's requirement of 2026-11-20 («El usuario captura las propiedades generales del atributo:
+  Nombre del Atributo (Texto). Tipo de Dato: …»). The description field is removed from the form, the
+  detail, the field preview (feature 008) and the API (contract v2.0.0); a `description` sent in a
+  request is ignored. Descriptions already stored are no longer read or shown (they stay in the stored
+  documents, unused). The owner's requirement text was not found in the reference repository (open
+  question: its source document).
 - **FR-023**: The display name MUST be **unique across all attributes**, compared ignoring letter
   case and surrounding spaces ("Color" and " color " are the same name). Surrounding spaces are
   removed before saving. Creating an attribute whose display name is already used MUST be refused
@@ -421,8 +429,8 @@ Reported per constitution XI; not used as requirements and not resolved by assum
 
 ### Key Entities
 
-- **Attribute definition**: system ID (feature 003), display name (required), description
-  (optional), data type, type-specific properties and scope (always global in this feature, FR-018). No group links
+- **Attribute definition**: system ID (feature 003), display name (required), ~~description
+  (optional)~~ (removed 2026-11-20, FR-003), data type, type-specific properties and scope (always global in this feature, FR-018). No group links
   (FR-017).
 - **Data type**: one of the seven types of FR-007.
 - **Type-specific properties**: text (lengths, case mask, capture mask, rich text), numeric

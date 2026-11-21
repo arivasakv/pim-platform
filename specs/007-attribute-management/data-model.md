@@ -19,14 +19,14 @@ No new collection. One optional field is added to `attributes`; nothing else in 
 |---|---|---|
 | `systemId` | Feature 003; unique; stored upper-cased as `_id` | **No** (422 `SYSTEM_ID_IMMUTABLE` if another one is sent) |
 | `displayName` | 1–120 characters after trimming; unique among attributes ignoring case (feature 004 FR-023) | Yes; must be free among the *other* attributes |
-| `description` | Optional, up to 1,000 characters | Yes |
+| ~~`description`~~ | Removed 2026-11-20 (feature 004 FR-003 amendment) | — |
 | `dataType` | One of 7 | **No** (422 `DATA_TYPE_IMMUTABLE`) |
 | `scope` | Always `GLOBAL` | No (not a request field) |
 | type properties | Feature 004 FR-008–FR-016, A-003, A-004 | Yes, validated as at creation |
 | `createdAt` | Set at creation | No |
 | `updatedAt` | **New**; set on every successful edit; absent before | Set by the system |
 
-`Attribute.updated(displayName, description, properties, at)` returns a copy with those four values
+`Attribute.updated(displayName, properties, at)` returns a copy with those three values (the description was removed on 2026-11-20)
 changed and everything else kept.
 
 ## AttributeDetails (read model, new)

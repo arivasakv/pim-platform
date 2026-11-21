@@ -106,19 +106,6 @@ class MongoAttributeRepositoryIntegrationTest {
     }
 
     @Test
-    void keepsTheDescriptionAndAnAbsentOne() {
-        repository.save(Attribute.create(
-                "ATR000001", DisplayName.of("Peso"), "Peso neto", AttributeDataType.BOOLEAN, null, CREATED_AT));
-        repository.save(Attribute.create(
-                "ATR000002", DisplayName.of("Volumen"), null, AttributeDataType.BOOLEAN, null, CREATED_AT));
-
-        assertThat(repository.findBySystemId("ATR000001").orElseThrow().description())
-                .contains("Peso neto");
-        assertThat(repository.findBySystemId("ATR000002").orElseThrow().description())
-                .isEmpty();
-    }
-
-    @Test
     void displayNameCheckIgnoresCase() {
         repository.save(attribute("ATR000001", "Peso", AttributeDataType.BOOLEAN, null));
 
@@ -161,8 +148,7 @@ class MongoAttributeRepositoryIntegrationTest {
 
     private static Attribute attribute(
             String systemId, String name, AttributeDataType dataType, AttributeProperties properties) {
-        return Attribute.create(
-                systemId, DisplayName.of(name), "Descripción de " + name, dataType, properties, CREATED_AT);
+        return Attribute.create(systemId, DisplayName.of(name), dataType, properties, CREATED_AT);
     }
 
     // --- Feature 007 ---
@@ -178,11 +164,11 @@ class MongoAttributeRepositoryIntegrationTest {
         assertThat(repository.existsWithDisplayName(DisplayName.of("color"), "ATR000001"))
                 .isTrue();
 
-        Attribute edited = peso.updated(DisplayName.of("Peso neto"), null, null, CREATED_AT.plusSeconds(5));
+        Attribute edited = peso.updated(DisplayName.of("Peso neto"), null, CREATED_AT.plusSeconds(5));
         repository.update(edited);
         assertThat(repository.findBySystemId("atr000001")).contains(edited);
         assertThat(repository.existsWithDisplayName(DisplayName.of("Peso"))).isFalse();
-        assertThatThrownBy(() -> repository.update(edited.updated(DisplayName.of("COLOR"), null, null, CREATED_AT)))
+        assertThatThrownBy(() -> repository.update(edited.updated(DisplayName.of("COLOR"), null, CREATED_AT)))
                 .isInstanceOf(IllegalStateException.class);
 
         repository.delete("atr000001");
@@ -199,6 +185,7 @@ class MongoAttributeRepositoryIntegrationTest {
                         .append("displayNameKey", "antiguo")
                         .append("dataType", "BOOLEAN")
                         .append("scope", "GLOBAL")
+                        .append("description", "Descripción guardada antes del 2026-11-20")
                         .append("createdAt", java.util.Date.from(CREATED_AT)),
                 "attributes");
 

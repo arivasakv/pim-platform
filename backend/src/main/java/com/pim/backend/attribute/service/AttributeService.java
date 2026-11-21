@@ -78,7 +78,7 @@ public class AttributeService {
      * Creates one attribute.
      *
      * @throws AttributeCreateNotPermittedException without the {@code ATTRIBUTE_CREATE} permission
-     * @throws com.pim.backend.attribute.model.InvalidAttributeException for an invalid display name, description
+     * @throws com.pim.backend.attribute.model.InvalidAttributeException for an invalid display name
      *     or property
      * @throws DisplayNameInUseException when another attribute has the display name, ignoring letter case
      */
@@ -88,7 +88,6 @@ public class AttributeService {
             throw new AttributeCreateNotPermittedException();
         }
         DisplayName displayName = DisplayName.of(draft.displayName());
-        Optional<String> description = Attribute.normalizedDescription(draft.description());
         synchronized (lock) {
             // Checked under the lock, so a list cannot be deleted between this check and the save (feature 006
             // research R-04). The order of the checks is unchanged.
@@ -110,7 +109,6 @@ public class AttributeService {
             Attribute attribute = Attribute.create(
                     assignment.registration().systemId().value(),
                     displayName,
-                    description.orElse(null),
                     draft.dataType(),
                     draft.properties(),
                     clock.instant());
@@ -162,11 +160,11 @@ public class AttributeService {
     }
 
     /**
-     * Edits the display name, description and properties of an attribute (feature 007 FR-007 to FR-011; research
+     * Edits the display name and properties of an attribute (feature 007 FR-007 to FR-011; research
      * R-04). The system ID, data type, scope, creation date and group memberships stay.
      *
      * @throws AttributeChangeNotPermittedException without the {@code ATTRIBUTE_CREATE} permission
-     * @throws InvalidAttributeException for an invalid display name, description or list-of-values property
+     * @throws InvalidAttributeException for an invalid display name or list-of-values property
      * @throws AttributeNotFoundException if no attribute has the system ID
      * @throws ImmutableFieldException if the draft names another system ID or data type
      * @throws ListOfValuesUnavailableException if the linked list does not exist
@@ -177,7 +175,6 @@ public class AttributeService {
             throw new AttributeChangeNotPermittedException();
         }
         DisplayName displayName = DisplayName.of(draft.displayName());
-        Attribute.normalizedDescription(draft.description());
         Attribute updated;
         synchronized (lock) {
             Attribute current =
@@ -198,7 +195,7 @@ public class AttributeService {
             if (attributes.existsWithDisplayName(displayName, current.systemId())) {
                 throw new DisplayNameInUseException(displayName);
             }
-            updated = current.updated(displayName, draft.description(), draft.properties(), clock.instant());
+            updated = current.updated(displayName, draft.properties(), clock.instant());
             attributes.update(updated);
         }
         return detailsOf(updated);

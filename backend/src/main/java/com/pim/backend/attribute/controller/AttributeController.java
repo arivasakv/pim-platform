@@ -96,7 +96,6 @@ public class AttributeController {
         return new AttributeDraft(
                 request.systemId(),
                 request.displayName(),
-                request.description(),
                 dataType,
                 AttributePropertiesMapper.fromRequest(dataType, request));
     }

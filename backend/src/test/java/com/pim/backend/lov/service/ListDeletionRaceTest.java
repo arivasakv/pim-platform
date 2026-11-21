@@ -91,7 +91,6 @@ class ListDeletionRaceTest {
                                 new AttributeDraft(
                                         null,
                                         attributeName,
-                                        null,
                                         AttributeDataType.LIST_OF_VALUES,
                                         new ListOfValuesProperties(SelectionMode.SINGLE, listId)),
                                 CAN_CHANGE,

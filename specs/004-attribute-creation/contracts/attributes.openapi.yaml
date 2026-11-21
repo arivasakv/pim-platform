@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PIM Platform – Attribute creation
-  version: 1.3.0
+  version: 2.0.0
   description: >
     Feature 004 (specs/004-attribute-creation). Creates attribute definitions, one at a time, with a
     data type and type-specific properties (ERF 1.1 §3.2, §3.2.1). Every attribute is global and has
@@ -13,7 +13,9 @@ info:
     response fields `groups`, `updatedAt` and `listOfValuesProperties.listOfValuesName`; the change
     record is specs/007-attribute-management/contracts/attributes-v1.2.openapi.yaml. v1.3.0 (feature 010,
     specs/010-taxonomy-attribute-inheritance) refuses deleting an attribute assigned to taxonomy nodes
-    (409 ATTRIBUTE_ON_TAXONOMY_NODES). Unknown fields in request bodies are ignored, as in the rest of
+    (409 ATTRIBUTE_ON_TAXONOMY_NODES). v2.0.0 (2026-11-20, owner request) removes the attribute
+    description: the request field `description` is no longer read (ignored like any unknown field), the
+    response field `description` and the error code INVALID_DESCRIPTION are gone. Unknown fields in request bodies are ignored, as in the rest of
     the API. Messages are in Spanish.
 servers:
   - url: http://localhost:8080
@@ -41,7 +43,7 @@ paths:
       summary: Create one attribute definition
       description: >
         Checks, in order: request format and the chosen type's properties (400), permission (403),
-        display name and description (400), list of values (422; then 400 for a missing selection mode
+        display name (400), list of values (422; then 400 for a missing selection mode
         or list ID), unique display name (409), then asks feature 003 for the system ID (feature 003
         errors: 403, 400, 409). Only the properties object matching `dataType` is read (A-004).
       tags: [attributes]
@@ -62,7 +64,6 @@ paths:
               decimal:
                 value:
                   displayName: Peso neto
-                  description: Peso del producto sin empaque, en kilogramos
                   dataType: NUMERIC
                   numericProperties: { numberFormat: DECIMAL, precision: 2, minimum: 0, maximum: 999.99 }
               manualId:
@@ -83,7 +84,6 @@ paths:
               example:
                 systemId: ATR000001
                 displayName: Descripción corta
-                description: null
                 dataType: TEXT
                 scope: GLOBAL
                 textProperties: { minLength: 2, maxLength: 50, caseFormat: UPPERCASE, captureMask: null, richText: false }
@@ -167,7 +167,7 @@ paths:
       operationId: updateAttribute
       summary: Edit an attribute (v1.2.0; feature 007 FR-007 to FR-011, research R-04)
       description: >
-        Full replace of the editable fields: display name, description and the properties of the
+        Full replace of the editable fields: display name and the properties of the
         attribute's data type, with the same rules and codes as creation. The body has the creation
         fields; `systemId` is optional and must be the attribute's own (ignoring letter case), and
         `dataType` must be its current type. System ID, data type, scope and creation date never
@@ -193,7 +193,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Attribute' }
         '400':
-          description: Invalid display name, description or property (creation codes). Nothing changed.
+          description: Invalid display name or property (creation codes). Nothing changed.
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/Problem' }
@@ -344,7 +344,6 @@ components:
       properties:
         systemId: { type: [string, 'null'], maxLength: 60, description: Optional manual ID (feature 003 rules); blank = generate }
         displayName: { type: string, maxLength: 200, description: 'Trimmed; 1–120 characters; unique ignoring letter case' }
-        description: { type: [string, 'null'], maxLength: 2000, description: 'Trimmed; up to 1,000 characters' }
         dataType: { type: string, description: One of DataType }
         textProperties: { $ref: '#/components/schemas/TextProperties' }
         numericProperties: { $ref: '#/components/schemas/NumericProperties' }
@@ -359,7 +358,6 @@ components:
       properties:
         systemId: { type: string }
         displayName: { type: string }
-        description: { type: [string, 'null'] }
         dataType: { $ref: '#/components/schemas/DataType' }
         scope: { type: string, enum: [GLOBAL] }
         textProperties: { $ref: '#/components/schemas/TextProperties' }
@@ -444,7 +442,6 @@ components:
                 enum:
                   - REQUIRED
                   - INVALID_DISPLAY_NAME
-                  - INVALID_DESCRIPTION
                   - UNKNOWN_DATA_TYPE
                   - INVALID_LENGTH
                   - INVALID_LENGTH_RANGE

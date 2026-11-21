@@ -263,6 +263,9 @@ document in `docs/source-of-truth/` covers this feature.
   used for creation (feature 004), filled with the current values. Every validation of feature 004
   (FR-003, FR-008–FR-016, FR-023, A-003, A-004) MUST apply to the edit exactly as to creation, checked
   by the backend. [Feature request §2.B]
+- *Amended 2026-11-20 (feature 004 FR-003 amendment): attributes have no description any more; the
+  detail (FR-006) no longer shows one and editing (FR-008) no longer changes one. The mentions of a
+  description in User Stories 1–2, FR-006 and FR-008 no longer apply.*
 - **FR-008 – What can change**: The display name, the description and the type-specific properties
   MAY change. The display name MUST stay unique ignoring letter case and surrounding spaces among the
   *other* attributes (feature 004 FR-023); keeping the own name, or changing only its letter case, is

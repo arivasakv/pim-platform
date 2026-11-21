@@ -32,7 +32,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
  * @param id the system ID upper-cased, so two IDs differing only in letter case collide on {@code _id}
  * @param displayNameKey the display name lower-cased ({@code Locale.ROOT}); unique index {@value #DISPLAY_NAME_INDEX}
  * @param updatedAt last change (feature 007); {@code null} for attributes never edited, including every document
- *     written before feature 007
+ *     written before feature 007. A {@code description} stored before 2026-11-20 is no longer mapped and stays unused
+ *     in the document (feature 004 FR-003 amendment).
  */
 @Document(AttributeDocument.COLLECTION)
 record AttributeDocument(
@@ -40,7 +41,6 @@ record AttributeDocument(
         String systemId,
         String displayName,
         String displayNameKey,
-        String description,
         AttributeDataType dataType,
         AttributeScope scope,
         Text textProperties,
@@ -80,7 +80,6 @@ record AttributeDocument(
                 attribute.systemId(),
                 attribute.displayName().value(),
                 attribute.displayName().comparisonKey(),
-                attribute.description().orElse(null),
                 attribute.dataType(),
                 attribute.scope(),
                 properties instanceof TextProperties text
@@ -116,7 +115,6 @@ record AttributeDocument(
         return new Attribute(
                 systemId,
                 DisplayName.of(displayName),
-                Optional.ofNullable(description),
                 dataType,
                 scope,
                 toProperties(),
