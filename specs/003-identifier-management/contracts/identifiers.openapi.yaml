@@ -86,10 +86,10 @@ paths:
                   value:
                     title: ID en uso
                     status: 409
-                    detail: El ID CLS-ROPA ya pertenece a otro objeto. Indica un ID nuevo que no esté en uso.
+                    detail: El ID CLS-ROPA ya se encuentra en uso por otro objeto. Favor de asignar un identificador inédito.
                     instance: /api/v1/system-ids
                     errors:
-                      - { field: systemId, code: SYSTEM_ID_IN_USE, message: El ID CLS-ROPA ya pertenece a otro objeto. Indica un ID nuevo que no esté en uso. }
+                      - { field: systemId, code: SYSTEM_ID_IN_USE, message: El ID CLS-ROPA ya se encuentra en uso por otro objeto. Favor de asignar un identificador inédito. }
                 sequenceExhausted:
                   value:
                     title: Secuencia agotada

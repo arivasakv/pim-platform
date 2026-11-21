@@ -239,6 +239,27 @@ describe('AttributeEditor (create mode, feature 004)', () => {
     expect(screen.getByLabelText<HTMLInputElement>('Nombre').value).toBe('Color')
   })
 
+  it('shows an ID used by another object under the ID field and keeps the data (feature 003 FR-011)', async () => {
+    const message =
+      'El ID ATR000001 ya se encuentra en uso por otro objeto. Favor de asignar un identificador inédito.'
+    stubBackend(problem(409, message, 'systemId', 'SYSTEM_ID_IN_USE', message))
+    await renderReadyPage()
+
+    type('ID (opcional)', 'ATR000001')
+    type('Nombre', 'Talla')
+    type('Tipo de dato', 'BOOLEAN')
+    save()
+
+    expect(await screen.findByText(message)).toBeTruthy()
+    const id = screen.getByLabelText<HTMLInputElement>('ID (opcional)')
+    expect(id.getAttribute('aria-invalid')).toBe('true')
+    expect(id.getAttribute('aria-describedby')).toContain('systemId-error')
+    expect(document.getElementById('systemId-error')?.textContent).toBe(message)
+    expect(id.value).toBe('ATR000001')
+    expect(screen.getByLabelText<HTMLInputElement>('Nombre').value).toBe('Talla')
+    expect(screen.queryByText(/Atributo global creado/)).toBeNull()
+  })
+
   it('shows the permission message from the backend', async () => {
     stubBackend(
       problem(

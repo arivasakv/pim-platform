@@ -203,7 +203,10 @@ class SystemIdControllerIntegrationTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.title").value("ID en uso"))
                 .andExpect(jsonPath("$.detail", containsString("cls-ropa")))
-                .andExpect(jsonPath("$.detail", containsString("ID nuevo que no esté en uso")))
+                .andExpect(jsonPath(
+                        "$.detail",
+                        containsString(
+                                "ya se encuentra en uso por otro objeto. Favor de asignar un identificador inédito.")))
                 .andExpect(error("systemId", "SYSTEM_ID_IN_USE"))
                 .andExpect(jsonPath("$.errors[0].message", containsString("cls-ropa")));
     }
@@ -287,7 +290,10 @@ class SystemIdControllerIntegrationTest {
 
         assign(attribute("A-100", "{\"code\":\"TALLA\"}"), "ATTRIBUTE")
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.detail", containsString("ID nuevo que no esté en uso")))
+                .andExpect(jsonPath(
+                        "$.detail",
+                        containsString(
+                                "ya se encuentra en uso por otro objeto. Favor de asignar un identificador inédito.")))
                 .andExpect(error("systemId", "SYSTEM_ID_IN_USE"));
         mockMvc.perform(get(SYSTEM_IDS + "/A-100"))
                 .andExpect(status().isOk())

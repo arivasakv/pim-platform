@@ -156,7 +156,10 @@ class AttributeControllerIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.title").value("ID en uso"))
                 .andExpect(error("systemId", "SYSTEM_ID_IN_USE"))
-                .andExpect(jsonPath("$.detail", containsString("ID nuevo que no esté en uso")));
+                .andExpect(
+                        jsonPath("$.detail")
+                                .value(
+                                        "El ID atr-color ya se encuentra en uso por otro objeto. Favor de asignar un identificador inédito."));
         createWithManualIds(
                         "{\"systemId\":\"" + "A".repeat(61) + "\",\"displayName\":\"Talla\",\"dataType\":\"BOOLEAN\"}")
                 .andExpect(status().isBadRequest())

@@ -317,6 +317,14 @@ Identificadores`.
 - **FR-011**: Messages for the rejections in FR-003, FR-007 and FR-009(b) MUST be in Spanish and MUST name
   the ID concerned. [Language: project convention from features 001 and 002; content: 3.1 §5
   «mensaje de error explícito y solicitar un ID inédito»]
+  *Amended 2026-11-20 by the project owner:* the FR-009(b) message MUST read exactly «El ID {ID} ya se
+  encuentra en uso por otro objeto. Favor de asignar un identificador inédito.», where {ID} is the ID as
+  typed, and it MUST be shown under the ID field of the form that captured it, blocking the save. The
+  owner supplied the text as «El ID ingresado ya se encuentra en uso por otro objeto. Favor de asignar un
+  identificador inédito.» (labelled "Visual") and chose to keep the ID in it, as this requirement asks.
+  The text was not found in the reference repository's tracked files (open question: its source
+  document). Previous text: «El ID {ID} ya pertenece a otro objeto. Indica un ID nuevo que no esté en
+  uso.»
 
 **Delivery**
 

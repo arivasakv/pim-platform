@@ -19,7 +19,7 @@ public enum IdentifierErrorCode {
     INVALID_MINIMUM_DIGITS("El número mínimo de dígitos debe estar entre 1 y 18."),
     INVALID_NEXT_VALUE("El siguiente valor debe estar entre 1 y 999999999999999999."),
     MANUAL_ID_NOT_PERMITTED("No tienes permiso para definir el ID %s para un objeto de tipo %s."),
-    SYSTEM_ID_IN_USE("El ID %s ya pertenece a otro objeto. Indica un ID nuevo que no esté en uso."),
+    SYSTEM_ID_IN_USE("El ID %s ya se encuentra en uso por otro objeto. Favor de asignar un identificador inédito."),
     SEQUENCE_EXHAUSTED("La secuencia de IDs de %s llegó a su valor máximo.");
 
     private final String template;
