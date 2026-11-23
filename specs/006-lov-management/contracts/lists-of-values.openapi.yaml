@@ -8,7 +8,9 @@ info:
     added one by one or from a CSV file. Attributes link to lists in feature 004 and are only read here.
     Changes need the ATTRIBUTE_CREATE permission (development header X-Pim-Permissions); reading needs
     none. Data is stored in MongoDB (constitution 2.4.0, ADR 0003). Unknown fields in request bodies are
-    ignored. Messages are in Spanish.
+    ignored. Messages are in Spanish. Feature 013 (2026-11-23) adds the bulk load of several lists from a CSV
+    or Excel file in specs/013-lov-bulk-load/contracts/lov-bulk-load.openapi.yaml; INVALID_IMPORT_FILE messages
+    now read «No se pudo leer el archivo: …» (no longer «archivo CSV»).
 servers:
   - url: http://localhost:8080
     description: Local development

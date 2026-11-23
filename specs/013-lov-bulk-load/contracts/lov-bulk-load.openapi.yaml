@@ -1,0 +1,299 @@
+openapi: 3.1.0
+info:
+  title: PIM Platform – Bulk load of lists of values
+  version: 1.0.0
+  description: >
+    Feature 013 (specs/013-lov-bulk-load). Creates and updates several lists of values from one CSV or
+    Excel (.xlsx) file with the columns Lista, ID, Etiqueta and optional Equivalencia (owner decisions of
+    2026-11-23). Two steps (research R-05): /check reads and checks the file and returns a summary and a
+    checkToken without saving anything; the apply call sends the same file with the token and saves
+    every list or none (R-06). Rows follow feature 006's value rules; lists are named by name (spec
+    FR-006). Extends specs/006-lov-management/contracts/lists-of-values.openapi.yaml: same permission
+    (ATTRIBUTE_CREATE, header X-Pim-Permissions), same Problem format and rowErrors. Messages are in
+    Spanish.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: lists-of-values
+paths:
+  /api/v1/lists-of-values/bulk-load/template:
+    get:
+      operationId: getBulkLoadTemplate
+      summary: Template with the columns Lista, ID, Etiqueta, Equivalencia and one example row (FR-003, R-12)
+      tags: [lists-of-values]
+      parameters:
+        - name: format
+          in: query
+          required: false
+          schema: { type: string, enum: [csv, xlsx], default: csv }
+      responses:
+        "200":
+          description: >
+            plantilla-listas-de-valores.csv (UTF-8 with BOM) or plantilla-listas-de-valores.xlsx (ID column
+            formatted as text), sent as an attachment.
+          content:
+            text/csv:
+              schema: { type: string, format: binary }
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "400":
+          description: Unknown format (field format, code INVALID_FORMAT).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+  /api/v1/lists-of-values/bulk-load/check:
+    post:
+      operationId: checkBulkLoad
+      summary: Read and check a file; return what it would change, without saving (FR-010, FR-012)
+      tags: [lists-of-values]
+      parameters:
+        - $ref: "#/components/parameters/Permissions"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV (UTF-8) or .xlsx; at most 5 MB and 50,000 data rows
+      responses:
+        "200":
+          description: The file is valid. Nothing was saved and no system ID was assigned.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BulkLoadSummary" }
+              example:
+                listsToCreate: 1
+                listsToUpdate: 1
+                valuesToAdd: 3
+                valuesToUpdate: 1
+                checkToken: 9f2c4e0b7d…
+                lists:
+                  - {
+                      name: Color,
+                      systemId: LOV000001,
+                      action: UPDATE,
+                      valuesAdded: 1,
+                      valuesUpdated: 1,
+                    }
+                  - {
+                      name: Talla,
+                      systemId: null,
+                      action: CREATE,
+                      valuesAdded: 2,
+                      valuesUpdated: 0,
+                    }
+        "400": { $ref: "#/components/responses/MissingFile" }
+        "403": { $ref: "#/components/responses/NotPermitted" }
+        "413": { $ref: "#/components/responses/OverHardLimit" }
+        "422": { $ref: "#/components/responses/InvalidFile" }
+  /api/v1/lists-of-values/bulk-load:
+    post:
+      operationId: applyBulkLoad
+      summary: Check the file again and save every list or none, if nothing changed since the check (FR-010, FR-011)
+      tags: [lists-of-values]
+      parameters:
+        - $ref: "#/components/parameters/Permissions"
+        - $ref: "#/components/parameters/User"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, checkToken]
+              properties:
+                file:
+                  {
+                    type: string,
+                    format: binary,
+                    description: The same file that was checked,
+                  }
+                checkToken:
+                  {
+                    type: string,
+                    description: The checkToken returned by /check,
+                  }
+      responses:
+        "200":
+          description: Every list in the file was created or updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BulkLoadResult" }
+        "400":
+          description: >
+            No file part or not multipart (field file, code REQUIRED), or no checkToken (field checkToken,
+            code CHECK_TOKEN_REQUIRED). Nothing saved.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "403": { $ref: "#/components/responses/NotPermitted" }
+        "409":
+          description: >
+            BULK_LOAD_OUTDATED: the file or the lists it touches changed since the check («Las listas
+            cambiaron desde la revisión. Vuelve a revisar el archivo.»); or SEQUENCE_EXHAUSTED from
+            feature 003 when no list ID is free. Nothing saved.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "413": { $ref: "#/components/responses/OverHardLimit" }
+        "422": { $ref: "#/components/responses/InvalidFile" }
+components:
+  parameters:
+    Permissions:
+      name: X-Pim-Permissions
+      in: header
+      required: false
+      description: Development stand-in for the user's permissions. ATTRIBUTE_CREATE allows the load.
+      schema: { type: string, example: ATTRIBUTE_CREATE }
+    User:
+      name: X-Pim-User
+      in: header
+      required: false
+      description: Development stand-in for the user's name, stored in the change records (research R-11).
+      schema: { type: string, maxLength: 100 }
+  responses:
+    MissingFile:
+      description: No file part, or the body is not multipart (field file, code REQUIRED). Nothing saved.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    NotPermitted:
+      description: Without ATTRIBUTE_CREATE (code ATTRIBUTE_CREATE_NOT_PERMITTED). Nothing saved.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    OverHardLimit:
+      description: >
+        Over the server's hard upload limit (10 MB), answered by the framework. Files of 5–10 MB get 422
+        IMPORT_TOO_LARGE.
+    InvalidFile:
+      description: >
+        Nothing saved. INVALID_IMPORT (rows with errors, every one in rowErrors), INVALID_IMPORT_FILE
+        (unreadable file, legacy .xls, missing or unknown column, no data rows), IMPORT_TOO_LARGE (over
+        5 MB or 50,000 rows), LIST_TOO_LARGE (a list would exceed 50,000 values; the message names it).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example:
+            title: Archivo con errores
+            status: 422
+            detail: El archivo tiene 3 errores. No se aplicó ningún valor.
+            rowErrors:
+              - {
+                  row: 3,
+                  column: Etiqueta,
+                  code: REQUIRED,
+                  message: La etiqueta es obligatoria.,
+                }
+              - row: 5
+                column: ID
+                code: DUPLICATE_ID_IN_FILE
+                message: El ID "AZU" de la lista «Color» está repetido en el archivo (filas 5 y 8).
+              - row: 8
+                column: ID
+                code: DUPLICATE_ID_IN_FILE
+                message: El ID "AZU" de la lista «Color» está repetido en el archivo (filas 5 y 8).
+  schemas:
+    PlannedListChange:
+      type: object
+      required: [name, action, valuesAdded, valuesUpdated]
+      properties:
+        name:
+          {
+            type: string,
+            description: The list's name,
+            or the name a new list will get,
+          }
+        systemId:
+          type: [string, "null"]
+          description: Existing list's ID; null for a list to create in the summary (filled in the result)
+        action: { type: string, enum: [CREATE, UPDATE] }
+        valuesAdded: { type: integer, minimum: 0 }
+        valuesUpdated: { type: integer, minimum: 0 }
+    BulkLoadSummary:
+      type: object
+      required:
+        [
+          lists,
+          listsToCreate,
+          listsToUpdate,
+          valuesToAdd,
+          valuesToUpdate,
+          checkToken,
+        ]
+      properties:
+        lists:
+          type: array
+          description: In order of first appearance in the file
+          items: { $ref: "#/components/schemas/PlannedListChange" }
+        listsToCreate: { type: integer, minimum: 0 }
+        listsToUpdate: { type: integer, minimum: 0 }
+        valuesToAdd: { type: integer, minimum: 0 }
+        valuesToUpdate: { type: integer, minimum: 0 }
+        checkToken:
+          type: string
+          description: SHA-256 (hex) of the file and the lists it touches; send it back to apply
+    BulkLoadResult:
+      type: object
+      required: [lists, listsCreated, listsUpdated, valuesAdded, valuesUpdated]
+      properties:
+        lists:
+          type: array
+          description: Every list created or updated, with its systemId
+          items: { $ref: "#/components/schemas/PlannedListChange" }
+        listsCreated: { type: integer, minimum: 0 }
+        listsUpdated: { type: integer, minimum: 0 }
+        valuesAdded: { type: integer, minimum: 0 }
+        valuesUpdated: { type: integer, minimum: 0 }
+    Problem:
+      type: object
+      description: RFC 9457 Problem Details, as in feature 006 (ADR 0001).
+      required: [title, status]
+      properties:
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, code, message]
+            properties:
+              field: { type: string }
+              code:
+                type: string
+                enum:
+                  - REQUIRED
+                  - INVALID_FORMAT
+                  - CHECK_TOKEN_REQUIRED
+                  - ATTRIBUTE_CREATE_NOT_PERMITTED
+                  - INVALID_IMPORT
+                  - INVALID_IMPORT_FILE
+                  - IMPORT_TOO_LARGE
+                  - LIST_TOO_LARGE
+                  - BULK_LOAD_OUTDATED
+                  - SEQUENCE_EXHAUSTED
+              message: { type: string }
+        rowErrors:
+          type: array
+          description: Only for INVALID_IMPORT. Row numbers as the user sees them in the file (header = row 1).
+          items:
+            type: object
+            required: [row, column, code, message]
+            properties:
+              row: { type: integer, minimum: 2 }
+              column:
+                { type: string, enum: [Lista, ID, Etiqueta, Equivalencia] }
+              code:
+                type: string
+                description: >
+                  REQUIRED, INVALID_LIST_NAME, INVALID_VALUE_ID, INVALID_LABEL, INVALID_EQUIVALENCE,
+                  DUPLICATE_ID_IN_FILE
+              message: { type: string }

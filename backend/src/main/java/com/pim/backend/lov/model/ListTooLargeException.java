@@ -8,4 +8,9 @@ public class ListTooLargeException extends RuntimeException {
     public ListTooLargeException() {
         super(LovErrorCode.LIST_TOO_LARGE.message());
     }
+
+    /** A bulk load (feature 013) would leave the named list with {@code values} values. */
+    public ListTooLargeException(String listName, int values) {
+        super(LovErrorCode.LIST_TOO_LARGE_IN_FILE.message(listName, String.format(java.util.Locale.US, "%,d", values)));
+    }
 }

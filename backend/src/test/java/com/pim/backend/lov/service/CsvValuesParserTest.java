@@ -58,25 +58,25 @@ class CsvValuesParserTest {
     void refusesWrongHeaders() {
         assertUnreadable(
                 "ID,Nombre\n1,Azul\n",
-                "No se pudo leer el archivo CSV: la columna «Nombre» no es válida;"
+                "No se pudo leer el archivo: la columna «Nombre» no es válida;"
                         + " usa ID, Etiqueta y Equivalencia. No se aplicó ningún valor.");
         assertUnreadable(
                 "ID,Equivalencia\n1,X\n",
-                "No se pudo leer el archivo CSV: falta la columna Etiqueta." + " No se aplicó ningún valor.");
+                "No se pudo leer el archivo: falta la columna Etiqueta." + " No se aplicó ningún valor.");
         assertUnreadable(
                 "Etiqueta,etiqueta\nA,B\n",
-                "No se pudo leer el archivo CSV: la columna Etiqueta está" + " repetida. No se aplicó ningún valor.");
+                "No se pudo leer el archivo: la columna Etiqueta está" + " repetida. No se aplicó ningún valor.");
     }
 
     @Test
     void refusesEmptyFilesUnclosedQuotesExtraCellsAndOtherEncodings() {
-        assertUnreadable("", "No se pudo leer el archivo CSV: el archivo está vacío. No se aplicó ningún valor.");
+        assertUnreadable("", "No se pudo leer el archivo: el archivo está vacío. No se aplicó ningún valor.");
         assertUnreadable(
                 "ID,Etiqueta\n1,\"Azul\n",
-                "No se pudo leer el archivo CSV: hay comillas sin cerrar." + " No se aplicó ningún valor.");
+                "No se pudo leer el archivo: hay comillas sin cerrar." + " No se aplicó ningún valor.");
         assertUnreadable(
                 "ID,Etiqueta\n1,Azul,extra\n",
-                "No se pudo leer el archivo CSV: la fila 2 tiene más columnas"
+                "No se pudo leer el archivo: la fila 2 tiene más columnas"
                         + " que el encabezado. No se aplicó ningún valor.");
         byte[] latin1 = "ID,Etiqueta\n1,Café\n".getBytes(StandardCharsets.ISO_8859_1);
         assertThatThrownBy(() -> CsvValuesParser.parse(latin1))

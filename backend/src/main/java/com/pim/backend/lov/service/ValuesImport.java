@@ -55,16 +55,28 @@ public final class ValuesImport {
      * @throws com.pim.backend.lov.model.ListTooLargeException if the list would exceed 50,000 values
      */
     public static ImportOutcome apply(ListOfValues list, List<CsvValuesParser.Row> rows, Instant now) {
+        return apply(list, rows, now, null);
+    }
+
+    /**
+     * The list with the rows applied; a duplicate ID is reported naming {@code listName} when it is not {@code null}
+     * (feature 013, a file with several lists).
+     *
+     * @throws InvalidImportException listing every wrong row; nothing is applied
+     * @throws com.pim.backend.lov.model.ListTooLargeException if the list would exceed 50,000 values
+     */
+    public static ImportOutcome apply(ListOfValues list, List<CsvValuesParser.Row> rows, Instant now, String listName) {
         List<ImportRowError> errors = new ArrayList<>();
         List<CheckedRow> checked = new ArrayList<>();
         Map<String, List<Integer>> rowsById = new LinkedHashMap<>();
         for (CsvValuesParser.Row row : rows) {
             CheckedRow checkedRow = check(row, errors);
             checked.add(checkedRow);
-            if (checkedRow != null && checkedRow.id().isPresent()) {
-                rowsById.computeIfAbsent(checkedRow.id().get().key(), key -> new ArrayList<>())
-                        .add(row.number());
-            }
+            // A valid ID counts for duplicates even when another cell of its row is wrong, so every problem is
+            // reported at once (feature 013 FR-012).
+            validId(row)
+                    .ifPresent(id -> rowsById.computeIfAbsent(id.key(), key -> new ArrayList<>())
+                            .add(row.number()));
         }
         rowsById.values().stream().filter(numbers -> numbers.size() > 1).forEach(numbers -> {
             for (int number : numbers) {
@@ -78,7 +90,9 @@ public final class ValuesImport {
                         number,
                         CsvValuesParser.ID_COLUMN,
                         LovErrorCode.DUPLICATE_ID_IN_FILE,
-                        LovErrorCode.DUPLICATE_ID_IN_FILE.message(id, joined(numbers))));
+                        listName == null
+                                ? LovErrorCode.DUPLICATE_ID_IN_FILE.message(id, joined(numbers))
+                                : LovErrorCode.DUPLICATE_ID_IN_LIST_OF_FILE.message(id, listName, joined(numbers))));
             }
         });
         if (!errors.isEmpty()) {
@@ -125,6 +139,18 @@ public final class ValuesImport {
             added++;
         }
         return new ImportOutcome(list.withValues(values, counter, now), added, updated);
+    }
+
+    /** The row's ID when it is given and valid. */
+    private static Optional<ValueId> validId(CsvValuesParser.Row row) {
+        if (row.id() == null || row.id().isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(ValueId.of(row.id()));
+        } catch (InvalidListException exception) {
+            return Optional.empty();
+        }
     }
 
     /** The row's cells checked one by one; {@code null} if any is wrong (its errors are added). */

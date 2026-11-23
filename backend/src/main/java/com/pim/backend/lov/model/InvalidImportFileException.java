@@ -1,7 +1,7 @@
 package com.pim.backend.lov.model;
 
 /**
- * A CSV file cannot be imported as a whole (HTTP 422): {@code INVALID_IMPORT_FILE} (unreadable, missing or unknown
+ * A CSV or Excel file cannot be imported as a whole (HTTP 422): {@code INVALID_IMPORT_FILE} (unreadable, missing or unknown
  * columns) or {@code IMPORT_TOO_LARGE} (over 5 MB or 50,000 rows). Nothing was applied.
  */
 public class InvalidImportFileException extends RuntimeException {

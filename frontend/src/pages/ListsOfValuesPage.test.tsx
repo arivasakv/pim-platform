@@ -68,6 +68,48 @@ function fakeBackend() {
       lists.push(list)
       return json(201, view(list))
     }
+    // Feature 013: the check answers a summary; applying it creates the list «Talla».
+    if (path === '/api/v1/lists-of-values/bulk-load/check' && method === 'POST') {
+      return json(200, {
+        lists: [
+          { name: 'Talla', systemId: null, action: 'CREATE', valuesAdded: 2, valuesUpdated: 0 },
+        ],
+        listsToCreate: 1,
+        listsToUpdate: 0,
+        valuesToAdd: 2,
+        valuesToUpdate: 0,
+        checkToken: 'token-1',
+      })
+    }
+    if (path === '/api/v1/lists-of-values/bulk-load' && method === 'POST') {
+      const talla = {
+        systemId: `LOV00000${nextList++}`,
+        name: 'Talla',
+        equivalencesEnabled: false,
+        values: [
+          { id: 'CH', label: 'Chica', equivalence: null },
+          { id: 'MD', label: 'Mediana', equivalence: null },
+        ],
+        attributes: [],
+        next: 1,
+      }
+      lists.push(talla)
+      return json(200, {
+        lists: [
+          {
+            name: 'Talla',
+            systemId: talla.systemId,
+            action: 'CREATE',
+            valuesAdded: 2,
+            valuesUpdated: 0,
+          },
+        ],
+        listsCreated: 1,
+        listsUpdated: 0,
+        valuesAdded: 2,
+        valuesUpdated: 0,
+      })
+    }
     const match = path.match(
       /^\/api\/v1\/lists-of-values\/([^/]+)(\/values(?:\/(import|[^/]+))?)?$/,
     )
@@ -139,9 +181,18 @@ function listsPanel() {
   return within(screen.getByRole('region', { name: 'Listas' }))
 }
 
+/** The «Crear LOV» card, opened from the page header when it is closed (feature 013 FR-001). */
+function createCard() {
+  if (!screen.queryByRole('region', { name: 'Crear LOV' })) {
+    fireEvent.click(screen.getByRole('button', { name: 'Crear LOV' }))
+  }
+  return within(screen.getByRole('region', { name: 'Crear LOV' }))
+}
+
 async function createListNamed(name: string) {
-  fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: name } })
-  fireEvent.click(screen.getByRole('button', { name: 'Crear lista' }))
+  const card = createCard()
+  fireEvent.change(card.getByLabelText('Nombre'), { target: { value: name } })
+  fireEvent.click(card.getByRole('button', { name: 'Crear LOV' }))
   await screen.findByText(`Lista «${name}» creada.`)
   return within(await screen.findByRole('region', { name }))
 }
@@ -199,13 +250,14 @@ describe('ListsOfValuesPage', () => {
     render(<ListsOfValuesPage />)
     await screen.findByText('Todavía no hay listas de valores.')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Crear lista' }))
+    fireEvent.click(createCard().getByRole('button', { name: 'Crear LOV' }))
     expect(await screen.findByText('Escribe el nombre de la lista.')).toBeTruthy()
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
     const panel = await createListNamed('Color')
-    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'COLOR' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Crear lista' }))
+    const card = createCard()
+    fireEvent.change(card.getByLabelText('Nombre'), { target: { value: 'COLOR' } })
+    fireEvent.click(card.getByRole('button', { name: 'Crear LOV' }))
     expect(
       await screen.findByText('Ya existe una lista con el nombre "COLOR". Usa otro nombre.'),
     ).toBeTruthy()
@@ -217,6 +269,51 @@ describe('ListsOfValuesPage', () => {
     expect(
       await panel.findByText('Ya existe un valor con el ID "0001" en esta lista.'),
     ).toBeTruthy()
+  })
+
+  it('opens «Crear LOV» or «Carga Masiva de LOV» from the header, one at a time (feature 013)', async () => {
+    fakeBackend()
+    render(<ListsOfValuesPage />)
+    await screen.findByText('Todavía no hay listas de valores.')
+    expect(screen.queryByRole('region', { name: 'Crear LOV' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Carga Masiva de LOV' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Crear LOV' }))
+    expect(screen.getByRole('region', { name: 'Crear LOV' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Carga Masiva de LOV' }))
+    expect(screen.queryByRole('region', { name: 'Crear LOV' })).toBeNull()
+    const bulk = within(screen.getByRole('region', { name: 'Carga Masiva de LOV' }))
+    expect(bulk.getByRole('link', { name: 'Descargar plantilla Excel' })).toBeTruthy()
+    expect(bulk.getByRole('link', { name: 'Descargar plantilla CSV' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Crear LOV' }))
+    fireEvent.click(
+      within(screen.getByRole('region', { name: 'Crear LOV' })).getByRole('button', {
+        name: 'Cancelar',
+      }),
+    )
+    expect(screen.queryByRole('region', { name: 'Crear LOV' })).toBeNull()
+  })
+
+  it('loads lists from a file and shows them in the overview (feature 013)', async () => {
+    fakeBackend()
+    render(<ListsOfValuesPage />)
+    await screen.findByText('Todavía no hay listas de valores.')
+    fireEvent.click(screen.getByRole('button', { name: 'Carga Masiva de LOV' }))
+    const bulk = within(screen.getByRole('region', { name: 'Carga Masiva de LOV' }))
+
+    fireEvent.change(bulk.getByLabelText('Archivo (Excel o CSV)'), {
+      target: { files: [new File(['x'], 'listas.xlsx')] },
+    })
+    fireEvent.click(bulk.getByRole('button', { name: 'Revisar archivo' }))
+    fireEvent.click(await bulk.findByRole('button', { name: 'Confirmar carga' }))
+
+    expect(
+      await bulk.findByText(
+        'Carga aplicada: 1 lista creada, 0 actualizadas; 2 valores agregados y 0 actualizados.',
+      ),
+    ).toBeTruthy()
+    expect(await listsPanel().findByRole('button', { name: /Talla/ })).toBeTruthy()
   })
 
   it('shows no change controls without the permission', async () => {
@@ -236,7 +333,8 @@ describe('ListsOfValuesPage', () => {
     const panel = within(await screen.findByRole('region', { name: 'Color' }))
 
     expect(panel.getByRole('cell', { name: 'Azul' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Crear lista' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Crear LOV' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Carga Masiva de LOV' })).toBeNull()
     expect(panel.queryByRole('button', { name: 'Agregar valor' })).toBeNull()
     expect(panel.queryByRole('button', { name: 'Eliminar lista' })).toBeNull()
     expect(panel.queryByRole('button', { name: /Editar Azul/ })).toBeNull()

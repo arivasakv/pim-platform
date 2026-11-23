@@ -1,11 +1,6 @@
 package com.pim.backend.lov.service;
 
 import com.pim.backend.lov.model.InvalidImportFileException;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,7 +9,8 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Reads the CSV files of bulk value loads (FR-011; research R-09), without a library (constitution II):
+ * Reads the CSV files of bulk value loads (FR-011; research R-09), without a library (constitution II); the
+ * tokenizing is shared with feature 013 in {@link CsvRecords}:
  *
  * <ul>
  *   <li>UTF-8, with or without BOM ("CSV UTF-8" from Excel);
@@ -52,103 +48,28 @@ public final class CsvValuesParser {
      *     unclosed quote or a wrong header; {@code IMPORT_TOO_LARGE} for more than {@value #MAX_DATA_ROWS} data rows
      */
     public static List<Row> parse(byte[] content) {
-        String text = decode(content);
-        if (text.startsWith("﻿")) {
-            text = text.substring(1);
-        }
-        char delimiter = delimiterOf(text);
-        List<List<String>> records = records(text, delimiter);
-        if (records.isEmpty() || isBlank(records.get(0))) {
+        List<SheetRecord> records = CsvRecords.read(content);
+        if (records.isEmpty() || records.get(0).isBlank()) {
             throw InvalidImportFileException.unreadable("el archivo está vacío");
         }
-        Map<String, Integer> positions = header(records.get(0));
+        Map<String, Integer> positions = header(records.get(0).cells());
         List<Row> rows = new ArrayList<>();
-        for (int index = 1; index < records.size(); index++) {
-            List<String> cells = records.get(index);
-            if (isBlank(cells)) {
+        for (SheetRecord record : records.subList(1, records.size())) {
+            if (record.isBlank()) {
                 continue;
             }
-            int number = index + 1;
-            checkWidth(cells, positions.size(), number);
+            List<String> cells = record.cells();
+            checkWidth(cells, positions.size(), record.number());
             if (rows.size() == MAX_DATA_ROWS) {
                 throw InvalidImportFileException.tooLarge();
             }
             rows.add(new Row(
-                    number,
+                    record.number(),
                     cell(cells, positions.get(ID_COLUMN)),
                     cell(cells, positions.get(LABEL_COLUMN)),
                     cell(cells, positions.get(EQUIVALENCE_COLUMN))));
         }
         return rows;
-    }
-
-    private static String decode(byte[] content) {
-        try {
-            CharBuffer chars = StandardCharsets.UTF_8
-                    .newDecoder()
-                    .onMalformedInput(CodingErrorAction.REPORT)
-                    .onUnmappableCharacter(CodingErrorAction.REPORT)
-                    .decode(ByteBuffer.wrap(content));
-            return chars.toString();
-        } catch (CharacterCodingException exception) {
-            throw InvalidImportFileException.unreadable("el archivo no está guardado como CSV UTF-8");
-        }
-    }
-
-    /** Comma or semicolon, whichever appears more often in the first line (comma when tied or absent). */
-    private static char delimiterOf(String text) {
-        int end = text.indexOf('\n');
-        String firstLine = end < 0 ? text : text.substring(0, end);
-        long commas = firstLine.chars().filter(character -> character == ',').count();
-        long semicolons =
-                firstLine.chars().filter(character -> character == ';').count();
-        return semicolons > commas ? ';' : ',';
-    }
-
-    /** RFC 4180 records; a record that is one empty cell stands for an empty line. */
-    private static List<List<String>> records(String text, char delimiter) {
-        List<List<String>> records = new ArrayList<>();
-        List<String> current = new ArrayList<>();
-        StringBuilder cell = new StringBuilder();
-        boolean quoted = false;
-        int index = 0;
-        while (index < text.length()) {
-            char character = text.charAt(index);
-            if (quoted) {
-                if (character == '"' && index + 1 < text.length() && text.charAt(index + 1) == '"') {
-                    cell.append('"');
-                    index++;
-                } else if (character == '"') {
-                    quoted = false;
-                } else {
-                    cell.append(character);
-                }
-            } else if (character == '"' && cell.isEmpty()) {
-                quoted = true;
-            } else if (character == delimiter) {
-                current.add(cell.toString());
-                cell.setLength(0);
-            } else if (character == '\r' || character == '\n') {
-                if (character == '\r' && index + 1 < text.length() && text.charAt(index + 1) == '\n') {
-                    index++;
-                }
-                current.add(cell.toString());
-                cell.setLength(0);
-                records.add(current);
-                current = new ArrayList<>();
-            } else {
-                cell.append(character);
-            }
-            index++;
-        }
-        if (quoted) {
-            throw InvalidImportFileException.unreadable("hay comillas sin cerrar");
-        }
-        if (!cell.isEmpty() || !current.isEmpty()) {
-            current.add(cell.toString());
-            records.add(current);
-        }
-        return records;
     }
 
     private static Map<String, Integer> header(List<String> cells) {
@@ -190,9 +111,5 @@ public final class CsvValuesParser {
             return null;
         }
         return position < cells.size() ? cells.get(position) : "";
-    }
-
-    private static boolean isBlank(List<String> cells) {
-        return cells.stream().allMatch(String::isBlank);
     }
 }

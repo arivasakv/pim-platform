@@ -18,6 +18,9 @@ public interface ListOfValuesRepository {
     /** Every list's name keyed by its system ID upper-cased, without loading the values (feature 007 research R-03). */
     Map<String, String> namesById();
 
+    /** The list with this name, compared ignoring letter case (feature 013 FR-006). */
+    Optional<ListOfValues> findByName(ListName name);
+
     /** Whether a list other than {@code excludedId} (may be {@code null}) has the name, ignoring letter case. */
     boolean existsWithName(ListName name, String excludedId);
 

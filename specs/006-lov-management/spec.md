@@ -312,6 +312,11 @@ Requirement IDs are kept stable; requirements moved to follow-up features are ma
   as an error (OQ-005). [§3.1 «utilizará el ID para actualizarlo (siempre y cuando se trate del mismo
   objeto)»; §3.2.1 «El
   PIM debe soportar la administración de LOVs masivamente o de manera manual»]
+  *Amended 2026-11-23 (feature 013): this per-list load stays as it is. Loading **several lists** from one
+  Excel or CSV file («Carga Masiva de LOV», with a summary to confirm) is feature 013
+  (`specs/013-lov-bulk-load`), which also relabels «Crear lista» as «Crear LOV» and opens it from the page
+  header. The file-error message no longer says «CSV», since the same messages serve Excel files; a
+  duplicate ID is now reported even when another cell of its row is wrong.*
 - **FR-012 – Label change**: An authorized user MUST be able to change a value's label; the value keeps
   its list and ID. A value MUST be identified by its list and ID, never by its label, so that FU-1 can
   show the new label on every product without copying it. **Deferred to FU-1**: the propagation to

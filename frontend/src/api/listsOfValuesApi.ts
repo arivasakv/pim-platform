@@ -215,3 +215,63 @@ export async function importValues(listId: string, file: File): Promise<ImportRe
 export function importTemplateUrl(): string | null {
   return buildApiUrl(`${LISTS}/import-template`)
 }
+
+// --- Feature 013: bulk load of several lists from a CSV or Excel file ---
+
+/** One list a bulk load creates or updates; `systemId` is `null` for a list still to create. */
+export type PlannedListChange = {
+  name: string
+  systemId: string | null
+  action: 'CREATE' | 'UPDATE'
+  valuesAdded: number
+  valuesUpdated: number
+}
+
+/** What a checked file would change; nothing is saved yet (`POST …/bulk-load/check`). */
+export type BulkLoadSummary = {
+  lists: PlannedListChange[]
+  listsToCreate: number
+  listsToUpdate: number
+  valuesToAdd: number
+  valuesToUpdate: number
+  checkToken: string
+}
+
+/** What an applied file changed (`POST …/bulk-load`). */
+export type BulkLoadResult = {
+  lists: PlannedListChange[]
+  listsCreated: number
+  listsUpdated: number
+  valuesAdded: number
+  valuesUpdated: number
+}
+
+function fileUpload(fields: Record<string, string | File>): RequestInit {
+  const form = new FormData()
+  Object.entries(fields).forEach(([name, value]) => form.append(name, value))
+  return {
+    method: 'POST',
+    headers: { Accept: 'application/json', ...permissionHeaders() },
+    body: form,
+  }
+}
+
+/** Reads and checks a file of several lists; returns the summary and its check token. */
+export async function checkBulkLoad(file: File): Promise<BulkLoadSummary> {
+  const response = await request(`${LISTS}/bulk-load/check`, fileUpload({ file }))
+  return (await response.json()) as BulkLoadSummary
+}
+
+/**
+ * Applies a checked file: every list or none. A 409 (`conflict`) means the lists changed since the
+ * check and the file must be checked again.
+ */
+export async function applyBulkLoad(file: File, checkToken: string): Promise<BulkLoadResult> {
+  const response = await request(`${LISTS}/bulk-load`, fileUpload({ file, checkToken }))
+  return (await response.json()) as BulkLoadResult
+}
+
+/** Address of the bulk load template in Excel or CSV, or `null` without a backend address. */
+export function bulkLoadTemplateUrl(format: 'xlsx' | 'csv'): string | null {
+  return buildApiUrl(`${LISTS}/bulk-load/template?format=${format}`)
+}
