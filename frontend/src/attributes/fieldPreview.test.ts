@@ -5,7 +5,6 @@ import {
   checkDate,
   checkNumber,
   checkText,
-  currencySymbol,
   datePattern,
   describePreview,
   listSummary,
@@ -171,9 +170,19 @@ describe('dates (FR-009)', () => {
 
 describe('currency (FR-009)', () => {
   it('shows the symbol and the decimals, 2 by default', () => {
-    expect(currencySymbol('MXN')).toBe('$')
-    const preview = describePreview(currency('mxn'), {})
+    const options = {
+      currencyCode: [
+        { code: 'MXN', label: 'Peso mexicano', symbol: '$' },
+        { code: 'EUR', label: 'Euro', symbol: '€' },
+      ],
+    }
+    const preview = describePreview(currency('mxn'), options)
     expect(preview.hintParts).toEqual(['Moneda: MXN ($)', '2 decimales'])
+    // The backend's symbol, as the detail shows it (feature 004 FR-014, 2026-11-23).
+    expect(describePreview(currency('EUR'), options).hintParts[0]).toBe('Moneda: EUR (€)')
+    expect(describePreview(currency(''), options).notes).toEqual([
+      'Elige una moneda para ver el símbolo.',
+    ])
     expect(preview.step).toBe('0.01')
     expect(describePreview(currency('MXN', '0'), {}).step).toBe('1')
   })
@@ -256,7 +265,7 @@ describe('references and notes (FR-009, FR-010)', () => {
     expect(unknown.hintParts[0]).toBe('Moneda: XYZ')
 
     expect(describePreview(currency(''), {}).notes).toEqual([
-      'Escribe el código de moneda para ver el símbolo.',
+      'Elige una moneda para ver el símbolo.',
     ])
   })
 })

@@ -4,7 +4,8 @@ import { buildApiUrl } from './apiConfig'
 export type DataType =
   'TEXT' | 'NUMERIC' | 'BOOLEAN' | 'LIST_OF_VALUES' | 'DATE_TIME' | 'CURRENCY' | 'REFERENCE'
 
-export type AttributeOption = { code: string; label: string }
+/** `symbol` is only given for the currencies of a currency attribute (feature 004 FR-014). */
+export type AttributeOption = { code: string; label: string; symbol?: string }
 
 export type AttributeType = {
   code: DataType

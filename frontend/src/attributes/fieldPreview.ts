@@ -1,5 +1,6 @@
 import type { AttributeOption } from '../api/attributesApi'
 import type { AttributeForm } from './attributeForm'
+import { currencySymbolOf } from './currencyOptions'
 
 /**
  * Pure rules of the live field preview (feature 008). They turn the attribute form's current state
@@ -106,19 +107,6 @@ export function compileMask(mask: string): RegExp | null | undefined {
   } catch {
     return null
   }
-}
-
-/** The currency symbol for an ISO 4217 code (es-MX), or undefined for an unknown code. */
-export function currencySymbol(code: string): string | undefined {
-  if (!/^[A-Z]{3}$/.test(code) || !Intl.supportedValuesOf('currency').includes(code)) {
-    return undefined
-  }
-  const parts = new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: code,
-    currencyDisplay: 'narrowSymbol',
-  }).formatToParts(0)
-  return parts.find((part) => part.type === 'currency')?.value
 }
 
 function optionLabel(options: AttributeOption[] | undefined, code: string): string {
@@ -234,9 +222,10 @@ export function describePreview(
       preview.kind = 'number'
       const code = form.currency.currencyCode.trim().toUpperCase()
       if (code === '') {
-        notes.push('Escribe el código de moneda para ver el símbolo.')
+        notes.push('Elige una moneda para ver el símbolo.')
       } else {
-        const symbol = currencySymbol(code)
+        // The backend's symbol, the same one the detail shows (feature 004 FR-014, 2026-11-23).
+        const symbol = currencySymbolOf(options.currencyCode, code)
         if (symbol === undefined) {
           notes.push(`Moneda ${code} no reconocida; se muestra solo el código.`)
           hintParts.push(`Moneda: ${code}`)

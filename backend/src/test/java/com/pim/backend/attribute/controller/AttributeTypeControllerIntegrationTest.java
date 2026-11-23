@@ -1,6 +1,7 @@
 package com.pim.backend.attribute.controller;
 
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -52,7 +53,14 @@ class AttributeTypeControllerIntegrationTest {
                 .andExpect(jsonPath("$.items[4].options.dateFormat[*].code")
                         .value(contains(
                                 "DD/MM/AAAA", "MM/DD/AAAA", "AAAA-MM-DD", "DD/MM/AAAA HH:mm", "AAAA-MM-DD HH:mm")))
-                .andExpect(jsonPath("$.items[5].options").isEmpty())
+                .andExpect(jsonPath("$.items[5].options.currencyCode[0].code").value("MXN"))
+                .andExpect(jsonPath("$.items[5].options.currencyCode[0].label").value("Peso mexicano"))
+                .andExpect(jsonPath("$.items[5].options.currencyCode[0].symbol").value("$"))
+                .andExpect(jsonPath("$.items[5].options.currencyCode[1].code").value("USD"))
+                .andExpect(jsonPath("$.items[5].options.currencyCode[2].code").value("EUR"))
+                .andExpect(jsonPath("$.items[5].options.currencyCode[2].symbol").value("€"))
+                .andExpect(jsonPath("$.items[5].options.currencyCode.length()", greaterThan(100)))
+                .andExpect(jsonPath("$.items[0].options.caseFormat[0].symbol").doesNotExist())
                 .andExpect(jsonPath("$.items[6].options.targetObjectType", hasSize(6)))
                 .andExpect(jsonPath("$.items[6].options.cardinality", hasSize(2)));
     }

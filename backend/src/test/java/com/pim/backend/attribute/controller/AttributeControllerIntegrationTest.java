@@ -397,7 +397,10 @@ class AttributeControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.currencyProperties.currencyCode").value("MXN"))
                 .andExpect(jsonPath("$.currencyProperties.decimals").value(2))
-                .andExpect(jsonPath("$.currencyProperties.currencySymbol", notNullValue()));
+                .andExpect(jsonPath("$.currencyProperties.currencySymbol").value("$"));
+        create(typed("Precio en euros", "CURRENCY", "currencyProperties", "{\"currencyCode\":\"EUR\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.currencyProperties.currencySymbol").value("€"));
         assertInvalid(
                 "CURRENCY",
                 "currencyProperties",

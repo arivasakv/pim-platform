@@ -45,7 +45,18 @@ const TYPES = {
       label: 'Fecha y Hora (Date/Time)',
       options: { dateFormat: [{ code: 'DD/MM/AAAA', label: 'DD/MM/AAAA' }] },
     },
-    { code: 'CURRENCY', label: 'Moneda (Currency)', options: {} },
+    {
+      code: 'CURRENCY',
+      label: 'Moneda (Currency)',
+      options: {
+        currencyCode: [
+          { code: 'MXN', label: 'Peso mexicano', symbol: '$' },
+          { code: 'USD', label: 'Dólar estadounidense', symbol: '$' },
+          { code: 'EUR', label: 'Euro', symbol: '€' },
+          { code: 'CHF', label: 'Franco suizo', symbol: 'CHF' },
+        ],
+      },
+    },
     {
       code: 'REFERENCE',
       label: 'Referencias / Relaciones',
@@ -388,6 +399,44 @@ describe('AttributeEditor (create mode, feature 004)', () => {
     })
   })
 
+  it('creates a currency attribute from the selector and previews its symbol', async () => {
+    const fetchMock = stubBackend(() =>
+      Promise.resolve(response(201, { systemId: 'ATR000001', displayName: 'Precio' })),
+    )
+    await renderReadyPage()
+
+    type('Nombre', 'Precio')
+    type('Tipo de dato', 'CURRENCY')
+    type('Moneda', 'EUR')
+    const panel = screen.getByRole('region', { name: 'Vista previa del campo' })
+    expect(within(panel).getByText('Moneda: EUR (€) · 2 decimales')).toBeTruthy()
+    save()
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    expect(lastRequestBody(fetchMock)).toEqual({
+      displayName: 'Precio',
+      dataType: 'CURRENCY',
+      currencyProperties: { currencyCode: 'EUR' },
+    })
+  })
+
+  it('keeps a stored currency that is not in the list when editing', async () => {
+    stubBackend()
+    const oro = {
+      systemId: 'ATR000003',
+      displayName: 'Valor en oro',
+      dataType: 'CURRENCY' as const,
+      scope: 'GLOBAL' as const,
+      currencyProperties: { currencyCode: 'XAU', decimals: 2, currencySymbol: 'XAU' },
+      groups: [],
+    }
+    render(<AttributeEditor mode="edit" attribute={oro} />)
+
+    const currency = await screen.findByLabelText<HTMLSelectElement>('Moneda')
+    expect(currency.value).toBe('XAU')
+    expect(currency.options[1].textContent).toBe('XAU')
+  })
+
   it('shows the date and currency fields', async () => {
     stubBackend()
     await renderReadyPage()
@@ -395,7 +444,14 @@ describe('AttributeEditor (create mode, feature 004)', () => {
     type('Tipo de dato', 'DATE_TIME')
     expect(screen.getByLabelText('Formato de fecha')).toBeTruthy()
     type('Tipo de dato', 'CURRENCY')
-    expect(screen.getByLabelText('Moneda (código ISO, p. ej. MXN)')).toBeTruthy()
+    const currency = screen.getByLabelText<HTMLSelectElement>('Moneda')
+    expect(Array.from(currency.options).map((option) => option.textContent)).toEqual([
+      'Elige una moneda',
+      '$ · MXN · Peso mexicano',
+      '$ · USD · Dólar estadounidense',
+      '€ · EUR · Euro',
+      'CHF · Franco suizo',
+    ])
     expect(screen.getByLabelText('Decimales')).toBeTruthy()
     type('Tipo de dato', 'BOOLEAN')
     expect(screen.queryByLabelText('Decimales')).toBeNull()

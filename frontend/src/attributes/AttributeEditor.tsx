@@ -9,6 +9,7 @@ import {
   type AttributeType,
   type DataType,
 } from '../api/attributesApi'
+import { currencyChoices } from './currencyOptions'
 import { choiceOf, fromChoice, numericChoices, typeChoices } from './dataTypeChoices'
 import { listLists, type ListOfValuesSummary } from '../api/listsOfValuesApi'
 import { Button, Card, CheckboxField, Notification, SelectField, TextField } from '../components/ui'
@@ -467,12 +468,13 @@ function TypeFields({ form, errors, options, listsState, onChange }: TypeFieldsP
         <fieldset className={styles.typeFields}>
           <legend className={styles.legend}>Propiedades de moneda</legend>
           <div className={styles.row}>
-            <TextField
+            <SelectField
               id="currency-currencyCode"
-              label="Moneda (código ISO, p. ej. MXN)"
-              maxLength={3}
-              value={form.currency.currencyCode}
-              onChange={(event) => set({ currencyCode: event.target.value })}
+              label="Moneda"
+              placeholder="Elige una moneda"
+              options={currencyChoices(options.currencyCode, form.currency.currencyCode)}
+              value={form.currency.currencyCode.trim().toUpperCase()}
+              onChange={(code) => set({ currencyCode: code })}
               error={errors['currencyProperties.currencyCode']}
             />
             <TextField

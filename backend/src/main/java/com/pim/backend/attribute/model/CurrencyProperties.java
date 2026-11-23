@@ -1,12 +1,12 @@
 package com.pim.backend.attribute.model;
 
 import java.util.Currency;
-import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
  * Properties of a currency attribute (ERF 1.1 §3.2.1 Moneda; FR-014; plan decision D-10). The currency is fixed per
- * attribute; its symbol is derived from the ISO 4217 code.
+ * attribute; its symbol is derived from the ISO 4217 code by {@link CurrencyCatalog#symbolOf} (FR-014 amendment of
+ * 2026-11-23).
  *
  * @param currencyCode ISO 4217 code known to the runtime, e.g. {@code MXN}
  * @param decimals 0–4
@@ -17,7 +17,6 @@ public record CurrencyProperties(String currencyCode, int decimals) implements A
     public static final int DEFAULT_DECIMALS = 2;
 
     private static final Pattern ISO_CODE = Pattern.compile("[A-Z]{3}");
-    private static final Locale SYMBOL_LOCALE = Locale.of("es", "MX");
 
     public CurrencyProperties {
         if (currencyCode == null) {
@@ -37,9 +36,9 @@ public record CurrencyProperties(String currencyCode, int decimals) implements A
         return new CurrencyProperties(currencyCode, decimals == null ? DEFAULT_DECIMALS : decimals);
     }
 
-    /** The currency symbol shown with values, e.g. {@code $} for {@code MXN}. */
+    /** The currency symbol shown with values, e.g. {@code $} for {@code MXN} and {@code €} for {@code EUR}. */
     public String currencySymbol() {
-        return Currency.getInstance(currencyCode).getSymbol(SYMBOL_LOCALE);
+        return CurrencyCatalog.symbolOf(currencyCode);
     }
 
     @Override

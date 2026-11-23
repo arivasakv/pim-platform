@@ -158,7 +158,7 @@ describe('AttributeFieldPreview', () => {
     rerender(
       <AttributeFieldPreview
         form={form({ dataType: 'CURRENCY', currency: { currencyCode: 'MXN', decimals: '2' } })}
-        options={{}}
+        options={{ currencyCode: [{ code: 'MXN', label: 'Peso mexicano', symbol: '$' }] }}
       />,
     )
     expect(field().type).toBe('number')

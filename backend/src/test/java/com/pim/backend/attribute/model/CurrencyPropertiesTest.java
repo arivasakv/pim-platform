@@ -3,8 +3,6 @@ package com.pim.backend.attribute.model;
 import static com.pim.backend.attribute.model.TextPropertiesTest.assertRejected;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Currency;
-import java.util.Locale;
 import org.junit.jupiter.api.Test;
 
 /** Currency properties (FR-014; plan decision D-10). */
@@ -17,8 +15,9 @@ class CurrencyPropertiesTest {
         assertThat(properties.currencyCode()).isEqualTo("MXN");
         assertThat(properties.decimals()).isEqualTo(2);
         assertThat(properties.dataType()).isEqualTo(AttributeDataType.CURRENCY);
-        assertThat(properties.currencySymbol())
-                .isEqualTo(Currency.getInstance("MXN").getSymbol(Locale.of("es", "MX")));
+        assertThat(properties.currencySymbol()).isEqualTo("$");
+        // The defect fixed on 2026-11-23 (FR-014 amendment): a euro attribute showed "EUR".
+        assertThat(CurrencyProperties.of("EUR", null).currencySymbol()).isEqualTo("€");
     }
 
     @Test

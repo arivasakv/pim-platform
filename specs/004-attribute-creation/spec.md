@@ -364,6 +364,21 @@ not stored, A-004)
 - **FR-014 – Moneda**: a numeric attribute that is associated with a currency symbol ($, €, …) and
   financial formatting rules. [3.2.1 Moneda] The currency is fixed per attribute as an ISO 4217
   code, with 0–4 decimals (default 2); the symbol is derived from the code (plan decision D-10).
+  *Amended 2026-11-23 by the project owner:* the currency MUST be chosen from a **selector** («Para
+  Moneda: Selector de Símbolo Monetario ($, €) con formato financiero automático», owner's requirement;
+  source document not found in the reference repository, open question). The owner chose to list each
+  currency with its symbol, ISO code and Spanish name (e.g. «$ · MXN · Peso mexicano», «€ · EUR · Euro»)
+  rather than bare symbols, because one symbol can stand for several currencies ($ = MXN, USD, CAD…);
+  the ISO code is still what is stored, so stored attributes do not change. The selector offers **every
+  ISO 4217 currency in current use by a country** (the national currencies known to the runtime), with
+  MXN, USD and EUR first and the rest sorted by Spanish name. The list and the symbols come from the
+  backend (contract v2.1.0) so that the form, the field preview and the detail always show the same
+  symbol. **Symbol rule** (fixes a defect where a saved EUR attribute showed «EUR» instead of «€»): the
+  symbol used in Mexico (es-MX) when it differs from the code; otherwise the symbol most countries using
+  the currency show locally (USD → $, EUR → €, GBP → £, BRL → R$); otherwise the code (CHF). An existing
+  attribute whose code is not in the list keeps it and shows the code. «Formato financiero automático»
+  beyond the decimals (thousands separator, symbol next to the amount) is not decided yet (open
+  question; values are captured in a later feature).
 - **FR-015 – Referencia**: the kind of system object the attribute links a product to (for example a
   spare part, or a cross-sell or up-sell product). [3.2.1 Referencias o Relaciones] The target is one of feature 003's
   object types, with single (default) or multiple cardinality (plan decision D-11).

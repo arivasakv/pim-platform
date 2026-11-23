@@ -6,6 +6,7 @@ import com.pim.backend.attribute.dto.OptionResponse;
 import com.pim.backend.attribute.model.AttributeDataType;
 import com.pim.backend.attribute.model.Cardinality;
 import com.pim.backend.attribute.model.CaseFormat;
+import com.pim.backend.attribute.model.CurrencyCatalog;
 import com.pim.backend.attribute.model.DateFormat;
 import com.pim.backend.attribute.model.NumberFormat;
 import com.pim.backend.attribute.model.ReferenceTargetType;
@@ -48,7 +49,14 @@ public class AttributeTypeController {
                         options(ReferenceTargetType.values(), ReferenceTargetType::name, ReferenceTargetType::label));
                 options.put("cardinality", options(Cardinality.values(), Cardinality::name, Cardinality::label));
             }
-            case BOOLEAN, CURRENCY -> {
+            case CURRENCY ->
+                options.put(
+                        "currencyCode",
+                        CurrencyCatalog.inUse().stream()
+                                .map(currency ->
+                                        new OptionResponse(currency.code(), currency.name(), currency.symbol()))
+                                .toList());
+            case BOOLEAN -> {
                 // No option lists.
             }
         }

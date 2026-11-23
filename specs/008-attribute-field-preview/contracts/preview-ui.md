@@ -51,7 +51,7 @@ Reference placeholder: **Selecciona un objeto: {objeto}** (single) / **Seleccion
 | A limit that is not a number | **Un límite no es un número; la vista previa lo ignora.** |
 | Decimal without decimals | **Sin decimales configurados: la vista previa usa 2.** |
 | Unknown currency | **Moneda {código} no reconocida; se muestra solo el código.** |
-| No currency code | **Escribe el código de moneda para ver el símbolo.** |
+| No currency chosen | **Elige una moneda para ver el símbolo.** (2026-11-23: the currency is chosen from a selector; the symbol is the backend's) |
 | No date format | **Elige un formato de fecha para ver el campo.** |
 | No selection mode | **Tipo de selección sin elegir: la vista previa usa selección única.** |
 | No reference target | **Elige el objeto referenciado para ver el campo.** |

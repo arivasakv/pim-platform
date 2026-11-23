@@ -275,6 +275,9 @@ properties and their options. No ERF section asks for a preview; the feature req
     the format or is not a real date or time MUST get a message.
   - *Moneda*: a number field showing the currency symbol and code, with the configured decimals
     (2 while not set, feature 004 D-10 default).
+    *Amended 2026-11-23 (feature 004 FR-014 amendment): the symbol is the one the backend gives with
+    the currency list, the same one the detail shows; the currency is chosen from a selector, so the
+    "no code" and "unknown code" notes only apply to an attribute whose stored code is not in the list.*
   - *Referencia*: a disabled selector naming the target kind of object and whether one or several can
     be chosen (one while not set, feature 004 D-11 default), with a note that objects can be chosen
     when product forms exist.

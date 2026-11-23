@@ -26,6 +26,7 @@ import {
 } from '../attributes/attributeBrowsing'
 import { AttributeFieldPreview } from '../attributes/AttributeFieldPreview'
 import { fromAttribute } from '../attributes/attributeForm'
+import { currencyLabel } from '../attributes/currencyOptions'
 import { attributeTypeLabel, typeChoices } from '../attributes/dataTypeChoices'
 import { Button, Card, Notification, PageHeader, SelectField, TextField } from '../components/ui'
 import styles from './AttributesPage.module.css'
@@ -579,11 +580,16 @@ function AttributeDetail({ attribute, types }: AttributeDetailProps) {
   }
   const currency = attribute.currencyProperties
   if (currency) {
+    const listed = type?.options.currencyCode?.find(
+      (candidate) => candidate.code === currency.currencyCode,
+    )
     add(
       'Moneda',
-      currency.currencySymbol
-        ? `${currency.currencyCode} (${currency.currencySymbol})`
-        : currency.currencyCode,
+      listed
+        ? currencyLabel(listed)
+        : currency.currencySymbol && currency.currencySymbol !== currency.currencyCode
+          ? `${currency.currencyCode} (${currency.currencySymbol})`
+          : currency.currencyCode,
     )
     add('Decimales', currency.decimals)
   }
