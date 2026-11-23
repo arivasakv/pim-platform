@@ -126,6 +126,12 @@ public record ListOfValues(
         return new ListOfValues(systemId, name, equivalencesEnabled, newValues, newNextGeneratedNumber, createdAt, now);
     }
 
+    /** A list planned by a bulk load with the system ID it gets when it is created (feature 013 research R-07). */
+    public ListOfValues withSystemId(String newSystemId) {
+        return new ListOfValues(
+                newSystemId, name, equivalencesEnabled, values, nextGeneratedNumber, createdAt, updatedAt);
+    }
+
     /** The list with another name; ID, values and links stay (User Story 3). */
     public ListOfValues renamed(ListName newName, Instant now) {
         return new ListOfValues(systemId, newName, equivalencesEnabled, values, nextGeneratedNumber, createdAt, now);

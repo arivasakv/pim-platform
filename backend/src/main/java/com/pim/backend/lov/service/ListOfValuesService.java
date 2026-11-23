@@ -8,6 +8,10 @@ import com.pim.backend.identifier.model.AssignmentResult;
 import com.pim.backend.identifier.model.ManualIdPermissions;
 import com.pim.backend.identifier.model.ObjectType;
 import com.pim.backend.identifier.service.IdentifierService;
+import com.pim.backend.lov.model.BulkLoadOutdatedException;
+import com.pim.backend.lov.model.BulkLoadResult;
+import com.pim.backend.lov.model.BulkLoadRow;
+import com.pim.backend.lov.model.BulkLoadSummary;
 import com.pim.backend.lov.model.ImportOutcome;
 import com.pim.backend.lov.model.LinkedAttribute;
 import com.pim.backend.lov.model.ListChangeNotPermittedException;
@@ -22,6 +26,8 @@ import com.pim.backend.lov.model.ListValue;
 import com.pim.backend.lov.model.ValueAddition;
 import com.pim.backend.lov.repository.ListOfValuesRepository;
 import java.time.Clock;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -37,6 +43,9 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class ListOfValuesService {
+
+    /** New lists of a bulk load always get a generated system ID (feature 013 research R-07). */
+    private static final ManualIdPermissions NO_MANUAL_IDS = ManualIdPermissions.fromCodes(null);
 
     private final ListOfValuesRepository lists;
     private final IdentifierService identifierService;
@@ -234,6 +243,106 @@ public class ListOfValuesService {
             lists.update(outcome.list());
             changeRecorder.valuesImported(outcome.list(), outcome.added(), outcome.updated(), user);
             return outcome;
+        }
+    }
+
+    /**
+     * Reads and checks a bulk load file of several lists and says what it would change; nothing is saved and no
+     * system ID is assigned (feature 013 FR-010, FR-012; research R-05).
+     *
+     * @throws ListChangeNotPermittedException without {@code ATTRIBUTE_CREATE}
+     * @throws com.pim.backend.lov.model.InvalidImportFileException for an unreadable or too large file
+     * @throws com.pim.backend.lov.model.InvalidImportException listing every wrong row
+     * @throws com.pim.backend.lov.model.ListTooLargeException if a list would exceed 50,000 values
+     */
+    public BulkLoadSummary checkBulkLoad(byte[] file, AttributePermissions permissions) {
+        checkPermission(permissions);
+        List<BulkLoadRow> rows = BulkLoadFileReader.read(file);
+        synchronized (lock) {
+            BulkLoadPlan plan = BulkLoadPlan.of(rows, lists::findByName, clock.instant());
+            return new BulkLoadSummary(plan.planned(), plan.checkToken(file));
+        }
+    }
+
+    /**
+     * Checks the file again and, when neither it nor the lists it touches changed since {@code checkToken} was given,
+     * creates and updates every list it names, or none (feature 013 FR-008–FR-011; research R-05–R-07, R-11).
+     *
+     * @throws ListChangeNotPermittedException without {@code ATTRIBUTE_CREATE}
+     * @throws com.pim.backend.lov.model.InvalidImportFileException for an unreadable or too large file
+     * @throws com.pim.backend.lov.model.InvalidImportException listing every wrong row
+     * @throws com.pim.backend.lov.model.ListTooLargeException if a list would exceed 50,000 values
+     * @throws BulkLoadOutdatedException if the token does not match the file and the lists as they are now
+     * @throws com.pim.backend.identifier.model.SequenceExhaustedException if feature 003 has no list ID left
+     */
+    public BulkLoadResult applyBulkLoad(byte[] file, String checkToken, String user, AttributePermissions permissions) {
+        checkPermission(permissions);
+        List<BulkLoadRow> rows = BulkLoadFileReader.read(file);
+        synchronized (lock) {
+            Instant now = clock.instant();
+            BulkLoadPlan plan = BulkLoadPlan.of(rows, lists::findByName, now);
+            if (!plan.checkToken(file).equals(checkToken)) {
+                throw new BulkLoadOutdatedException();
+            }
+            List<BulkLoadPlan.ListChange> changes = new ArrayList<>();
+            for (BulkLoadPlan.ListChange change : plan.changes()) {
+                if (change.before().isPresent()) {
+                    changes.add(change);
+                } else {
+                    String systemId = identifierService
+                            .assign(ObjectType.LIST_OF_VALUES, null, Map.of(), NO_MANUAL_IDS)
+                            .registration()
+                            .systemId()
+                            .value();
+                    changes.add(new BulkLoadPlan.ListChange(
+                            change.planned().withSystemId(systemId),
+                            change.before(),
+                            change.after().withSystemId(systemId)));
+                }
+            }
+            write(changes);
+            changes.forEach(change -> changeRecorder.valuesImported(
+                    change.after(),
+                    change.planned().valuesAdded(),
+                    change.planned().valuesUpdated(),
+                    user));
+            return new BulkLoadResult(
+                    changes.stream().map(BulkLoadPlan.ListChange::planned).toList());
+        }
+    }
+
+    /**
+     * Inserts the new lists, then replaces the changed ones; if a write fails, what was written is undone before the
+     * failure is passed on (feature 013 research R-06: no multi-document transactions on a standalone MongoDB).
+     */
+    private void write(List<BulkLoadPlan.ListChange> changes) {
+        List<BulkLoadPlan.ListChange> written = new ArrayList<>();
+        try {
+            for (BulkLoadPlan.ListChange change : changes) {
+                if (change.before().isEmpty()) {
+                    lists.insert(change.after());
+                    written.add(change);
+                }
+            }
+            for (BulkLoadPlan.ListChange change : changes) {
+                if (change.before().isPresent()) {
+                    lists.update(change.after());
+                    written.add(change);
+                }
+            }
+        } catch (RuntimeException failure) {
+            for (BulkLoadPlan.ListChange change : written.reversed()) {
+                try {
+                    if (change.before().isPresent()) {
+                        lists.update(change.before().get());
+                    } else {
+                        lists.delete(change.after().systemId());
+                    }
+                } catch (RuntimeException undoFailure) {
+                    failure.addSuppressed(undoFailure);
+                }
+            }
+            throw failure;
         }
     }
 

@@ -18,6 +18,7 @@ import {
   type ListValue,
 } from '../api/listsOfValuesApi'
 import { Button, Card, CheckboxField, Notification, PageHeader, TextField } from '../components/ui'
+import { BulkLoadPanel } from '../listsOfValues/BulkLoadPanel'
 import styles from './ListsOfValuesPage.module.css'
 
 const CONNECTION_ERROR = 'No se pudo conectar con el servidor. Inténtalo de nuevo.'
@@ -74,7 +75,8 @@ function matches(value: ListValue, filter: string): boolean {
 }
 
 /**
- * Lists of values (feature 006): create, rename and delete lists; add, edit and delete their
+ * Lists of values (feature 006): create, rename and delete lists («Crear LOV»), or load several
+ * lists from one Excel or CSV file («Carga Masiva de LOV», feature 013); add, edit and delete their
  * values one by one or from a CSV file; turn the equivalence column on or off; see which
  * attributes use each list. Every list and value comes from the backend (FR-025). Change controls
  * are shown only with the development permission `ATTRIBUTE_CREATE`; the backend still checks it.
@@ -85,6 +87,8 @@ export function ListsOfValuesPage() {
   const [listRequest, setListRequest] = useState(0)
   const [confirmation, setConfirmation] = useState<string>()
 
+  /** The card the header actions opened (feature 013 FR-001): one at a time. */
+  const [openCard, setOpenCard] = useState<'none' | 'create' | 'bulk'>('none')
   const [name, setName] = useState('')
   const [nameError, setNameError] = useState<string>()
   const [createError, setCreateError] = useState<string>()
@@ -154,6 +158,7 @@ export function ListsOfValuesPage() {
     try {
       const list = await createList(name.trim())
       setName('')
+      setOpenCard('none')
       setConfirmation(`Lista «${list.name}» creada.`)
       resetPanel()
       setSelected(list)
@@ -333,6 +338,16 @@ export function ListsOfValuesPage() {
       <PageHeader
         title="Lista de Valores (LOV's)"
         description="Administra listas reutilizables de pares ID y etiqueta. Una lista puede usarse en varios atributos."
+        actions={
+          canChange && (
+            <>
+              <Button onClick={() => setOpenCard('create')}>Crear LOV</Button>
+              <Button variant="secondary" onClick={() => setOpenCard('bulk')}>
+                Carga Masiva de LOV
+              </Button>
+            </>
+          )
+        }
       />
 
       {confirmation && (
@@ -345,8 +360,8 @@ export function ListsOfValuesPage() {
 
       <div className={styles.layout}>
         <div className={styles.column}>
-          {canChange && (
-            <Card title="Nueva lista">
+          {canChange && openCard === 'create' && (
+            <Card title="Crear LOV">
               <form className={styles.form} noValidate onSubmit={handleCreate}>
                 <TextField
                   id="lista-nombre"
@@ -359,10 +374,28 @@ export function ListsOfValuesPage() {
                 {createError && <Notification variant="error">{createError}</Notification>}
                 <div className={styles.actions}>
                   <Button type="submit" disabled={creating}>
-                    Crear lista
+                    Crear LOV
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    disabled={creating}
+                    onClick={() => {
+                      setOpenCard('none')
+                      setName('')
+                      setNameError(undefined)
+                      setCreateError(undefined)
+                    }}
+                  >
+                    Cancelar
                   </Button>
                 </div>
               </form>
+            </Card>
+          )}
+
+          {canChange && openCard === 'bulk' && (
+            <Card title="Carga Masiva de LOV">
+              <BulkLoadPanel onApplied={reloadList} />
             </Card>
           )}
 

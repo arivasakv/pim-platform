@@ -7,7 +7,9 @@ import com.pim.backend.identifier.model.InvalidIdentifierRequestException;
 import com.pim.backend.identifier.model.ManualIdNotPermittedException;
 import com.pim.backend.identifier.model.SequenceExhaustedException;
 import com.pim.backend.identifier.model.SystemIdInUseException;
+import com.pim.backend.lov.model.BulkLoadOutdatedException;
 import com.pim.backend.lov.model.ImportRowError;
+import com.pim.backend.lov.model.InvalidBulkLoadRequestException;
 import com.pim.backend.lov.model.InvalidImportException;
 import com.pim.backend.lov.model.InvalidImportFileException;
 import com.pim.backend.lov.model.InvalidListException;
@@ -171,6 +173,22 @@ public class LovExceptionHandler {
                 exception.getMessage(),
                 "file",
                 exception.code());
+    }
+
+    @ExceptionHandler(BulkLoadOutdatedException.class)
+    ProblemDetail handleBulkLoadOutdated(BulkLoadOutdatedException exception, HttpServletRequest request) {
+        return problem(
+                request,
+                HttpStatus.CONFLICT,
+                "Listas modificadas",
+                exception.getMessage(),
+                "checkToken",
+                LovErrorCode.BULK_LOAD_OUTDATED);
+    }
+
+    @ExceptionHandler(InvalidBulkLoadRequestException.class)
+    ProblemDetail handleInvalidBulkLoadRequest(InvalidBulkLoadRequestException exception, HttpServletRequest request) {
+        return invalidRequest(request, List.of(error(exception.field(), exception.code(), exception.getMessage())));
     }
 
     /** No {@code file} part, or a body that is not multipart. */

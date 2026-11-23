@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   ListOfValuesApiError,
   addValue,
+  applyBulkLoad,
+  bulkLoadTemplateUrl,
   canChangeLists,
+  checkBulkLoad,
   createList,
   deleteList,
   deleteValue,
@@ -140,6 +143,44 @@ describe('listsOfValuesApi', () => {
       detail: 'El archivo tiene 1 error. No se aplicó ningún valor.',
       rowErrors,
     })
+  })
+
+  it('checks and applies a bulk load of several lists (feature 013)', async () => {
+    const file = new File(['Lista,ID,Etiqueta'], 'listas.xlsx')
+    const summary = {
+      lists: [
+        { name: 'Talla', systemId: null, action: 'CREATE', valuesAdded: 2, valuesUpdated: 0 },
+      ],
+      listsToCreate: 1,
+      listsToUpdate: 0,
+      valuesToAdd: 2,
+      valuesToUpdate: 0,
+      checkToken: 'abc',
+    }
+    const fetchMock = stubFetch(() => Promise.resolve(response(200, summary)))
+
+    await expect(checkBulkLoad(file)).resolves.toEqual(summary)
+    const [checkUrl, checkInit] = fetchMock.mock.calls[0]
+    expect(checkUrl).toBe(`${LISTS}/bulk-load/check`)
+    expect((checkInit.body as FormData).get('file')).toBe(file)
+    expect(checkInit.headers['X-Pim-Permissions']).toBe('ATTRIBUTE_CREATE')
+
+    const result = { lists: [], listsCreated: 1, listsUpdated: 0, valuesAdded: 2, valuesUpdated: 0 }
+    fetchMock.mockImplementation(() => Promise.resolve(response(200, result)))
+    await expect(applyBulkLoad(file, 'abc')).resolves.toEqual(result)
+    const [applyUrl, applyInit] = fetchMock.mock.calls[1]
+    expect(applyUrl).toBe(`${LISTS}/bulk-load`)
+    expect((applyInit.body as FormData).get('checkToken')).toBe('abc')
+
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(
+        response(409, {
+          detail: 'Las listas cambiaron desde la revisión. Vuelve a revisar el archivo.',
+        }),
+      ),
+    )
+    await expect(applyBulkLoad(file, 'abc')).rejects.toMatchObject({ kind: 'conflict' })
+    expect(bulkLoadTemplateUrl('xlsx')).toBe(`${LISTS}/bulk-load/template?format=xlsx`)
   })
 
   it('turns refusals into errors with their kind and Spanish detail', async () => {

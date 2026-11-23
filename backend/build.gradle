@@ -25,6 +25,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	// Product catalog stored in MongoDB (constitution IX 2.2.0; ADR 0002)
 	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+	// Reads Excel (.xlsx) bulk loads of lists of values and writes their template (feature 013 decision D-1)
+	implementation 'org.apache.poi:poi-ooxml:5.4.1'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

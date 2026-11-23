@@ -74,6 +74,15 @@ public class MongoListOfValuesRepository implements ListOfValuesRepository, Init
     }
 
     @Override
+    public Optional<ListOfValues> findByName(ListName name) {
+        return Optional.ofNullable(mongoTemplate.findOne(
+                        Query.query(
+                                Criteria.where(ListOfValuesDocument.NAME_KEY).is(name.comparisonKey())),
+                        ListOfValuesDocument.class))
+                .map(ListOfValuesDocument::toList);
+    }
+
+    @Override
     public boolean existsWithName(ListName name, String excludedId) {
         Criteria criteria = Criteria.where(ListOfValuesDocument.NAME_KEY).is(name.comparisonKey());
         if (excludedId != null) {

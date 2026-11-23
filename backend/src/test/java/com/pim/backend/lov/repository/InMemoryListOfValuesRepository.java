@@ -34,6 +34,11 @@ public class InMemoryListOfValuesRepository implements ListOfValuesRepository {
     }
 
     @Override
+    public Optional<ListOfValues> findByName(ListName name) {
+        return byId.values().stream().filter(list -> list.name().equals(name)).findFirst();
+    }
+
+    @Override
     public boolean existsWithName(ListName name, String excludedId) {
         return byId.values().stream()
                 .anyMatch(list -> list.name().equals(name)
