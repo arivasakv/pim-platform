@@ -161,8 +161,41 @@ describe('AttributeFieldPreview', () => {
         options={{ currencyCode: [{ code: 'MXN', label: 'Peso mexicano', symbol: '$' }] }}
       />,
     )
-    expect(field().type).toBe('number')
-    expect(screen.getByText('Moneda: MXN ($) · 2 decimales')).toBeTruthy()
+    expect(field().type).toBe('text')
+    expect(screen.getByText('Moneda: MXN ($) · 2 decimales · Ejemplo: $1,234.50')).toBeTruthy()
+  })
+
+  it('shows the currency symbol and formats the amount when leaving the field', () => {
+    render(
+      <AttributeFieldPreview
+        form={form({ dataType: 'CURRENCY', currency: { currencyCode: 'EUR', decimals: '2' } })}
+        options={{ currencyCode: [{ code: 'EUR', label: 'Euro', symbol: '€' }] }}
+      />,
+    )
+    expect(field().closest('div')?.textContent).toContain('€')
+
+    fireEvent.focus(field())
+    fireEvent.change(field(), { target: { value: '1234.5' } })
+    expect(field().value).toBe('1234.5')
+    fireEvent.blur(field())
+    expect(field().value).toBe('1,234.50')
+    fireEvent.focus(field())
+    expect(field().value).toBe('1234.5')
+
+    fireEvent.change(field(), { target: { value: '12,345' } })
+    fireEvent.blur(field())
+    expect(field().value).toBe('12,345.00')
+
+    fireEvent.focus(field())
+    fireEvent.change(field(), { target: { value: '1.239' } })
+    fireEvent.blur(field())
+    expect(field().value).toBe('1.239')
+    expect(screen.getByText('Usa como máximo 2 decimales.')).toBeTruthy()
+
+    fireEvent.focus(field())
+    fireEvent.change(field(), { target: { value: 'abc' } })
+    fireEvent.blur(field())
+    expect(screen.getByText('Escribe una cantidad, por ejemplo 1,234.50.')).toBeTruthy()
   })
 
   it('clears the typed value when the configuration changes, without touching the form', () => {

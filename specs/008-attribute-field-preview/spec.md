@@ -278,6 +278,14 @@ properties and their options. No ERF section asks for a preview; the feature req
     *Amended 2026-11-23 (feature 004 FR-014 amendment): the symbol is the one the backend gives with
     the currency list, the same one the detail shows; the currency is chosen from a selector, so the
     "no code" and "unknown code" notes only apply to an attribute whose stored code is not in the list.*
+    *Amended 2026-11-23 by the project owner («cuando el usuario selecciona la moneda, la vista previa
+    también debe mostrar el símbolo y, si es posible, dar formato al número»): the field MUST show the
+    currency symbol in front of the amount (the code when the currency has no symbol of its own), and
+    MUST show the amount in financial format (es-MX: thousands separated by commas, a decimal point,
+    exactly the configured decimals, e.g. 1,234.50) once the user leaves the field; while the user types,
+    the amount is shown as typed. Thousands commas MAY be typed. An amount that is not a number MUST get a
+    message, and more decimals than configured keep the FR-006 message; neither is reformatted. The help
+    text adds an example in that format («Ejemplo: $1,234.50»).*
   - *Referencia*: a disabled selector naming the target kind of object and whether one or several can
     be chosen (one while not set, feature 004 D-11 default), with a note that objects can be chosen
     when product forms exist.

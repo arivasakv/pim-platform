@@ -378,7 +378,9 @@ not stored, A-004)
   the currency show locally (USD → $, EUR → €, GBP → £, BRL → R$); otherwise the code (CHF). An existing
   attribute whose code is not in the list keeps it and shows the code. «Formato financiero automático»
   beyond the decimals (thousands separator, symbol next to the amount) is not decided yet (open
-  question; values are captured in a later feature).
+  question; values are captured in a later feature). *Partly resolved 2026-11-23 by the project owner:*
+  the field preview (feature 008 FR-009) shows the symbol in the field and formats the amount; how
+  product values are shown is decided with the feature that captures them.
 - **FR-015 – Referencia**: the kind of system object the attribute links a product to (for example a
   spare part, or a cross-sell or up-sell product). [3.2.1 Referencias o Relaciones] The target is one of feature 003's
   object types, with single (default) or multiple cardinality (plan decision D-11).

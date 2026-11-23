@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { emptyForm, type AttributeForm } from './attributeForm'
 import {
   applyCase,
+  checkAmount,
   checkDate,
   checkNumber,
   checkText,
   datePattern,
   describePreview,
+  formatAmount,
   listSummary,
   previewKey,
+  type FieldPreview,
 } from './fieldPreview'
 
 const TARGETS = { targetObjectType: [{ code: 'PRODUCT', label: 'Producto' }] }
@@ -177,7 +180,9 @@ describe('currency (FR-009)', () => {
       ],
     }
     const preview = describePreview(currency('mxn'), options)
-    expect(preview.hintParts).toEqual(['Moneda: MXN ($)', '2 decimales'])
+    expect(preview.kind).toBe('currency')
+    expect(preview.currencyPrefix).toBe('$')
+    expect(preview.hintParts).toEqual(['Moneda: MXN ($)', '2 decimales', 'Ejemplo: $1,234.50'])
     // The backend's symbol, as the detail shows it (feature 004 FR-014, 2026-11-23).
     expect(describePreview(currency('EUR'), options).hintParts[0]).toBe('Moneda: EUR (€)')
     expect(describePreview(currency(''), options).notes).toEqual([
@@ -185,6 +190,38 @@ describe('currency (FR-009)', () => {
     ])
     expect(preview.step).toBe('0.01')
     expect(describePreview(currency('MXN', '0'), {}).step).toBe('1')
+  })
+})
+
+describe('currency amounts (FR-009, amended 2026-11-23)', () => {
+  const preview: FieldPreview = {
+    kind: 'currency',
+    label: 'Precio',
+    hintParts: [],
+    notes: [],
+    decimals: 2,
+  }
+
+  it('formats in es-MX with exactly the configured decimals', () => {
+    expect(formatAmount('1234.5', 2)).toBe('1,234.50')
+    expect(formatAmount('1,234,567', 2)).toBe('1,234,567.00')
+    expect(formatAmount('-0.5', 0)).toBe('-1')
+    expect(formatAmount('1234.5', 4)).toBe('1,234.5000')
+  })
+
+  it('accepts thousands commas and refuses what is not an amount', () => {
+    expect(checkAmount('', preview)).toBeUndefined()
+    expect(checkAmount('1,234.50', preview)).toBeUndefined()
+    expect(checkAmount('1.234', preview)).toBe('Usa como máximo 2 decimales.')
+    expect(checkAmount('12a', preview)).toBe('Escribe una cantidad, por ejemplo 1,234.50.')
+  })
+
+  it('shows the code in front when the currency has no symbol of its own, and none without one', () => {
+    const options = { currencyCode: [{ code: 'CHF', label: 'Franco suizo', symbol: 'CHF' }] }
+    expect(describePreview(currency('CHF'), options).currencyPrefix).toBe('CHF')
+    expect(describePreview(currency('XAU'), options).currencyPrefix).toBe('XAU')
+    expect(describePreview(currency(''), options).currencyPrefix).toBeUndefined()
+    expect(describePreview(currency(''), options).hintParts).toContain('Ejemplo: 1,234.50')
   })
 })
 

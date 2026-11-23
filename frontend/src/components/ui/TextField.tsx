@@ -13,6 +13,8 @@ interface TextFieldProps extends Omit<
   hideLabel?: boolean
   hint?: string
   error?: string
+  /** Short text shown inside the field, before the value (e.g. a currency symbol). */
+  prefix?: string
 }
 
 export function TextField({
@@ -22,6 +24,7 @@ export function TextField({
   hideLabel = false,
   hint,
   error,
+  prefix,
   ...inputProps
 }: TextFieldProps) {
   const hintId = `${id}-ayuda`
@@ -35,7 +38,12 @@ export function TextField({
       <label htmlFor={id} className={hideLabel ? 'visually-hidden' : styles.label}>
         {label}
       </label>
-      <div className={styles.control}>
+      <div className={`${styles.control} ${prefix ? styles.controlPrefixed : ''}`}>
+        {prefix && (
+          <span className={styles.prefix} aria-hidden="true">
+            {prefix}
+          </span>
+        )}
         {isSearch && (
           <span className={styles.searchIcon}>
             <Icon name="search" size={16} />
@@ -44,7 +52,7 @@ export function TextField({
         <input
           id={id}
           type={type}
-          className={`${styles.input} ${isSearch ? styles.inputSearch : ''} ${error ? styles.inputError : ''}`}
+          className={`${styles.input} ${isSearch ? styles.inputSearch : ''} ${prefix ? styles.inputPrefixed : ''} ${error ? styles.inputError : ''}`}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           {...inputProps}

@@ -31,7 +31,7 @@ shows, so tests and reviewers share one reference. Texts are exact (Spanish, es-
 | Lista, única | select, placeholder **Selecciona una opción** | **Lista: {lista}** | — |
 | Lista, múltiple | one checkbox per value (fieldset, legend = label) | **Lista: {lista} · Puedes elegir varios valores** | — |
 | Fecha y hora | text, placeholder = format | **Formato: {formato}** | **Usa el formato {formato}.** · **La fecha no existe.** |
-| Moneda | number, step 10^-d | **Moneda: {código} ({símbolo}) · {d} decimales** | **Usa como máximo {d} decimales.** |
+| Moneda | text (decimal keyboard), symbol in front of the amount; formatted on leaving the field (es-MX, exactly d decimals, 2026-11-23) | **Moneda: {código} ({símbolo}) · {d} decimales · Ejemplo: {símbolo}1,234.50** | **Usa como máximo {d} decimales.** · **Escribe una cantidad, por ejemplo 1,234.50.** |
 | Referencia | disabled select | **Los objetos se podrán elegir cuando existan los formularios de producto.** | — |
 
 Range text: **Entre {min} y {max}** / **Desde {min}** / **Hasta {max}**. Range message: **El valor

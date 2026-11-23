@@ -13,10 +13,12 @@ import styles from './AttributeFieldPreview.module.css'
 import {
   PREVIEW_VALUE_LIMIT,
   applyCase,
+  checkAmount,
   checkDate,
   checkNumber,
   checkText,
   describePreview,
+  formatAmount,
   listSummary,
   previewKey,
   type FieldPreview,
@@ -140,6 +142,8 @@ function PreviewField({ preview, list }: PreviewFieldProps) {
           onChange={(event) => setText(event.target.value)}
         />
       )
+    case 'currency':
+      return <CurrencyField id={id} preview={preview} />
     case 'date':
       return (
         <TextField
@@ -176,6 +180,32 @@ function PreviewField({ preview, list }: PreviewFieldProps) {
     case 'checkboxes':
       return <ListField preview={preview} list={list} value={chosen} onChange={setChosen} />
   }
+}
+
+/**
+ * A currency amount with the symbol in front, shown in financial format once the user leaves the
+ * field and as typed while editing (feature 008 FR-009, amended 2026-11-23).
+ */
+function CurrencyField({ id, preview }: { id: string; preview: FieldPreview }) {
+  const [text, setText] = useState('')
+  const [editing, setEditing] = useState(false)
+  const error = checkAmount(text, preview)
+  const formatted =
+    !editing && !error && text.trim() !== '' ? formatAmount(text, preview.decimals ?? 2) : undefined
+  return (
+    <TextField
+      id={id}
+      label={preview.label}
+      hint={hint(preview.hintParts)}
+      prefix={preview.currencyPrefix}
+      inputMode="decimal"
+      value={formatted ?? text}
+      error={error}
+      onFocus={() => setEditing(true)}
+      onBlur={() => setEditing(false)}
+      onChange={(event) => setText(event.target.value)}
+    />
+  )
 }
 
 type ListFieldProps = {

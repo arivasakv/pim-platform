@@ -22,6 +22,7 @@ export type PreviewKind =
   | 'checkboxes'
   | 'date'
   | 'reference'
+  | 'currency'
 
 export type FieldPreview = {
   kind: PreviewKind
@@ -40,6 +41,8 @@ export type FieldPreview = {
   max?: number
   step?: string
   dateFormat?: string
+  /** Shown in front of a currency amount: the symbol, or the code when there is none (2026-11-23). */
+  currencyPrefix?: string
   listOfValuesId?: string
   /** Placeholder of the disabled reference selector. */
   referencePlaceholder?: string
@@ -219,13 +222,14 @@ export function describePreview(
       return preview
     }
     case 'CURRENCY': {
-      preview.kind = 'number'
+      preview.kind = 'currency'
       const code = form.currency.currencyCode.trim().toUpperCase()
       if (code === '') {
         notes.push('Elige una moneda para ver el símbolo.')
       } else {
         // The backend's symbol, the same one the detail shows (feature 004 FR-014, 2026-11-23).
         const symbol = currencySymbolOf(options.currencyCode, code)
+        preview.currencyPrefix = symbol ?? code
         if (symbol === undefined) {
           notes.push(`Moneda ${code} no reconocida; se muestra solo el código.`)
           hintParts.push(`Moneda: ${code}`)
@@ -241,6 +245,7 @@ export function describePreview(
       preview.decimals = decimals
       preview.step = stepFor(decimals)
       hintParts.push(plural(decimals, 'decimal', 'decimales'))
+      hintParts.push(`Ejemplo: ${preview.currencyPrefix ?? ''}${formatAmount('1234.5', decimals)}`)
       return preview
     }
     case 'REFERENCE': {
@@ -297,6 +302,32 @@ export function checkNumber(value: string, preview: FieldPreview): string | unde
   if (min !== undefined && max !== undefined) return `El valor debe estar entre ${min} y ${max}.`
   if (min !== undefined) return `El valor debe ser al menos ${min}.`
   return `El valor debe ser como máximo ${max}.`
+}
+
+const AMOUNT = /^-?(\d+(\.\d*)?|\.\d+)$/
+
+/** The amount without thousands commas or spaces, as typed in the currency preview. */
+function plainAmount(value: string): string {
+  return value.replace(/[,\s]/g, '')
+}
+
+/**
+ * Checks a currency amount (feature 008 FR-009, amended 2026-11-23): thousands commas are allowed,
+ * then the number rules of FR-006 apply.
+ */
+export function checkAmount(value: string, preview: FieldPreview): string | undefined {
+  const plain = plainAmount(value)
+  if (plain === '') return undefined
+  if (!AMOUNT.test(plain)) return 'Escribe una cantidad, por ejemplo 1,234.50.'
+  return checkNumber(plain, preview)
+}
+
+/** The amount in financial format (es-MX): thousands commas and exactly `decimals` decimals. */
+export function formatAmount(value: string, decimals: number): string {
+  return new Intl.NumberFormat('es-MX', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(Number(plainAmount(value)))
 }
 
 const DATE_TOKENS = /AAAA|DD|MM|HH|mm/g

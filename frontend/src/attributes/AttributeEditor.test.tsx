@@ -409,7 +409,9 @@ describe('AttributeEditor (create mode, feature 004)', () => {
     type('Tipo de dato', 'CURRENCY')
     type('Moneda', 'EUR')
     const panel = screen.getByRole('region', { name: 'Vista previa del campo' })
-    expect(within(panel).getByText('Moneda: EUR (€) · 2 decimales')).toBeTruthy()
+    expect(
+      within(panel).getByText('Moneda: EUR (€) · 2 decimales · Ejemplo: €1,234.50'),
+    ).toBeTruthy()
     save()
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
