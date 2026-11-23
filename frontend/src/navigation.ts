@@ -30,7 +30,12 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
 export const NAVIGATION_ENTRIES: NavigationEntry[] = [
   { path: '/', label: 'Inicio', icon: 'home', section: 'general' },
   { path: '/buscar-producto', label: 'Buscar Producto', icon: 'search', section: 'general' },
-  { path: '/listas-de-valores', label: 'Lista de Valores', icon: 'list', section: 'catalogo' },
+  {
+    path: '/listas-de-valores',
+    label: "Lista de Valores (LOV's)",
+    icon: 'list',
+    section: 'catalogo',
+  },
   { path: '/atributos', label: 'Atributos', icon: 'tags', section: 'catalogo' },
   {
     path: '/grupos-de-atributos',

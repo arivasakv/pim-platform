@@ -50,11 +50,11 @@ describe('navigation for the lists of values page (feature 006)', () => {
     expect(getPathFromHash('#/listas-de-valores')).toBe('/listas-de-valores')
   })
 
-  it('orders the side navigation with "Lista de Valores" before the attribute pages', () => {
+  it("orders the side navigation with Lista de Valores (LOV's) before the attribute pages", () => {
     expect(NAVIGATION_ENTRIES.map((entry) => entry.label)).toEqual([
       'Inicio',
       'Buscar Producto',
-      'Lista de Valores',
+      "Lista de Valores (LOV's)",
       'Atributos',
       'Grupo de Atributos',
       'Taxonomía',
@@ -88,7 +88,7 @@ describe('side navigation sections', () => {
 
   it('lists the catalog administration pages under "Administración de catálogo"', () => {
     expect(labelsIn('catalogo')).toEqual([
-      'Lista de Valores',
+      "Lista de Valores (LOV's)",
       'Atributos',
       'Grupo de Atributos',
       'Taxonomía',

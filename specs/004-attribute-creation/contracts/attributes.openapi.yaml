@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PIM Platform – Attribute creation
-  version: 2.1.0
+  version: 2.1.1
   description: >
     Feature 004 (specs/004-attribute-creation). Creates attribute definitions, one at a time, with a
     data type and type-specific properties (ERF 1.1 §3.2, §3.2.1). Every attribute is global and has
@@ -24,7 +24,9 @@ info:
     v2.1.0 (2026-11-23, owner request, FR-014 amendment) adds the currency selector list: CURRENCY gets the
     option list `currencyCode` (every ISO 4217 currency in current use by a country; MXN, USD, EUR first,
     then by Spanish name), each option with a `symbol`; and fixes `currencySymbol` (EUR now gives €, not
-    EUR). Requests are unchanged: any ISO 4217 code known to the runtime is still accepted.
+    EUR). Requests are unchanged: any ISO 4217 code known to the runtime is still accepted. v2.1.1
+    (2026-11-23, owner request) only relabels LIST_OF_VALUES, and the targetObjectType option
+    LIST_OF_VALUES, as «Lista de Valores (LOV's)».
 servers:
   - url: http://localhost:8080
     description: Local development (the frontend reads it from VITE_API_BASE_URL)

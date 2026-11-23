@@ -32,7 +32,7 @@ const TYPES = {
     { code: 'BOOLEAN', label: 'Booleano (Sí/No)', options: {} },
     {
       code: 'LIST_OF_VALUES',
-      label: 'Lista de Valores (LOV)',
+      label: "Lista de Valores (LOV's)",
       options: {
         selectionMode: [
           { code: 'SINGLE', label: 'Selección única' },
@@ -166,7 +166,7 @@ describe('AttributeEditor (create mode, feature 004)', () => {
       'Numérico Entero (Integer)',
       'Numérico Decimal (Float)',
       'Booleano (Sí/No)',
-      'Lista de Valores (LOV)',
+      "Lista de Valores (LOV's)",
       'Fecha y Hora (Date/Time)',
       'Moneda (Currency)',
       'Referencias / Relaciones',
@@ -505,7 +505,7 @@ describe('AttributeEditor (create mode, feature 004)', () => {
 
     type('Nombre', 'Tono')
     type('Tipo de dato', 'LIST_OF_VALUES')
-    const listSelect = await screen.findByLabelText('Lista de valores')
+    const listSelect = await screen.findByLabelText("Lista de Valores (LOV's)")
     expect(screen.getByRole('option', { name: 'Color (LOV000001)' })).toBeTruthy()
     expect(screen.getByRole('option', { name: 'Talla (LOV000002)' })).toBeTruthy()
     expect(screen.queryByText(/Aún no existen listas de valores/)).toBeNull()
@@ -531,7 +531,7 @@ describe('AttributeEditor (create mode, feature 004)', () => {
         'Aún no existen listas de valores. Podrás crear este atributo cuando exista una lista.',
       ),
     ).toBeTruthy()
-    await waitFor(() => expect(screen.queryByLabelText('Lista de valores')).toBeNull())
+    await waitFor(() => expect(screen.queryByLabelText("Lista de Valores (LOV's)")).toBeNull())
   })
 
   // --- User Story 4 ---

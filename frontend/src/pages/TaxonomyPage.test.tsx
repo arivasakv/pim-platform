@@ -673,7 +673,7 @@ describe('TaxonomyPage', () => {
   }
 
   function listRow() {
-    const table = screen.getByRole('table', { name: /^Listas de valores de «/ })
+    const table = screen.getByRole('table', { name: /^Lista de Valores \(LOV's\) de «/ })
     return within(within(table).getAllByRole('row')[1])
   }
 
@@ -682,7 +682,9 @@ describe('TaxonomyPage', () => {
     render(<TaxonomyPage />)
     const hombre = await openNode('Ropa de hombre')
 
-    expect(hombre.getByRole('heading', { name: 'Listas de valores en este nodo' })).toBeTruthy()
+    expect(
+      hombre.getByRole('heading', { name: "Lista de Valores (LOV's) en este nodo" }),
+    ).toBeTruthy()
     expect(listRow().getByText('7 de 7')).toBeTruthy()
     expect(listRow().getByText('Sin filtro')).toBeTruthy()
 

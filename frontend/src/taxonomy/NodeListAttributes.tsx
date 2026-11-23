@@ -67,12 +67,12 @@ export function NodeListAttributes({
 
   return (
     <div className={styles.section}>
-      <h3 className={styles.heading}>Listas de valores en este nodo</h3>
+      <h3 className={styles.heading}>Lista de Valores (LOV's) en este nodo</h3>
       <p className={styles.muted}>
         Los filtros limitan los valores permitidos en este nodo y en todos sus niveles inferiores.
       </p>
       <div className={styles.scroll}>
-        <table className={styles.table} aria-label={`Listas de valores de «${node.name}»`}>
+        <table className={styles.table} aria-label={`Lista de Valores (LOV's) de «${node.name}»`}>
           <thead>
             <tr>
               <th scope="col">Atributo</th>

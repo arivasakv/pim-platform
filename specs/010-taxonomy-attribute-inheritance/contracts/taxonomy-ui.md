@@ -35,7 +35,7 @@ and reviewers. API: [taxonomy.openapi.yaml](taxonomy.openapi.yaml).
 | Facts | **{systemId} · Nivel {n}**; description or **Sin descripción** |
 | Actions (permission) | **Agregar nodo hijo**, **Editar**, **Mover** (feature 011), **Eliminar** |
 | Children | Heading (h3) **Nodos hijos**; list of link-buttons; none: **Este nodo no tiene nodos hijos.** |
-| Listas de valores en este nodo (feature 012, 2026-11-19) | Section after "Atributos del nodo" with allowed values per list attribute, **Filtrar valores** and **Vista previa**; texts in [taxonomy-value-filters-ui.md](../../012-taxonomy-list-value-filters/contracts/taxonomy-value-filters-ui.md) |
+| Lista de Valores (LOV's) en este nodo (feature 012, 2026-11-19; label of 2026-11-23) | Section after "Atributos del nodo" with allowed values per list attribute, **Filtrar valores** and **Vista previa**; texts in [taxonomy-value-filters-ui.md](../../012-taxonomy-list-value-filters/contracts/taxonomy-value-filters-ui.md) |
 | Mover nodo (feature 011, 2026-11-19) | **Mover** action between **Editar** and **Eliminar**; panel, confirmation and texts in [taxonomy-move-ui.md](../../011-taxonomy-node-relocation/contracts/taxonomy-move-ui.md) |
 
 ### Create / edit form (inline card, like "Grupo de Atributos")

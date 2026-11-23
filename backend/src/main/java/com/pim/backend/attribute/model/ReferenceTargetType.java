@@ -9,7 +9,7 @@ import java.util.Optional;
 public enum ReferenceTargetType {
     PRODUCT("Producto"),
     ATTRIBUTE("Atributo"),
-    LIST_OF_VALUES("Lista de valores"),
+    LIST_OF_VALUES("Lista de Valores (LOV's)"),
     TEMPLATE("Plantilla"),
     CLASSIFICATION("Clasificación"),
     INTERFACE("Interfaz");

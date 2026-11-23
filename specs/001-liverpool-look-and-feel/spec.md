@@ -212,6 +212,7 @@ of 2026-11-08 and are cited as `[Source: feature request §<section>]`.
 - **FR-019**: The side navigation MUST group its entries into named sections, shown in this order:
   1. **General**: Inicio, Buscar Producto;
   2. **Administración de catálogo**: Lista de Valores, Atributos, Grupo de Atributos, Taxonomía.
+     *Amended 2026-11-23 (feature 006 FR-025 amendment): the first entry reads «Lista de Valores (LOV's)».*
 
   Each section name MUST be shown above its entries as a small uppercase label that is visually
   secondary to the entries, and consecutive sections MUST be separated by spacing and a subtle

@@ -62,7 +62,7 @@ Defined in `frontend/src/navigation.ts`.
 |---|---|---|---|
 | `general` | `/` | Inicio | `home` |
 | `general` | `/buscar-producto` | Buscar Producto | `search` |
-| `catalogo` | `/listas-de-valores` | Lista de Valores | `list` |
+| `catalogo` | `/listas-de-valores` | Lista de Valores (LOV's) (2026-11-23) | `list` |
 | `catalogo` | `/atributos` | Atributos | `tags` |
 | `catalogo` | `/grupos-de-atributos` | Grupo de Atributos | `folder-tree` |
 | `catalogo` | `/taxonomia` | Taxonomía | `network` |

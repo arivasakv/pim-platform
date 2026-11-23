@@ -13,7 +13,7 @@ function renderSection(node: TaxonomyNode, canChange = true) {
 }
 
 function row() {
-  const table = screen.getByRole('table', { name: /^Listas de valores de «/ })
+  const table = screen.getByRole('table', { name: /^Lista de Valores \(LOV's\) de «/ })
   return within(within(table).getAllByRole('row')[1])
 }
 
@@ -21,7 +21,9 @@ describe('NodeListAttributes', () => {
   it('lists list attributes with allowed counts and no filter', () => {
     const { onFilter, onPreview } = renderSection(nodeWith(HOMBRE, [listAttribute([], 7, false)]))
 
-    expect(screen.getByRole('heading', { name: 'Listas de valores en este nodo' })).toBeTruthy()
+    expect(
+      screen.getByRole('heading', { name: "Lista de Valores (LOV's) en este nodo" }),
+    ).toBeTruthy()
     expect(
       screen.getByText(
         'Los filtros limitan los valores permitidos en este nodo y en todos sus niveles inferiores.',
@@ -95,6 +97,8 @@ describe('NodeListAttributes', () => {
     container.remove()
 
     renderSection(nodeWith(HOMBRE, []))
-    expect(screen.queryByRole('heading', { name: 'Listas de valores en este nodo' })).toBeNull()
+    expect(
+      screen.queryByRole('heading', { name: "Lista de Valores (LOV's) en este nodo" }),
+    ).toBeNull()
   })
 })

@@ -10,7 +10,7 @@ Shown after "Atributos del nodo", only when the node has at least one list-of-va
 
 | Element | Text / behavior |
 |---|---|
-| Heading (h3) | **Listas de valores en este nodo** |
+| Heading (h3) | **Lista de Valores (LOV's) en este nodo** (was «Listas de valores en este nodo» until 2026-11-23, feature 006 FR-025 amendment) |
 | Intro | **Los filtros limitan los valores permitidos en este nodo y en todos sus niveles inferiores.** |
 | Table caption (accessible name) | **Listas de valores de «{nodo}»** |
 | Columns | **Atributo** · **Valores permitidos** · **Restricción** · (actions) |

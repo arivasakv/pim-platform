@@ -411,7 +411,7 @@ function TypeFields({ form, errors, options, listsState, onChange }: TypeFieldsP
       const lists = listsState?.status === 'ready' ? listsState.lists : []
       return (
         <fieldset className={styles.typeFields}>
-          <legend className={styles.legend}>Propiedades de la lista de valores</legend>
+          <legend className={styles.legend}>Propiedades de la Lista de Valores (LOV's)</legend>
           {listsState?.status === 'error' ? (
             <Notification variant="error">
               No se pudieron cargar las listas de valores. Inténtalo de nuevo.
@@ -423,7 +423,7 @@ function TypeFields({ form, errors, options, listsState, onChange }: TypeFieldsP
           ) : (
             <SelectField
               id="listOfValues-listOfValuesId"
-              label="Lista de valores"
+              label="Lista de Valores (LOV's)"
               placeholder="Elige una lista"
               options={lists.map((list) => ({
                 code: list.systemId,

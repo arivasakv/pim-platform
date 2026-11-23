@@ -40,7 +40,7 @@ class AttributeTypeControllerIntegrationTest {
                                 "Texto (String)",
                                 "Numérico (Integer / Float)",
                                 "Booleano (Sí/No)",
-                                "Lista de Valores (LOV)",
+                                "Lista de Valores (LOV's)",
                                 "Fecha y Hora (Date/Time)",
                                 "Moneda (Currency)",
                                 "Referencias / Relaciones")))

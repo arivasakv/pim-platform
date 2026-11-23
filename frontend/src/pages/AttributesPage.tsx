@@ -569,7 +569,7 @@ function AttributeDetail({ attribute, types }: AttributeDetailProps) {
   if (list) {
     add('Tipo de selección', option('selectionMode', list.selectionMode))
     add(
-      'Lista de valores',
+      "Lista de Valores (LOV's)",
       list.listOfValuesName
         ? `${list.listOfValuesName} (${list.listOfValuesId})`
         : list.listOfValuesId,

@@ -22,7 +22,7 @@ const TYPES = {
     { code: 'BOOLEAN', label: 'Booleano', options: {} },
     {
       code: 'LIST_OF_VALUES',
-      label: 'Lista de valores',
+      label: "Lista de Valores (LOV's)",
       options: {
         selectionMode: [
           { code: 'SINGLE', label: 'Selección única' },
@@ -291,7 +291,7 @@ describe('AttributesPage', () => {
       expect.stringContaining('Color'),
       expect.stringContaining('Peso logístico'),
     ])
-    expect(rows[1].textContent).toContain('ATR000002 · Lista de valores')
+    expect(rows[1].textContent).toContain("ATR000002 · Lista de Valores (LOV's)")
     expect(rows[1].textContent).toContain('Lista: Colores')
     expect(rows[2].textContent).toContain('Grupos: Logísticos')
     expect(rows[0].textContent).toContain('Sin grupos')

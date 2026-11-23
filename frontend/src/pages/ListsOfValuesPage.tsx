@@ -331,7 +331,7 @@ export function ListsOfValuesPage() {
   return (
     <>
       <PageHeader
-        title="Lista de Valores"
+        title="Lista de Valores (LOV's)"
         description="Administra listas reutilizables de pares ID y etiqueta. Una lista puede usarse en varios atributos."
       />
 

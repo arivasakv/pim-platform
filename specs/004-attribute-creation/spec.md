@@ -337,6 +337,7 @@ Sources: the feature request and `p360:ERF - HUs/ERF 1.1 Plantillas.docx`, cited
   numeric attribute shows the label of its choice. ERF 1.1 §3.2.1 lists one «Numéricos (Integer /
   Float)» type; the owner's split is a presentation decision on top of it. The owner's requirement text
   was not found in the reference repository (open question: source document).
+  *Amended 2026-11-23 by the project owner (feature 006 FR-025 amendment): the list-of-values choice reads «Lista de Valores (LOV's)» instead of «Lista de Valores (LOV)».*
 
 **Type-specific properties** (set at creation; properties that do not apply to the chosen type are
 not stored, A-004)

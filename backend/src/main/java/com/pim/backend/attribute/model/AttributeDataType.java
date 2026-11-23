@@ -11,7 +11,7 @@ public enum AttributeDataType {
     TEXT("Texto (String)"),
     NUMERIC("Numérico (Integer / Float)"),
     BOOLEAN("Booleano (Sí/No)"),
-    LIST_OF_VALUES("Lista de Valores (LOV)"),
+    LIST_OF_VALUES("Lista de Valores (LOV's)"),
     DATE_TIME("Fecha y Hora (Date/Time)"),
     CURRENCY("Moneda (Currency)"),
     REFERENCE("Referencias / Relaciones");

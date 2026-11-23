@@ -378,6 +378,7 @@ Requirement IDs are kept stable; requirements moved to follow-up features are ma
   from the attribute pages, labelled **"Lista de Valores"**, placed right after "Buscar Producto" and
   before "Atributos" and "Grupo de Atributos" (order and labels changed by the project owner on
   2026-11-11; feature 007 replaced "Crear Atributos" with "Atributos").
+  *Amended 2026-11-23 by the project owner: «Lista de Valores» is not recognizable enough for users, so every label that names lists of values reads **Lista de Valores (LOV's)**: the side navigation entry, the page title, the data type, the list field of the attribute form and its group title, the detail row, the reference target and the taxonomy node section («Lista de Valores (LOV's) en este nodo»). Sentences and error messages keep their wording.*
   The interface MUST be in Spanish and use the existing design system components; lists and values
   MUST come from the backend, never be written into the frontend.
 - **FR-026 – Feature 004 integration**: Once lists exist, feature 004's LOV attribute creation MUST
