@@ -89,6 +89,8 @@ export function ListsOfValuesPage() {
 
   /** The card the header actions opened (feature 013 FR-001): one at a time. */
   const [openCard, setOpenCard] = useState<'none' | 'create' | 'bulk'>('none')
+  const [listId, setListId] = useState('')
+  const [listIdError, setListIdError] = useState<string>()
   const [name, setName] = useState('')
   const [nameError, setNameError] = useState<string>()
   const [createError, setCreateError] = useState<string>()
@@ -149,6 +151,7 @@ export function ListsOfValuesPage() {
     event.preventDefault()
     setConfirmation(undefined)
     setCreateError(undefined)
+    setListIdError(undefined)
     if (!name.trim()) {
       setNameError(NAME_REQUIRED)
       return
@@ -156,7 +159,8 @@ export function ListsOfValuesPage() {
     setNameError(undefined)
     setCreating(true)
     try {
-      const list = await createList(name.trim())
+      const list = await createList(name.trim(), listId)
+      setListId('')
       setName('')
       setOpenCard('none')
       setConfirmation(`Lista «${list.name}» creada.`)
@@ -164,8 +168,10 @@ export function ListsOfValuesPage() {
       setSelected(list)
       reloadList()
     } catch (error) {
+      const idMessage = fieldMessage(error, 'systemId')
       const message = fieldMessage(error, 'name')
-      if (message) setNameError(message)
+      if (idMessage) setListIdError(idMessage)
+      else if (message) setNameError(message)
       else setCreateError(messageOf(error))
     } finally {
       setCreating(false)
@@ -364,6 +370,15 @@ export function ListsOfValuesPage() {
             <Card title="Crear LOV">
               <form className={styles.form} noValidate onSubmit={handleCreate}>
                 <TextField
+                  id="lista-id"
+                  label="ID (opcional)"
+                  hint="Déjalo vacío para que el sistema genere uno."
+                  value={listId}
+                  maxLength={40}
+                  error={listIdError}
+                  onChange={(event) => setListId(event.target.value)}
+                />
+                <TextField
                   id="lista-nombre"
                   label="Nombre"
                   value={name}
@@ -381,6 +396,8 @@ export function ListsOfValuesPage() {
                     disabled={creating}
                     onClick={() => {
                       setOpenCard('none')
+                      setListId('')
+                      setListIdError(undefined)
                       setName('')
                       setNameError(undefined)
                       setCreateError(undefined)

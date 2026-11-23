@@ -90,6 +90,21 @@ describe('listsOfValuesApi', () => {
     expect(fetchMock.mock.calls[2][1].method).toBe('DELETE')
   })
 
+  it('sends a typed list ID and leaves a blank one out (feature 013 FR-002)', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve(response(201, LIST)))
+
+    await createList('Color', ' LOV-COLOR ')
+    await createList('Color', '  ')
+    await createList('Color')
+
+    const bodies = fetchMock.mock.calls.map(([, init]) => JSON.parse(String(init.body)))
+    expect(bodies).toEqual([
+      { name: 'Color', systemId: 'LOV-COLOR' },
+      { name: 'Color' },
+      { name: 'Color' },
+    ])
+  })
+
   it('adds, updates and deletes values', async () => {
     const value = { id: '0001', label: 'Azul', equivalence: null }
     const fetchMock = stubFetch(() => Promise.resolve(response(201, value)))

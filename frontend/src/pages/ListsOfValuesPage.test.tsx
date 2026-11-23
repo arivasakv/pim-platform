@@ -57,8 +57,13 @@ function fakeBackend() {
         const detail = `Ya existe una lista con el nombre "${name}". Usa otro nombre.`
         return problem(409, 'name', 'LIST_NAME_IN_USE', detail)
       }
+      const requestedId = body.systemId as string | undefined
+      if (requestedId === 'SIN-PERMISO') {
+        const detail = `No tienes permiso para definir manualmente el ID ${requestedId} para este tipo de objeto.`
+        return problem(403, 'systemId', 'MANUAL_ID_NOT_PERMITTED', detail)
+      }
       const list = {
-        systemId: `LOV00000${nextList++}`,
+        systemId: requestedId ?? `LOV00000${nextList++}`,
         name,
         equivalencesEnabled: false,
         values: [],
@@ -314,6 +319,37 @@ describe('ListsOfValuesPage', () => {
       ),
     ).toBeTruthy()
     expect(await listsPanel().findByRole('button', { name: /Talla/ })).toBeTruthy()
+  })
+
+  it('creates a list with the ID the user typed, or shows why it was refused (feature 013 FR-002)', async () => {
+    const { fetchMock } = fakeBackend()
+    render(<ListsOfValuesPage />)
+    await screen.findByText('Todavía no hay listas de valores.')
+    let card = createCard()
+    expect(card.getByLabelText('ID (opcional)')).toBeTruthy()
+    expect(card.getByText('Déjalo vacío para que el sistema genere uno.')).toBeTruthy()
+
+    fireEvent.change(card.getByLabelText('ID (opcional)'), { target: { value: 'SIN-PERMISO' } })
+    fireEvent.change(card.getByLabelText('Nombre'), { target: { value: 'Talla' } })
+    fireEvent.click(card.getByRole('button', { name: 'Crear LOV' }))
+    expect(
+      await card.findByText(
+        'No tienes permiso para definir manualmente el ID SIN-PERMISO para este tipo de objeto.',
+      ),
+    ).toBeTruthy()
+
+    fireEvent.change(card.getByLabelText('ID (opcional)'), { target: { value: ' LOV-TALLA ' } })
+    fireEvent.click(card.getByRole('button', { name: 'Crear LOV' }))
+    const panel = within(await screen.findByRole('region', { name: 'Talla' }))
+    expect(panel.getByText('LOV-TALLA')).toBeTruthy()
+    const createCall = fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST').at(-1)
+    expect(JSON.parse(String(createCall?.[1]?.body))).toEqual({
+      name: 'Talla',
+      systemId: 'LOV-TALLA',
+    })
+
+    card = createCard()
+    expect(card.getByLabelText<HTMLInputElement>('ID (opcional)').value).toBe('')
   })
 
   it('shows no change controls without the permission', async () => {

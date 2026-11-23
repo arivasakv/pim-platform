@@ -125,7 +125,7 @@ To try the attribute administration screens that need permissions, uncomment the
 
 ```
 VITE_DEV_PERMISSIONS=ATTRIBUTE_CREATE
-VITE_DEV_MANUAL_ID_PERMISSIONS=ATTRIBUTE
+VITE_DEV_MANUAL_ID_PERMISSIONS=ATTRIBUTE,LIST_OF_VALUES
 ```
 
 These are development stand-ins until authentication exists. They are not secrets.

@@ -155,9 +155,13 @@ export async function getList(listId: string): Promise<ListOfValues> {
   return (await response.json()) as ListOfValues
 }
 
-/** Creates an empty list (`POST /api/v1/lists-of-values`). */
-export async function createList(name: string): Promise<ListOfValues> {
-  const response = await request(LISTS, change('POST', { name }))
+/**
+ * Creates an empty list (`POST /api/v1/lists-of-values`). A blank `systemId` is left out, so the
+ * backend generates one; a given one follows feature 003's manual-ID rules (feature 013 FR-002).
+ */
+export async function createList(name: string, systemId?: string): Promise<ListOfValues> {
+  const id = systemId?.trim()
+  const response = await request(LISTS, change('POST', id ? { name, systemId: id } : { name }))
   return (await response.json()) as ListOfValues
 }
 

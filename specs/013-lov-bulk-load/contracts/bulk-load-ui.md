@@ -20,6 +20,12 @@ Without the permission neither button nor card is shown (as today's "Nueva lista
 Feature 006's "Nueva lista" form with the card title **Crear LOV** and the button **Crear LOV**; same
 field («Nombre»), rules and messages. «Cancelar» closes the card.
 
+*Amended 2026-11-23 (spec FR-002):* a first field **ID (opcional)**, hint «Déjalo vacío para que el
+sistema genere uno.», at most 40 characters, sent as `systemId` only when not blank. Feature 003's
+refusals for the ID (no manual-ID permission for `LIST_OF_VALUES`, invalid format, ID in use) are shown
+under it; the manual-ID permission comes from `VITE_DEV_MANUAL_ID_PERMISSIONS` (e.g.
+`ATTRIBUTE,LIST_OF_VALUES`).
+
 ## Bulk card «Carga Masiva de LOV» (FR-003, FR-010–FR-013)
 
 | Step | Content |
