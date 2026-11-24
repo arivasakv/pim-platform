@@ -809,6 +809,18 @@ export function ListsOfValuesPage() {
                         <span className={styles.muted}>
                           {SELECTION_LABELS[attribute.selectionMode] ?? attribute.selectionMode}
                         </span>
+                        {canChange && (
+                          <Button
+                            variant="secondary"
+                            aria-label={`Desvincular ${attribute.displayName}`}
+                            onClick={() => {
+                              // Opens the attribute's edit form in unlink mode (feature 014 FR-006).
+                              window.location.hash = `#/atributos?desvincular=${encodeURIComponent(attribute.systemId)}`
+                            }}
+                          >
+                            Desvincular
+                          </Button>
+                        )}
                       </li>
                     ))}
                   </ul>

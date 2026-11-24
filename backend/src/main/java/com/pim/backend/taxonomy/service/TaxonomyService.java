@@ -421,6 +421,33 @@ public class TaxonomyService {
         }
     }
 
+    /**
+     * The nodes with a list-value filter for the attribute, sorted by name ignoring letter case (feature 014 FR-009,
+     * research R-04). A filter whose node no longer exists is left out.
+     */
+    public List<NodeReference> nodesFilteringValuesOf(String attributeId) {
+        synchronized (lock) {
+            return filters.findByAttribute(attributeId).stream()
+                    .map(filter -> nodes.findById(filter.nodeId()))
+                    .flatMap(java.util.Optional::stream)
+                    .map(TaxonomyNode::reference)
+                    .sorted(java.util.Comparator.comparing(NodeReference::name, String.CASE_INSENSITIVE_ORDER))
+                    .toList();
+        }
+    }
+
+    /**
+     * Runs {@code action} and then deletes every list-value filter of the attribute, while holding the taxonomy lock, so
+     * no filter can be added in between (feature 014 FR-008, FR-011; research R-04). If {@code action} fails, no filter
+     * is deleted.
+     */
+    public void runRemovingValueFilters(String attributeId, Runnable action) {
+        synchronized (lock) {
+            action.run();
+            filters.deleteByAttribute(attributeId);
+        }
+    }
+
     private static void checkPermission(AttributePermissions permissions) {
         if (!permissions.allowsCreation()) {
             throw new TaxonomyChangeNotPermittedException();

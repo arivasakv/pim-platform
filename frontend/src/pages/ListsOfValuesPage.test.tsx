@@ -352,6 +352,26 @@ describe('ListsOfValuesPage', () => {
     expect(card.getByLabelText<HTMLInputElement>('ID (opcional)').value).toBe('')
   })
 
+  it('starts unlinking a linked attribute from the list (feature 014)', async () => {
+    const backend = fakeBackend()
+    backend.lists.push({
+      systemId: 'LOV000001',
+      name: 'Color',
+      equivalencesEnabled: false,
+      values: [],
+      attributes: [{ systemId: 'ATR000004', displayName: 'Color', selectionMode: 'SINGLE' }],
+      next: 1,
+    })
+    render(<ListsOfValuesPage />)
+    fireEvent.click(await listsPanel().findByRole('button', { name: /Color/ }))
+    const panel = within(await screen.findByRole('region', { name: 'Color' }))
+
+    fireEvent.click(panel.getByRole('button', { name: 'Desvincular Color' }))
+
+    expect(window.location.hash).toBe('#/atributos?desvincular=ATR000004')
+    window.location.hash = ''
+  })
+
   it('shows no change controls without the permission', async () => {
     const backend = fakeBackend()
     backend.lists.push({

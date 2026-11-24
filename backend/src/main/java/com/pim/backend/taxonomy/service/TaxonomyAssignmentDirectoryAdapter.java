@@ -26,4 +26,16 @@ public class TaxonomyAssignmentDirectoryAdapter implements TaxonomyAssignmentDir
                 .map(node -> new TaxonomyNodeReference(node.systemId(), node.name()))
                 .toList();
     }
+
+    @Override
+    public List<TaxonomyNodeReference> nodesFilteringValuesOf(String attributeId) {
+        return taxonomyService.getObject().nodesFilteringValuesOf(attributeId).stream()
+                .map(node -> new TaxonomyNodeReference(node.systemId(), node.name()))
+                .toList();
+    }
+
+    @Override
+    public void runRemovingValueFilters(String attributeId, Runnable action) {
+        taxonomyService.getObject().runRemovingValueFilters(attributeId, action);
+    }
 }

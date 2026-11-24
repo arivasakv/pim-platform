@@ -740,3 +740,145 @@ describe('AttributeEditor with the field preview (feature 008)', () => {
     })
   })
 })
+
+describe('AttributeEditor (unlink a list, feature 014)', () => {
+  const COLOR = {
+    systemId: 'ATR000004',
+    displayName: 'Color',
+    dataType: 'LIST_OF_VALUES' as const,
+    scope: 'GLOBAL' as const,
+    listOfValuesProperties: {
+      selectionMode: 'SINGLE',
+      listOfValuesId: 'LOV000001',
+      listOfValuesName: 'Colores',
+    },
+    groups: [],
+  }
+  const REVIEW = {
+    attributeId: 'ATR000004',
+    attributeName: 'Color',
+    listOfValuesId: 'LOV000001',
+    listOfValuesName: 'Colores',
+    filteredNodes: [{ id: 'CLS000001', name: 'Ropa de hombre' }],
+    reviewToken: 'token-1',
+  }
+  const LISTS = [{ systemId: 'LOV000001', name: 'Colores' }]
+  const review = () => Promise.resolve(response(200, REVIEW))
+
+  beforeEach(() => {
+    vi.stubEnv('VITE_API_BASE_URL', BASE_URL)
+    vi.stubEnv('VITE_DEV_PERMISSIONS', 'ATTRIBUTE_CREATE')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('offers «Desvincular lista» only for a list-of-values attribute', async () => {
+    stubBackendWithLists(LISTS)
+    const { unmount } = render(<AttributeEditor mode="edit" attribute={COLOR} />)
+    await screen.findByLabelText('Tipo de dato')
+    expect(screen.getByRole('button', { name: 'Desvincular lista' })).toBeTruthy()
+    unmount()
+
+    stubBackend()
+    render(
+      <AttributeEditor
+        mode="edit"
+        attribute={{ ...COLOR, dataType: 'BOOLEAN', listOfValuesProperties: undefined }}
+      />,
+    )
+    await screen.findByLabelText('Tipo de dato')
+    expect(screen.queryByRole('button', { name: 'Desvincular lista' })).toBeNull()
+  })
+
+  it('unlinks with a new type, the review and the token', async () => {
+    const saved = { ...COLOR, dataType: 'BOOLEAN', listOfValuesProperties: undefined }
+    const fetchMock = stubBackendWithLists(LISTS, review, () =>
+      Promise.resolve(response(200, saved)),
+    )
+    const onUnlinked = vi.fn()
+    render(<AttributeEditor mode="edit" attribute={COLOR} onUnlinked={onUnlinked} />)
+    await screen.findByLabelText('Tipo de dato')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Desvincular lista' }))
+
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Desvincular lista de «Color»' }),
+    ).toBeTruthy()
+    expect(
+      screen.getByText(
+        'El atributo dejará de usar la lista «Colores» y tendrá un nuevo tipo de dato. Su ID, nombre, grupos y nodos de taxonomía no cambian.',
+      ),
+    ).toBeTruthy()
+    expect(screen.getByLabelText<HTMLInputElement>('Nombre').readOnly).toBe(true)
+    const typeSelect = screen.getByLabelText<HTMLSelectElement>('Tipo de dato')
+    expect(typeSelect.value).toBe('')
+    expect(
+      Array.from(typeSelect.options).some((option) =>
+        option.textContent?.startsWith('Lista de Valores'),
+      ),
+    ).toBe(false)
+    expect(typeSelect.options).toHaveLength(8)
+    expect(typeSelect.options[0].textContent).toBe('Elige el nuevo tipo de dato')
+    expect(await screen.findByText('Se desvinculará la lista «Colores».')).toBeTruthy()
+    expect(screen.getByText('Ropa de hombre')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Desvincular y guardar' }))
+    expect(await screen.findByText('Elige un tipo de dato.')).toBeTruthy()
+
+    type('Tipo de dato', 'BOOLEAN')
+    fireEvent.click(screen.getByRole('button', { name: 'Desvincular y guardar' }))
+
+    await waitFor(() => expect(onUnlinked).toHaveBeenCalledWith(saved))
+    const [url, init] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]
+    expect(url).toBe(`${BASE_URL}/api/v1/attributes/ATR000004/list-unlink`)
+    expect(init?.method).toBe('POST')
+    expect(JSON.parse(String(init?.body))).toEqual({ dataType: 'BOOLEAN', reviewToken: 'token-1' })
+  })
+
+  it('opens directly in unlink mode and goes back with «Cancelar»', async () => {
+    stubBackendWithLists(LISTS, review)
+    render(<AttributeEditor mode="edit" attribute={COLOR} startUnlinking />)
+
+    expect(await screen.findByText('Se desvinculará la lista «Colores».')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Editar atributo' })).toBeTruthy()
+    expect(screen.getByLabelText<HTMLSelectElement>('Tipo de dato').disabled).toBe(true)
+    expect(screen.queryByText('Qué cambiará')).toBeNull()
+  })
+
+  it('shows property errors under the field and reloads the review when it is outdated', async () => {
+    const outdated =
+      'El atributo o sus filtros cambiaron desde la revisión. Vuelve a revisar la desvinculación.'
+    stubBackendWithLists(
+      LISTS,
+      review,
+      problem(
+        400,
+        'Solicitud no válida',
+        'currencyProperties.decimals',
+        'INVALID_DECIMALS',
+        'Los decimales de una moneda van de 0 a 4.',
+      ),
+      problem(409, outdated, 'reviewToken', 'UNLINK_OUTDATED', outdated),
+      () =>
+        Promise.resolve(response(200, { ...REVIEW, filteredNodes: [], reviewToken: 'token-2' })),
+    )
+    render(<AttributeEditor mode="edit" attribute={COLOR} startUnlinking />)
+    await screen.findByText('Se desvinculará la lista «Colores».')
+
+    type('Tipo de dato', 'CURRENCY')
+    type('Moneda', 'MXN')
+    fireEvent.click(screen.getByRole('button', { name: 'Desvincular y guardar' }))
+    expect(await screen.findByText('Los decimales de una moneda van de 0 a 4.')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Desvincular y guardar' }))
+    expect(await screen.findAllByText(outdated)).toHaveLength(1)
+    expect(
+      await screen.findByText('Este atributo no tiene filtros de valores en la taxonomía.'),
+    ).toBeTruthy()
+  })
+})

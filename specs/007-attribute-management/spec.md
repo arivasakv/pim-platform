@@ -284,6 +284,9 @@ document in `docs/source-of-truth/` covers this feature.
   this feature (A-002, OQ-001). The **scope** stays global (feature 004 FR-018). The creation date
   stays. A request that names another system ID or another data type MUST be refused with a Spanish
   message and nothing MAY change; scope and creation date cannot be sent at all. [ERF §3.1; §3.2.1 «Al momento de la creación … se debe definir el tipo de dato»]
+  *Amended 2026-11-23 (feature 014 FR-013): the data type MAY change in exactly one case, through feature
+  014's unlink, from list of values to another type together with the new type's properties. Editing
+  (this feature's PUT) still refuses any type change.*
 - **FR-011 – Memberships kept**: Editing an attribute MUST NOT change its group memberships or any
   other object; the groups and lists that show the attribute show its new name. [Feature 005 FR-010]
 

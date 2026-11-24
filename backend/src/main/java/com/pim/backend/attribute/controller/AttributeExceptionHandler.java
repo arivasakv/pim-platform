@@ -5,11 +5,14 @@ import com.pim.backend.attribute.model.AttributeCreateNotPermittedException;
 import com.pim.backend.attribute.model.AttributeErrorCode;
 import com.pim.backend.attribute.model.AttributeInGroupsException;
 import com.pim.backend.attribute.model.AttributeNotFoundException;
+import com.pim.backend.attribute.model.AttributeNotListOfValuesException;
 import com.pim.backend.attribute.model.AttributeOnTaxonomyNodesException;
 import com.pim.backend.attribute.model.DisplayNameInUseException;
 import com.pim.backend.attribute.model.ImmutableFieldException;
 import com.pim.backend.attribute.model.InvalidAttributeException;
 import com.pim.backend.attribute.model.ListOfValuesUnavailableException;
+import com.pim.backend.attribute.model.UnlinkOutdatedException;
+import com.pim.backend.attribute.model.UnlinkToListNotAllowedException;
 import com.pim.backend.common.ApiFieldError;
 import com.pim.backend.common.ApiProblems;
 import com.pim.backend.identifier.model.IdentifierErrorCode;
@@ -130,6 +133,38 @@ public class AttributeExceptionHandler {
                         .map(node -> Map.of("systemId", node.systemId(), "name", node.name()))
                         .toList());
         return problem;
+    }
+
+    // --- Feature 014: unlinking a list of values ---
+
+    @ExceptionHandler(AttributeNotListOfValuesException.class)
+    ProblemDetail handleNotListOfValues(AttributeNotListOfValuesException exception, HttpServletRequest request) {
+        return ApiProblems.problem(
+                request,
+                HttpStatus.UNPROCESSABLE_CONTENT,
+                "Sin lista que desvincular",
+                exception.getMessage(),
+                List.of(error("dataType", AttributeErrorCode.ATTRIBUTE_NOT_LIST_OF_VALUES, exception.getMessage())));
+    }
+
+    @ExceptionHandler(UnlinkToListNotAllowedException.class)
+    ProblemDetail handleUnlinkToList(UnlinkToListNotAllowedException exception, HttpServletRequest request) {
+        return ApiProblems.problem(
+                request,
+                HttpStatus.UNPROCESSABLE_CONTENT,
+                "Tipo de dato no permitido",
+                exception.getMessage(),
+                List.of(error("dataType", AttributeErrorCode.UNLINK_TO_LIST_NOT_ALLOWED, exception.getMessage())));
+    }
+
+    @ExceptionHandler(UnlinkOutdatedException.class)
+    ProblemDetail handleUnlinkOutdated(UnlinkOutdatedException exception, HttpServletRequest request) {
+        return ApiProblems.problem(
+                request,
+                HttpStatus.CONFLICT,
+                "Atributo modificado",
+                exception.getMessage(),
+                List.of(error("reviewToken", AttributeErrorCode.UNLINK_OUTDATED, exception.getMessage())));
     }
 
     @ExceptionHandler(AttributeNotFoundException.class)

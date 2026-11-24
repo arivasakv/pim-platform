@@ -73,6 +73,25 @@ public class MongoValueFilterRepository implements ValueFilterRepository, Initia
                 ValueFilterDocument.class);
     }
 
+    @Override
+    public List<ValueFilter> findByAttribute(String attributeId) {
+        return mongoTemplate
+                .find(
+                        Query.query(
+                                Criteria.where(ValueFilterDocument.ATTRIBUTE_ID).is(TaxonomyNode.key(attributeId))),
+                        ValueFilterDocument.class)
+                .stream()
+                .map(ValueFilterDocument::toFilter)
+                .toList();
+    }
+
+    @Override
+    public void deleteByAttribute(String attributeId) {
+        mongoTemplate.remove(
+                Query.query(Criteria.where(ValueFilterDocument.ATTRIBUTE_ID).is(TaxonomyNode.key(attributeId))),
+                ValueFilterDocument.class);
+    }
+
     private static String key(String nodeId, String attributeId) {
         return TaxonomyNode.key(nodeId) + ":" + TaxonomyNode.key(attributeId);
     }

@@ -28,6 +28,7 @@ Features built so far:
 | 011 | Move taxonomy nodes with their branch (inheritance follows the new location) |
 | 012 | List-value filters per taxonomy level (restrict list values on a node; inherited and only narrowed below) |
 | 013 | Bulk load of lists of values («Carga Masiva de LOV»): several lists from one Excel or CSV file, checked first, then confirmed |
+| 014 | Unlink a list of values from an attribute, giving the attribute a new data type (its value filters are deleted after a review) |
 
 ### Deliberate limits of the POC
 

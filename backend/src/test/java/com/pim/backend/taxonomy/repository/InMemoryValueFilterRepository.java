@@ -44,6 +44,20 @@ public class InMemoryValueFilterRepository implements ValueFilterRepository {
         filters.values().removeIf(filter -> filter.nodeId().equals(key));
     }
 
+    @Override
+    public List<ValueFilter> findByAttribute(String attributeId) {
+        String key = TaxonomyNode.key(attributeId);
+        return filters.values().stream()
+                .filter(filter -> filter.attributeId().equals(key))
+                .toList();
+    }
+
+    @Override
+    public void deleteByAttribute(String attributeId) {
+        String key = TaxonomyNode.key(attributeId);
+        filters.values().removeIf(filter -> filter.attributeId().equals(key));
+    }
+
     /** Every stored filter. */
     public List<ValueFilter> all() {
         return List.copyOf(filters.values());
