@@ -234,6 +234,55 @@ export async function deleteAttribute(systemId: string): Promise<void> {
   throw await refusal(response)
 }
 
+// --- Feature 014: unlink a list of values from an attribute ---
+
+/** A taxonomy node named in an unlink review. */
+export type NodeReference = { id: string; name: string }
+
+/** What unlinking the attribute's list would affect; nothing changes (`GET …/list-unlink`). */
+export type ListUnlinkReview = {
+  attributeId: string
+  attributeName: string
+  listOfValuesId: string
+  listOfValuesName: string | null
+  filteredNodes: NodeReference[]
+  reviewToken: string
+}
+
+/** The new data type and its properties, in feature 004's shapes, plus the review's token. */
+export type ListUnlinkRequest = Omit<AttributeCreationRequest, 'displayName' | 'systemId'> & {
+  reviewToken: string
+}
+
+function unlinkPath(systemId: string): string {
+  return `/api/v1/attributes/${encodeURIComponent(systemId)}/list-unlink`
+}
+
+/** The list to detach and the nodes whose value filters would be deleted (feature 014 FR-009). */
+export async function reviewListUnlink(systemId: string): Promise<ListUnlinkReview> {
+  const response = await send(unlinkPath(systemId), { headers: { Accept: 'application/json' } })
+  if (response.ok) return (await response.json()) as ListUnlinkReview
+  throw await refusal(response)
+}
+
+/**
+ * Detaches the attribute's list and gives it the new data type and properties (feature 014
+ * FR-001). A `conflict` means the attribute or its filters changed since the review.
+ */
+export async function unlinkList(systemId: string, request: ListUnlinkRequest): Promise<Attribute> {
+  const response = await send(unlinkPath(systemId), {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...permissionHeaders(),
+    },
+    body: JSON.stringify(request),
+  })
+  if (response.ok) return (await response.json()) as Attribute
+  throw await refusal(response)
+}
+
 /** The error for a response the backend refused; unknown statuses count as unavailable. */
 async function refusal(response: Response): Promise<AttributeApiError> {
   const kind = KIND_BY_STATUS[response.status]

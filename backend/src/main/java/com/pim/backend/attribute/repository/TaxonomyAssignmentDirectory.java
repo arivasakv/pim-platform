@@ -19,4 +19,17 @@ public interface TaxonomyAssignmentDirectory {
      * @return the nodes that list the attribute, sorted by name ignoring letter case; empty if the action ran
      */
     List<TaxonomyNodeReference> runIfOnNoNode(String attributeId, Runnable action);
+
+    /**
+     * The nodes with a list-value filter for the attribute (feature 012), sorted by name ignoring letter case (feature
+     * 014 FR-009).
+     */
+    List<TaxonomyNodeReference> nodesFilteringValuesOf(String attributeId);
+
+    /**
+     * Runs {@code action}, then deletes every list-value filter of the attribute, while holding the taxonomy lock
+     * (feature 014 FR-008, research R-04). If {@code action} fails, no filter is deleted; if the deletion fails, the
+     * failure is passed on after {@code action} ran, so the caller can undo it.
+     */
+    void runRemovingValueFilters(String attributeId, Runnable action);
 }

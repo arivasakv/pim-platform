@@ -7,6 +7,8 @@ import {
   fetchAttributeTypes,
   getAttribute,
   listAttributes,
+  reviewListUnlink,
+  unlinkList,
   updateAttribute,
 } from './attributesApi'
 
@@ -210,5 +212,48 @@ describe('attributesApi', () => {
     expect(canChangeAttributes()).toBe(false)
     vi.stubEnv('VITE_DEV_PERMISSIONS', 'OTHER, attribute_create')
     expect(canChangeAttributes()).toBe(true)
+  })
+
+  it('reviews and unlinks the list of an attribute (feature 014)', async () => {
+    vi.stubEnv('VITE_DEV_PERMISSIONS', 'ATTRIBUTE_CREATE')
+    const review = {
+      attributeId: 'ATR000001',
+      attributeName: 'Color',
+      listOfValuesId: 'LOV000001',
+      listOfValuesName: 'Colores',
+      filteredNodes: [{ id: 'CLS000001', name: 'Ropa' }],
+      reviewToken: 'abc',
+    }
+    const fetchMock = stubFetch(() => Promise.resolve(response(200, review)))
+
+    await expect(reviewListUnlink('ATR000001')).resolves.toEqual(review)
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE_URL}/api/v1/attributes/ATR000001/list-unlink`)
+
+    const saved = {
+      systemId: 'ATR000001',
+      displayName: 'Color',
+      dataType: 'BOOLEAN',
+      scope: 'GLOBAL',
+    }
+    fetchMock.mockImplementation(() => Promise.resolve(response(200, saved)))
+    await expect(
+      unlinkList('ATR000001', { dataType: 'BOOLEAN', reviewToken: 'abc' }),
+    ).resolves.toEqual(saved)
+    const [url, init] = fetchMock.mock.calls[1]
+    expect(url).toBe(`${BASE_URL}/api/v1/attributes/ATR000001/list-unlink`)
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(init.body)).toEqual({ dataType: 'BOOLEAN', reviewToken: 'abc' })
+    expect(init.headers['X-Pim-Permissions']).toBe('ATTRIBUTE_CREATE')
+
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(
+        response(409, { detail: 'El atributo o sus filtros cambiaron…', errors: [] }),
+      ),
+    )
+    await expect(
+      unlinkList('ATR000001', { dataType: 'BOOLEAN', reviewToken: 'abc' }),
+    ).rejects.toMatchObject({ kind: 'conflict' })
+    fetchMock.mockImplementation(() => Promise.resolve(response(422, { detail: 'No es lista' })))
+    await expect(reviewListUnlink('ATR000002')).rejects.toMatchObject({ kind: 'unprocessable' })
   })
 })

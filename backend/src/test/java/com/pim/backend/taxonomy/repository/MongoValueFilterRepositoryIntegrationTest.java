@@ -73,6 +73,24 @@ class MongoValueFilterRepositoryIntegrationTest {
     }
 
     @Test
+    void findsAndDeletesTheFiltersOfOneAttributeOnly() {
+        repository.save(ValueFilter.create("CLS000001", "ATR000001", List.of("0001"), CREATED));
+        repository.save(ValueFilter.create("CLS000002", "ATR000001", List.of("0002"), CREATED));
+        repository.save(ValueFilter.create("CLS000002", "ATR000009", List.of("X"), CREATED));
+
+        assertThat(repository.findByAttribute("atr000001"))
+                .extracting(ValueFilter::id)
+                .containsExactlyInAnyOrder("CLS000001:ATR000001", "CLS000002:ATR000001");
+
+        repository.deleteByAttribute("Atr000001");
+
+        assertThat(repository.findByAttribute("ATR000001")).isEmpty();
+        assertThat(repository.findByAttribute("ATR000009"))
+                .extracting(ValueFilter::id)
+                .containsExactly("CLS000002:ATR000009");
+    }
+
+    @Test
     void createsTheUniqueIndex() {
         List<Document> indexes = mongoTemplate
                 .getCollection("taxonomy_value_filters")

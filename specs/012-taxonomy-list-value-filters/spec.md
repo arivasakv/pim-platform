@@ -358,6 +358,8 @@ blocking:
 
 - **OQ-002**: Filters for an attribute that stops applying to a node (edge case): kept with no effect (this
   spec), or removed automatically?
+  *Note 2026-11-23 (feature 014 FR-008): when an attribute's list is unlinked and it gets another data type,
+  all its filters on every node are deleted with the unlink, after a review that names those nodes.*
 - **OQ-003**: Should P360's existing filters be migrated later? The reference repository has not been
   checked for how P360 stores them; not needed now.
 

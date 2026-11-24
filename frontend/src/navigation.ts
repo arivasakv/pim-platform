@@ -48,9 +48,12 @@ export const NAVIGATION_ENTRIES: NavigationEntry[] = [
 
 const HOME_PATH = '/'
 
-/** Turns a location hash such as "#/buscar-producto" into a known path; anything else is home. */
+/**
+ * Turns a location hash such as "#/buscar-producto" into a known path; anything else is home. A
+ * query after the path ("#/atributos?desvincular=ATR000001", feature 014) does not change the page.
+ */
 export function getPathFromHash(hash: string): string {
-  const path = hash.replace(/^#/, '')
+  const path = hash.replace(/^#/, '').split('?')[0]
   const isKnownPath = NAVIGATION_ENTRIES.some((entry) => entry.path === path)
   return isKnownPath ? path : HOME_PATH
 }

@@ -3,13 +3,16 @@ package com.pim.backend.attribute.service;
 import com.pim.backend.attribute.model.Attribute;
 import com.pim.backend.attribute.model.AttributeChangeNotPermittedException;
 import com.pim.backend.attribute.model.AttributeCreateNotPermittedException;
+import com.pim.backend.attribute.model.AttributeDataType;
 import com.pim.backend.attribute.model.AttributeDetails;
 import com.pim.backend.attribute.model.AttributeDraft;
 import com.pim.backend.attribute.model.AttributeErrorCode;
 import com.pim.backend.attribute.model.AttributeInGroupsException;
 import com.pim.backend.attribute.model.AttributeNotFoundException;
+import com.pim.backend.attribute.model.AttributeNotListOfValuesException;
 import com.pim.backend.attribute.model.AttributeOnTaxonomyNodesException;
 import com.pim.backend.attribute.model.AttributePermissions;
+import com.pim.backend.attribute.model.AttributeProperties;
 import com.pim.backend.attribute.model.DisplayName;
 import com.pim.backend.attribute.model.DisplayNameInUseException;
 import com.pim.backend.attribute.model.GroupReference;
@@ -17,7 +20,10 @@ import com.pim.backend.attribute.model.ImmutableFieldException;
 import com.pim.backend.attribute.model.InvalidAttributeException;
 import com.pim.backend.attribute.model.ListOfValuesProperties;
 import com.pim.backend.attribute.model.ListOfValuesUnavailableException;
+import com.pim.backend.attribute.model.ListUnlinkReview;
 import com.pim.backend.attribute.model.TaxonomyNodeReference;
+import com.pim.backend.attribute.model.UnlinkOutdatedException;
+import com.pim.backend.attribute.model.UnlinkToListNotAllowedException;
 import com.pim.backend.attribute.repository.AttributeGroupDirectory;
 import com.pim.backend.attribute.repository.AttributeRepository;
 import com.pim.backend.attribute.repository.ListOfValuesCatalog;
@@ -27,8 +33,12 @@ import com.pim.backend.identifier.model.AssignmentResult;
 import com.pim.backend.identifier.model.ManualIdPermissions;
 import com.pim.backend.identifier.model.ObjectType;
 import com.pim.backend.identifier.service.IdentifierService;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -231,6 +241,108 @@ public class AttributeService {
         }
         if (!nodes.isEmpty()) {
             throw new AttributeOnTaxonomyNodesException(nodes);
+        }
+    }
+
+    /**
+     * What unlinking the attribute's list would affect: the list and the taxonomy nodes whose value filters for the
+     * attribute would be deleted; nothing changes (feature 014 FR-009; research R-02).
+     *
+     * @throws AttributeNotFoundException if no attribute has the system ID
+     * @throws AttributeNotListOfValuesException if the attribute is not of type list of values
+     */
+    public ListUnlinkReview reviewListUnlink(String systemId) {
+        Attribute attribute = find(systemId);
+        ListOfValuesProperties list = listOf(attribute);
+        // Asked outside this service's lock (lock order: taxonomy, then attribute).
+        List<TaxonomyNodeReference> nodes = taxonomyDirectory.nodesFilteringValuesOf(attribute.systemId());
+        return new ListUnlinkReview(
+                attribute.systemId(),
+                attribute.displayName().value(),
+                list.listOfValuesId(),
+                Optional.ofNullable(
+                        listsOfValues.namesById().get(list.listOfValuesId().toUpperCase(Locale.ROOT))),
+                nodes,
+                reviewToken(attribute, nodes));
+    }
+
+    /**
+     * Detaches the attribute's list of values and gives the attribute another data type and its properties, deleting
+     * its list-value filters on taxonomy nodes, all or nothing (feature 014 FR-001–FR-013; research R-02–R-05). The
+     * system ID, display name, scope, creation date and group memberships stay. Properties must already satisfy feature
+     * 004's rules for the type (the request mapping checks them).
+     *
+     * @throws AttributeChangeNotPermittedException without the {@code ATTRIBUTE_CREATE} permission
+     * @throws AttributeNotFoundException if no attribute has the system ID
+     * @throws AttributeNotListOfValuesException if the attribute is not of type list of values
+     * @throws UnlinkToListNotAllowedException if the new data type is list of values
+     * @throws UnlinkOutdatedException if the attribute or its filters changed since {@code reviewToken} was given
+     */
+    public AttributeDetails unlinkList(
+            String systemId,
+            AttributeDataType newDataType,
+            AttributeProperties newProperties,
+            String reviewToken,
+            AttributePermissions permissions) {
+        if (!permissions.allowsCreation()) {
+            throw new AttributeChangeNotPermittedException();
+        }
+        Attribute[] stored = new Attribute[2]; // [before, after], set once the new definition is stored
+        try {
+            // Taxonomy lock first, then this service's lock (feature 010 research R-05).
+            taxonomyDirectory.runRemovingValueFilters(systemId, () -> {
+                List<TaxonomyNodeReference> nodes = taxonomyDirectory.nodesFilteringValuesOf(systemId);
+                synchronized (lock) {
+                    Attribute current = attributes
+                            .findBySystemId(systemId)
+                            .orElseThrow(() -> new AttributeNotFoundException(systemId));
+                    listOf(current);
+                    if (newDataType == AttributeDataType.LIST_OF_VALUES) {
+                        throw new UnlinkToListNotAllowedException();
+                    }
+                    if (!reviewToken(current, nodes).equals(reviewToken)) {
+                        throw new UnlinkOutdatedException();
+                    }
+                    Attribute unlinked = current.withDataType(newDataType, newProperties, clock.instant());
+                    attributes.update(unlinked);
+                    stored[0] = current;
+                    stored[1] = unlinked;
+                }
+            });
+        } catch (RuntimeException failure) {
+            if (stored[0] != null) {
+                // The filters could not be deleted: put the attribute back (research R-04).
+                synchronized (lock) {
+                    attributes.update(stored[0]);
+                }
+            }
+            throw failure;
+        }
+        return detailsOf(stored[1]);
+    }
+
+    /** The attribute's list-of-values properties; refuses another type (feature 014 FR-012). */
+    private static ListOfValuesProperties listOf(Attribute attribute) {
+        if (attribute.properties() instanceof ListOfValuesProperties list && list.listOfValuesId() != null) {
+            return list;
+        }
+        throw new AttributeNotListOfValuesException(attribute.displayName().value());
+    }
+
+    /**
+     * SHA-256, in hexadecimal, of the attribute's definition and the nodes with filters for it (feature 014 research
+     * R-02): any change to either gives another token.
+     */
+    private static String reviewToken(Attribute attribute, List<TaxonomyNodeReference> nodes) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.update(attribute.toString().getBytes(StandardCharsets.UTF_8));
+            for (TaxonomyNodeReference node : nodes) {
+                digest.update(("\n" + node.systemId().toUpperCase(Locale.ROOT)).getBytes(StandardCharsets.UTF_8));
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is always available", exception);
         }
     }
 

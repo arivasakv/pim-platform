@@ -32,7 +32,13 @@ public enum AttributeErrorCode {
     DATA_TYPE_IMMUTABLE("El tipo de dato no se puede cambiar."),
     ATTRIBUTE_IN_GROUPS("El atributo pertenece a %s: %s. Quítalo de esos grupos antes de eliminarlo."),
     ATTRIBUTE_ON_TAXONOMY_NODES(
-            "El atributo pertenece a %s de la taxonomía: %s. Quítalo de esos nodos antes de eliminarlo.");
+            "El atributo pertenece a %s de la taxonomía: %s. Quítalo de esos nodos antes de eliminarlo."),
+    // Feature 014: unlinking a list of values from an attribute.
+    ATTRIBUTE_NOT_LIST_OF_VALUES(
+            "El atributo «%s» no es de tipo lista de valores; no tiene una lista que desvincular."),
+    UNLINK_TO_LIST_NOT_ALLOWED("Elige un tipo de dato distinto de lista de valores para el atributo."),
+    UNLINK_OUTDATED("El atributo o sus filtros cambiaron desde la revisión. Vuelve a revisar la desvinculación."),
+    REVIEW_TOKEN_REQUIRED("Falta el resultado de la revisión. Revisa la desvinculación antes de confirmarla.");
 
     private final String template;
 

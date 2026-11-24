@@ -16,6 +16,10 @@ describe('getPathFromHash', () => {
     expect(getPathFromHash('#/')).toBe('/')
   })
 
+  it('ignores a query after the path (feature 014)', () => {
+    expect(getPathFromHash('#/atributos?desvincular=ATR000001')).toBe('/atributos')
+  })
+
   it('returns the home path for an unknown hash', () => {
     expect(getPathFromHash('#/desconocido')).toBe('/')
   })

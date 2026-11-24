@@ -3,6 +3,8 @@ package com.pim.backend.attribute.controller;
 import com.pim.backend.attribute.dto.AttributeCollectionResponse;
 import com.pim.backend.attribute.dto.AttributeCreationRequest;
 import com.pim.backend.attribute.dto.AttributeResponse;
+import com.pim.backend.attribute.dto.ListUnlinkRequest;
+import com.pim.backend.attribute.dto.ListUnlinkReviewResponse;
 import com.pim.backend.attribute.model.Attribute;
 import com.pim.backend.attribute.model.AttributeDataType;
 import com.pim.backend.attribute.model.AttributeDraft;
@@ -86,6 +88,36 @@ public class AttributeController {
     ResponseEntity<Void> delete(@PathVariable String systemId, HttpServletRequest httpRequest) {
         attributeService.delete(systemId, permissionsReader.attributePermissions(httpRequest));
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * What unlinking the attribute's list would affect; nothing changes (feature 014 FR-009; contract
+     * {@code list-unlink.openapi.yaml}).
+     */
+    @GetMapping("/{systemId}/list-unlink")
+    ListUnlinkReviewResponse reviewListUnlink(@PathVariable String systemId) {
+        return ListUnlinkReviewResponse.from(attributeService.reviewListUnlink(systemId));
+    }
+
+    /**
+     * Detaches the attribute's list and gives it the new data type and properties, deleting its list-value filters
+     * (feature 014 FR-001–FR-011). The properties are checked with feature 004's mapping and rules.
+     */
+    @PostMapping("/{systemId}/list-unlink")
+    AttributeResponse unlinkList(
+            @PathVariable String systemId,
+            @Valid @RequestBody ListUnlinkRequest request,
+            HttpServletRequest httpRequest) {
+        AttributeDraft draft = draft(request.asCreationRequest());
+        if (request.reviewToken() == null || request.reviewToken().isBlank()) {
+            throw new InvalidAttributeException("reviewToken", AttributeErrorCode.REVIEW_TOKEN_REQUIRED);
+        }
+        return AttributeResponse.from(attributeService.unlinkList(
+                systemId,
+                draft.dataType(),
+                draft.properties(),
+                request.reviewToken().strip(),
+                permissionsReader.attributePermissions(httpRequest)));
     }
 
     /** The request as model values; unknown option texts and malformed properties are refused here (400). */

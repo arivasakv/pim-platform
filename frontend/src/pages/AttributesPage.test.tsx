@@ -322,6 +322,47 @@ describe('AttributesPage', () => {
     expect(screen.getByText('0 atributos')).toBeTruthy()
   })
 
+  it('opens an attribute from «#/atributos?desvincular=…» in unlink mode and reports the unlink (feature 014)', async () => {
+    const unlinked = {
+      ...color(),
+      dataType: 'BOOLEAN' as const,
+      listOfValuesProperties: undefined,
+      updatedAt: '2026-11-23T10:00:00Z',
+    }
+    const fetchMock = fakeBackend([peso(), color()], {
+      [`GET ${ATTRIBUTES}/ATR000002/list-unlink`]: () =>
+        response(200, {
+          attributeId: 'ATR000002',
+          attributeName: 'Color',
+          listOfValuesId: 'LOV000001',
+          listOfValuesName: 'Colores',
+          filteredNodes: [],
+          reviewToken: 'token-1',
+        }),
+      [`POST ${ATTRIBUTES}/ATR000002/list-unlink`]: () => response(200, unlinked),
+    })
+    window.location.hash = '#/atributos?desvincular=ATR000002'
+    render(<AttributesPage />)
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Desvincular lista de «Color»' }),
+    ).toBeTruthy()
+    expect(window.location.hash).toBe('#/atributos')
+    await screen.findByText('Se desvinculará la lista «Colores».')
+    const editor = within(screen.getByRole('region', { name: 'Desvincular lista de «Color»' }))
+    fireEvent.change(editor.getByLabelText('Tipo de dato'), { target: { value: 'BOOLEAN' } })
+    fireEvent.click(editor.getByRole('button', { name: 'Desvincular y guardar' }))
+
+    expect(
+      await screen.findByText('Lista desvinculada de «Color». Ahora es de tipo Booleano.'),
+    ).toBeTruthy()
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${ATTRIBUTES}/ATR000002/list-unlink`,
+      expect.objectContaining({ method: 'POST' }),
+    )
+    window.location.hash = ''
+  })
+
   it('shows the complete configuration of an attribute', async () => {
     fakeBackend([peso(), color()])
     render(<AttributesPage />)

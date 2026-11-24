@@ -24,4 +24,33 @@ public class FakeTaxonomyAssignments implements TaxonomyAssignmentDirectory {
         }
         return nodes;
     }
+
+    // --- Feature 014: list-value filters ---
+
+    private final Map<String, List<TaxonomyNodeReference>> filtersByAttribute = new HashMap<>();
+    private boolean failRemovingFilters;
+
+    /** Gives the attribute list-value filters on these nodes (already sorted by name). */
+    public synchronized void putFilters(String attributeId, TaxonomyNodeReference... nodes) {
+        filtersByAttribute.put(attributeId.toUpperCase(Locale.ROOT), List.of(nodes));
+    }
+
+    /** Makes the next filter deletions fail after the action ran, as a storage failure would. */
+    public synchronized void failRemovingFilters() {
+        failRemovingFilters = true;
+    }
+
+    @Override
+    public synchronized List<TaxonomyNodeReference> nodesFilteringValuesOf(String attributeId) {
+        return filtersByAttribute.getOrDefault(attributeId.toUpperCase(Locale.ROOT), List.of());
+    }
+
+    @Override
+    public synchronized void runRemovingValueFilters(String attributeId, Runnable action) {
+        action.run();
+        if (failRemovingFilters) {
+            throw new IllegalStateException("Storage is down");
+        }
+        filtersByAttribute.remove(attributeId.toUpperCase(Locale.ROOT));
+    }
 }

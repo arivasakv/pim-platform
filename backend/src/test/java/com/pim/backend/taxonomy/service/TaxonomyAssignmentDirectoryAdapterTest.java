@@ -39,6 +39,7 @@ class TaxonomyAssignmentDirectoryAdapterTest {
     private final AttributeService attributeService;
     private final IdentifierService identifierService;
     private final InMemoryTaxonomyNodeRepository nodes = new InMemoryTaxonomyNodeRepository();
+    private final InMemoryValueFilterRepository filters = new InMemoryValueFilterRepository();
     private final TaxonomyService service;
 
     {
@@ -54,7 +55,7 @@ class TaxonomyAssignmentDirectoryAdapterTest {
                 clock);
         service = new TaxonomyService(
                 nodes,
-                new InMemoryValueFilterRepository(),
+                filters,
                 attributeService,
                 new ListOfValuesLookup(new InMemoryListOfValuesRepository()),
                 identifierService,
@@ -85,5 +86,46 @@ class TaxonomyAssignmentDirectoryAdapterTest {
         assertThat(adapter.runIfOnNoNode(talla.systemId(), () -> ran.add("talla")))
                 .isEmpty();
         assertThat(ran).containsExactly("talla");
+    }
+
+    // --- Feature 014 ---
+
+    private TaxonomyAssignmentDirectoryAdapter adapter() {
+        StaticListableBeanFactory beans = new StaticListableBeanFactory();
+        beans.addBean("taxonomyService", service);
+        return new TaxonomyAssignmentDirectoryAdapter(beans.getBeanProvider(TaxonomyService.class));
+    }
+
+    @Test
+    void listsAndDeletesTheValueFiltersOfOneAttribute() {
+        String ropa = service.create("Ropa", null, null, CAN_CHANGE).node().systemId();
+        String camisas =
+                service.create("Camisas", null, null, CAN_CHANGE).node().systemId();
+        filters.save(com.pim.backend.taxonomy.model.ValueFilter.create(ropa, "ATR000001", List.of("1"), NOW));
+        filters.save(com.pim.backend.taxonomy.model.ValueFilter.create(camisas, "ATR000001", List.of("1"), NOW));
+        filters.save(com.pim.backend.taxonomy.model.ValueFilter.create(ropa, "ATR000002", List.of("1"), NOW));
+        List<String> ran = new ArrayList<>();
+
+        assertThat(adapter().nodesFilteringValuesOf("atr000001"))
+                .containsExactly(
+                        new TaxonomyNodeReference(camisas, "Camisas"), new TaxonomyNodeReference(ropa, "Ropa"));
+
+        adapter().runRemovingValueFilters("ATR000001", () -> ran.add("unlinked"));
+
+        assertThat(ran).containsExactly("unlinked");
+        assertThat(adapter().nodesFilteringValuesOf("ATR000001")).isEmpty();
+        assertThat(filters.findByAttribute("ATR000002")).hasSize(1);
+    }
+
+    @Test
+    void keepsTheFiltersWhenTheActionFails() {
+        String ropa = service.create("Ropa", null, null, CAN_CHANGE).node().systemId();
+        filters.save(com.pim.backend.taxonomy.model.ValueFilter.create(ropa, "ATR000001", List.of("1"), NOW));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> adapter().runRemovingValueFilters("ATR000001", () -> {
+                    throw new IllegalStateException("refused");
+                }))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(filters.findByAttribute("ATR000001")).hasSize(1);
     }
 }

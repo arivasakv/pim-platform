@@ -87,6 +87,34 @@ export function AttributesPage() {
   const [panelError, setPanelError] = useState<string>()
   const [busy, setBusy] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  /** The edit form opens in unlink mode (feature 014 FR-006). */
+  const [unlinkOnOpen, setUnlinkOnOpen] = useState(false)
+  /** «#/atributos?desvincular={id}», read once when the page opens (feature 014 FR-006). */
+  const [unlinkRequest] = useState(() =>
+    new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('desvincular'),
+  )
+
+  // Opens the attribute asked for by the list page directly in unlink mode, then clears the query
+  // so a reload does not open it again. State changes only in the callbacks.
+  useEffect(() => {
+    if (!unlinkRequest) return
+    window.history.replaceState(null, '', '#/atributos')
+    let isCurrent = true
+    getAttribute(unlinkRequest).then(
+      (attribute) => {
+        if (!isCurrent) return
+        setSelected(attribute)
+        setUnlinkOnOpen(true)
+        setPanel('edit')
+      },
+      (error: unknown) => {
+        if (isCurrent) setPanelError(messageOf(error))
+      },
+    )
+    return () => {
+      isCurrent = false
+    }
+  }, [unlinkRequest])
 
   // Loads the attributes, the data types and, independently, the groups (feature 009 FR-008); a
   // reload increments listRequest. State changes only in the callbacks.
@@ -180,6 +208,16 @@ export function AttributesPage() {
     setSelected(attribute)
     setPanel('detail')
     setConfirmation(`Atributo «${attribute.displayName}» creado con el ID ${attribute.systemId}.`)
+    reloadList()
+  }
+
+  function handleUnlinked(attribute: Attribute) {
+    setSelected(attribute)
+    setUnlinkOnOpen(false)
+    setPanel('detail')
+    setConfirmation(
+      `Lista desvinculada de «${attribute.displayName}». Ahora es de tipo ${attributeTypeLabel(attribute, types)}.`,
+    )
     reloadList()
   }
 
@@ -365,8 +403,13 @@ export function AttributesPage() {
                 key={`editar-${selected.systemId}`}
                 mode="edit"
                 attribute={selected}
+                startUnlinking={unlinkOnOpen}
                 onSaved={handleUpdated}
-                onCancel={() => setPanel('detail')}
+                onUnlinked={handleUnlinked}
+                onCancel={() => {
+                  setUnlinkOnOpen(false)
+                  setPanel('detail')
+                }}
               />
             )}
 

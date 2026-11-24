@@ -24,4 +24,10 @@ public interface ValueFilterRepository {
 
     /** Removes every filter of the node (feature 012 plan D-6). */
     void deleteByNode(String nodeId);
+
+    /** Every filter of the attribute, on any node (feature 014 research R-04). */
+    List<ValueFilter> findByAttribute(String attributeId);
+
+    /** Removes every filter of the attribute, on every node (feature 014 FR-008). */
+    void deleteByAttribute(String attributeId);
 }

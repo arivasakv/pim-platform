@@ -62,4 +62,14 @@ public record Attribute(
     public Attribute updated(DisplayName newDisplayName, AttributeProperties newProperties, Instant at) {
         return new Attribute(systemId, newDisplayName, dataType, scope, newProperties, createdAt, Optional.of(at));
     }
+
+    /**
+     * This attribute with another data type and its properties, changed at {@code at}: only for unlinking a list of
+     * values (feature 014 FR-001, FR-013; research R-05). The system ID, display name, scope and creation date stay.
+     *
+     * @throws IllegalArgumentException if the properties do not match the new data type
+     */
+    public Attribute withDataType(AttributeDataType newDataType, AttributeProperties newProperties, Instant at) {
+        return new Attribute(systemId, displayName, newDataType, scope, newProperties, createdAt, Optional.of(at));
+    }
 }

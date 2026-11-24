@@ -1,0 +1,180 @@
+openapi: 3.1.0
+info:
+  title: PIM Platform – Unlink a list of values from an attribute
+  version: 2.2.0
+  description: >
+    Feature 014 (specs/014-lov-unlink). Delta to the attributes contract
+    (specs/004-attribute-creation/contracts/attributes.openapi.yaml), merged there as v2.2.0 (additive). A
+    list-of-values attribute is given another data type and that type's properties in one change; its list
+    is detached and its list-value filters on taxonomy nodes (feature 012) are deleted (spec FR-001–FR-013).
+    Two steps (research R-02): GET returns the review and a reviewToken; POST applies with the token.
+    Permission ATTRIBUTE_CREATE (header X-Pim-Permissions). Request properties follow feature 004's shapes
+    and rules. Messages are in Spanish.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: attributes
+paths:
+  /api/v1/attributes/{systemId}/list-unlink:
+    parameters:
+      - name: systemId
+        in: path
+        required: true
+        description: The attribute's system ID, compared ignoring letter case.
+        schema: { type: string, maxLength: 40 }
+    get:
+      operationId: reviewListUnlink
+      summary: What unlinking the attribute's list would affect; nothing changes (FR-009)
+      tags: [attributes]
+      responses:
+        "200":
+          description: The review.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListUnlinkReview" }
+              example:
+                attributeId: ATR000004
+                attributeName: Color
+                listOfValuesId: LOV000001
+                listOfValuesName: Colores
+                filteredNodes:
+                  - { id: TAX000002, name: Ropa de hombre }
+                  - { id: TAX000005, name: Camisas }
+                reviewToken: 3be1c0…
+        "404":
+          description: No attribute has this ID (ATTRIBUTE_NOT_FOUND).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: The attribute is not of type list of values (ATTRIBUTE_NOT_LIST_OF_VALUES).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+    post:
+      operationId: unlinkList
+      summary: Detach the list, give the attribute a new data type, delete its filters (FR-001–FR-011)
+      tags: [attributes]
+      parameters:
+        - name: X-Pim-Permissions
+          in: header
+          required: false
+          description: Development stand-in for the user's permissions. ATTRIBUTE_CREATE allows the unlink.
+          schema: { type: string, example: ATTRIBUTE_CREATE }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ListUnlinkRequest" }
+            example:
+              dataType: NUMERIC
+              numericProperties:
+                {
+                  numberFormat: DECIMAL,
+                  precision: 1,
+                  minimum: 20,
+                  maximum: 32,
+                }
+              reviewToken: 3be1c0…
+      responses:
+        "200":
+          description: >
+            Unlinked: the attribute as stored (feature 004 Attribute schema) with the new data type and
+            properties, no list, the same system ID, name, groups and creation date, and a new updatedAt.
+        "400":
+          description: >
+            Invalid request or properties (feature 004 codes, e.g. REQUIRED, INVALID_PRECISION), or no
+            reviewToken (REVIEW_TOKEN_REQUIRED). Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "403":
+          description: Without ATTRIBUTE_CREATE (ATTRIBUTE_CHANGE_NOT_PERMITTED). Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "404":
+          description: No attribute has this ID (ATTRIBUTE_NOT_FOUND).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "409":
+          description: >
+            UNLINK_OUTDATED: the attribute or its filters changed since the review («El atributo o sus
+            filtros cambiaron desde la revisión. Vuelve a revisar la desvinculación.»). Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: >
+            ATTRIBUTE_NOT_LIST_OF_VALUES (the attribute has no list) or UNLINK_TO_LIST_NOT_ALLOWED (the new
+            data type is list of values). Nothing changed.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+components:
+  schemas:
+    NodeReference:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+    ListUnlinkReview:
+      type: object
+      required:
+        [attributeId, attributeName, listOfValuesId, filteredNodes, reviewToken]
+      properties:
+        attributeId: { type: string }
+        attributeName: { type: string }
+        listOfValuesId: { type: string }
+        listOfValuesName:
+          {
+            type: [string, "null"],
+            description: Null if the list no longer exists,
+          }
+        filteredNodes:
+          type: array
+          description: Nodes whose list-value filters for the attribute will be deleted, sorted by name
+          items: { $ref: "#/components/schemas/NodeReference" }
+        reviewToken:
+          { type: string, description: SHA-256 (hex); send it back to unlink }
+    ListUnlinkRequest:
+      type: object
+      required: [dataType, reviewToken]
+      description: >
+        dataType and the properties object of that type, exactly as in feature 004's
+        AttributeCreationRequest (textProperties, numericProperties, dateTimeProperties, currencyProperties,
+        referenceProperties; none for BOOLEAN). displayName and systemId are not read.
+      properties:
+        dataType:
+          type: string
+          enum: [TEXT, NUMERIC, BOOLEAN, DATE_TIME, CURRENCY, REFERENCE]
+        textProperties: { type: object }
+        numericProperties: { type: object }
+        dateTimeProperties: { type: object }
+        currencyProperties: { type: object }
+        referenceProperties: { type: object }
+        reviewToken: { type: string }
+    Problem:
+      type: object
+      description: RFC 9457 Problem Details, as in feature 004 (ADR 0001).
+      required: [title, status]
+      properties:
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, code, message]
+            properties:
+              field: { type: string }
+              code:
+                type: string
+                description: >
+                  Feature 004 codes plus ATTRIBUTE_NOT_LIST_OF_VALUES, UNLINK_TO_LIST_NOT_ALLOWED,
+                  UNLINK_OUTDATED, REVIEW_TOKEN_REQUIRED
+              message: { type: string }

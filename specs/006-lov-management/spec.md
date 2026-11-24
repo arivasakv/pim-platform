@@ -340,6 +340,10 @@ Requirement IDs are kept stable; requirements moved to follow-up features are ma
   attribute's type or list. [§3.2.1 «en el caso de la desvinculación debe quedar indicado el tipo de
   atributo diferente a LOV en caso de que ya no se ligue a otra»; HU2.1 «el PIM exigirá redefinir el
   nuevo tipo de dato»]
+  *Delivered 2026-11-23 by feature 014 (`specs/014-lov-unlink`): unlinking a list from an attribute together
+  with its new data type, from the attribute's edit form or from this list's linked attributes. The
+  owner confirmed the same day that FU-1 (label changes propagated to products; deletion showing the
+  number of affected products, with delete or migrate) stays deferred until products hold attribute values.*
 
 **Bulk-safety and consistency**
 

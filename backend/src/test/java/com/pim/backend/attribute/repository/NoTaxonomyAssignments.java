@@ -14,4 +14,14 @@ public class NoTaxonomyAssignments implements TaxonomyAssignmentDirectory {
         action.run();
         return List.of();
     }
+
+    @Override
+    public List<TaxonomyNodeReference> nodesFilteringValuesOf(String attributeId) {
+        return List.of();
+    }
+
+    @Override
+    public void runRemovingValueFilters(String attributeId, Runnable action) {
+        action.run();
+    }
 }
